@@ -13,6 +13,13 @@ export const login = baseProcedure
   )
   .mutation(async ({ input }) => {
     // Supabase Auth sign-in
+    if (!supabaseServer) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Authentication service is not configured correctly on the server. Please check environment variables.",
+      });
+    }
+
     const { data, error } = await supabaseServer.auth.signInWithPassword({
       email: input.email,
       password: input.password,
