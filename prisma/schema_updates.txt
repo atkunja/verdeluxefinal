@@ -1,0 +1,25 @@
+
+model ManualTask {
+  id             Int       @id @default(autoincrement())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  title          String
+  description    String?
+  date           DateTime
+  status         TaskStatus @default(PENDING)
+  priority       TaskPriority @default(MEDIUM)
+  assignedToId   Int?
+  assignedTo     User?     @relation(fields: [assignedToId], references: [id])
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
