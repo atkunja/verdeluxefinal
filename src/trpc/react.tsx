@@ -21,14 +21,21 @@ const { TRPCProvider, useTRPC, useTRPCClient } = createTRPCContext<AppRouter>();
 export { useTRPC, useTRPCClient };
 
 function getBaseUrl() {
-  if (typeof window !== "undefined") return ""; // use relative url on client
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // use vercel url on server
+  if (typeof window !== "undefined") {
+    // In the browser, we should always use the current origin
+    return window.location.origin;
+  }
+
+  // Server-side (during SSR or build)
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
   const apiBase =
     import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_BASE_URL ||
     import.meta.env.BASE_URL;
 
-  if (apiBase) return apiBase as string;
+  if (apiBase && !apiBase.includes("localhost")) return apiBase as string;
+
   return `http://localhost:3000`;
 }
 
