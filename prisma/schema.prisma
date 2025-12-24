@@ -1,0 +1,661 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                           Int                        @id @default(autoincrement())
+  createdAt                    DateTime                   @default(now())
+  email                        String                     @unique
+  password                     String
+  role                         UserRole                   @default(CLIENT)
+  firstName                    String?
+  lastName                     String?
+  phone                        String?
+  color                        String?
+  stripeCustomerId             String?
+  stripeDefaultPaymentMethodId String?
+  temporaryPassword            String?
+  hasResetPassword             Boolean                    @default(false)
+  adminPermissions             Json?
+  cleanerBookings              Booking[]                  @relation("CleanerBookings")
+  clientBookings               Booking[]                  @relation("ClientBookings")
+  bookingCleaners              BookingCleaner[]           @relation("UserBookingCleaners")
+  uploadedImages               BookingImage[]
+  bookingInquiries             BookingInquiry[]
+  cleanerAvailability          CleanerAvailability[]
+  cleanerTrainingProgress      CleanerTrainingProgress[]
+  documents                    Document[]
+  emailLogs                    EmailLog[]
+  receivedMessages             Message[]                  @relation("ReceivedMessages")
+  sentMessages                 Message[]                  @relation("SentMessages")
+  payments                     Payment[]
+  recurringBookingTemplates    RecurringBookingTemplate[]
+  systemLogs                   SystemLog[]
+  timeEntries                  TimeEntry[]
+  timeOffRequests              TimeOffRequest[]           @relation("CleanerTimeOffRequests")
+  reviewedTimeOffRequests      TimeOffRequest[]           @relation("AdminReviewedRequests")
+  assignedTasks                ManualTask[]
+  contactCallLogs              CallLog[]                  @relation("ContactCallLogs")
+  userCallLogs                 CallLog[]                  @relation("UserCallLogs")
+}
+
+model Booking {
+  id                        Int               @id @default(autoincrement())
+  createdAt                 DateTime          @default(now())
+  clientId                  Int
+  cleanerId                 Int?
+  serviceType               String
+  scheduledDate             DateTime
+  scheduledTime             String
+  durationHours             Float?
+  address                   String
+  addressLine1              String?
+  addressLine2              String?
+  city                      String?
+  state                     String?
+  postalCode                String?
+  placeId                   String?
+  latitude                  Float?
+  longitude                 Float?
+  specialInstructions       String?
+  privateBookingNote        String?
+  privateCustomerNote       String?
+  providerNote              String?
+  status                    BookingStatus     @default(PENDING)
+  finalPrice                Float?
+  selectedExtras            Json?
+  recurrenceId              String?
+  occurrenceNumber          Int?
+  cancellationFeeApplied    Boolean?          @default(false)
+  serviceFrequency          ServiceFrequency?
+  houseSquareFootage        Int?
+  basementSquareFootage     Int?
+  numberOfBedrooms          Int?
+  numberOfBathrooms         Int?
+  numberOfCleanersRequested Int?
+  cleanerPaymentAmount      Float?
+  paymentMethod             PaymentMethod?
+  paymentDetails            String?
+  accountingEntries         AccountingEntry[]
+  cleaner                   User?             @relation("CleanerBookings", fields: [cleanerId], references: [id])
+  client                    User              @relation("ClientBookings", fields: [clientId], references: [id], onDelete: Cascade)
+  checklist                 BookingChecklist?
+  cleaners                  BookingCleaner[]
+  images                    BookingImage[]
+  payments                  Payment[]
+  review                    Review?
+  stripePayments            StripePayment[]
+  timeEntries               TimeEntry[]
+}
+
+model BookingCleaner {
+  bookingId Int
+  cleanerId Int
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  cleaner   User    @relation("UserBookingCleaners", fields: [cleanerId], references: [id], onDelete: Cascade)
+
+  @@id([bookingId, cleanerId])
+}
+
+model Payment {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  bookingId   Int
+  cleanerId   Int?
+  amount      Float
+  paidAt      DateTime?
+  description String?
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  cleaner     User?     @relation(fields: [cleanerId], references: [id])
+}
+
+model BookingInquiry {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  userId        Int?
+  firstName     String?
+  lastName      String?
+  phone         String
+  email         String
+  howHeardAbout String
+  message       String?
+  smsConsent    Boolean  @default(false)
+  user          User?    @relation(fields: [userId], references: [id])
+}
+
+model ChecklistTemplate {
+  id                Int                     @id @default(autoincrement())
+  createdAt         DateTime                @default(now())
+  name              String
+  serviceType       String
+  bookingChecklists BookingChecklist[]
+  items             ChecklistItemTemplate[]
+}
+
+model ChecklistItemTemplate {
+  id          Int               @id @default(autoincrement())
+  templateId  Int
+  description String
+  order       Int
+  template    ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model BookingChecklist {
+  id         Int                    @id @default(autoincrement())
+  createdAt  DateTime               @default(now())
+  bookingId  Int                    @unique
+  templateId Int
+  booking    Booking                @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  template   ChecklistTemplate      @relation(fields: [templateId], references: [id])
+  items      BookingChecklistItem[]
+}
+
+model BookingChecklistItem {
+  id          Int              @id @default(autoincrement())
+  checklistId Int
+  description String
+  order       Int
+  isCompleted Boolean          @default(false)
+  completedAt DateTime?
+  completedBy Int?
+  checklist   BookingChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model CallLog {
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  externalId    String?        @unique // OpenPhone ID
+  callSid       String?        @unique // Twilio/Other SID
+  userId        Int? // The Admin/System user
+  contactId     Int? // The Client/Cleaner user
+  fromNumber    String
+  toNumber      String
+  status        String
+  direction     String
+  duration      Int?
+  startTime     DateTime?
+  endTime       DateTime?
+  recordingUrl  String?
+  voicemailUrl  String?
+  transcript    String?        @db.Text
+  summary       String?        @db.Text
+  aiTranscripts AITranscript[]
+  contact       User?          @relation("ContactCallLogs", fields: [contactId], references: [id], onDelete: SetNull)
+  user          User?          @relation("UserCallLogs", fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model PricingRule {
+  id               Int             @id @default(autoincrement())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  name             String
+  ruleType         PricingRuleType
+  serviceType      String?
+  priceAmount      Float?
+  ratePerUnit      Float?
+  timeAmount       Float?
+  timePerUnit      Float?
+  extraName        String?
+  extraDescription String?
+  isActive         Boolean         @default(true)
+  displayOrder     Int             @default(0)
+  priceRangeMin    Float?
+  priceRangeMax    Float?
+}
+
+model TimeOffRequest {
+  id           Int           @id @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  cleanerId    Int
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
+  status       RequestStatus @default(PENDING)
+  reviewedById Int?
+  reviewedAt   DateTime?
+  adminNotes   String?
+  isCleared    Boolean       @default(false)
+  cleaner      User          @relation("CleanerTimeOffRequests", fields: [cleanerId], references: [id], onDelete: Cascade)
+  reviewedBy   User?         @relation("AdminReviewedRequests", fields: [reviewedById], references: [id])
+}
+
+model TimeEntry {
+  id           Int       @id @default(autoincrement())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  userId       Int
+  bookingId    Int?
+  lat          Float?
+  lng          Float?
+  locationNote String?
+  startTime    DateTime
+  endTime      DateTime?
+  notes        String?
+  booking      Booking?  @relation(fields: [bookingId], references: [id])
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  senderId    Int
+  recipientId Int
+  content     String
+  mediaUrls   String[]  @default([])
+  externalId  String?   @unique
+  openPhoneId String?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+
+
+model ManualTask {
+  id             Int       @id @default(autoincrement())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  title          String
+  description    String?
+  date           DateTime
+  status         TaskStatus @default(PENDING)
+  priority       TaskPriority @default(MEDIUM)
+  assignedToId   Int?
+  assignedTo     User?     @relation(fields: [assignedToId], references: [id])
+}
+
+model SystemLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int?
+  action    String
+  entity    String
+  entityId  Int?
+  before    Json?
+  after     Json?
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model CleanerAvailability {
+  id          Int     @id @default(autoincrement())
+  cleanerId   Int
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isAvailable Boolean @default(true)
+  cleaner     User    @relation(fields: [cleanerId], references: [id], onDelete: Cascade)
+}
+
+model BookingImage {
+  id         Int              @id @default(autoincrement())
+  createdAt  DateTime         @default(now())
+  bookingId  Int
+  uploaderId Int
+  imageUrl   String
+  imageType  BookingImageType
+  caption    String?
+  booking    Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  uploader   User             @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+}
+
+model RecurringBookingTemplate {
+  id                  Int              @id @default(autoincrement())
+  createdAt           DateTime         @default(now())
+  clientId            Int
+  serviceType         String
+  address             String
+  specialInstructions String?
+  serviceFrequency    ServiceFrequency
+  startDate           DateTime
+  endDate             DateTime?
+  bookingTime         String
+  dayOfWeek           Int
+  client              User             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model EmailTemplate {
+  id        Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  name      String     @unique
+  subject   String
+  body      String
+  type      String?
+  emailLogs EmailLog[]
+}
+
+model EmailLog {
+  id          Int           @id @default(autoincrement())
+  createdAt   DateTime      @default(now())
+  recipientId Int
+  templateId  Int
+  sentAt      DateTime
+  status      String
+  recipient   User          @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  template    EmailTemplate @relation(fields: [templateId], references: [id])
+}
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  fileName  String
+  fileUrl   String
+  fileType  String
+  fileSize  Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccountingEntry {
+  id               Int                @id @default(autoincrement())
+  createdAt        DateTime           @default(now())
+  date             DateTime
+  description      String
+  amount           Float
+  category         AccountingCategory
+  relatedBookingId Int?
+  relatedBooking   Booking?           @relation(fields: [relatedBookingId], references: [id])
+  expense          Expense?           @relation("AccountingEntryExpense")
+  mercuryTransactionId Int?           @unique
+  mercuryTransaction   MercuryTransaction? @relation("AccountingEntryMercury", fields: [mercuryTransactionId], references: [id])
+}
+
+model Expense {
+  id                Int                @id @default(autoincrement())
+  createdAt         DateTime           @default(now())
+  date              DateTime
+  description       String
+  amount            Float
+  category          AccountingCategory
+  vendor            String?
+  receiptUrl        String?
+  reference         String?
+  accountingEntryId Int?               @unique
+  accountingEntry   AccountingEntry?   @relation("AccountingEntryExpense", fields: [accountingEntryId], references: [id])
+}
+
+model BillingConfig {
+  id             Int      @id @default(1)
+  holdDelayHours Int?
+  updatedAt      DateTime @updatedAt
+}
+
+model StripePayment {
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  bookingId      Int?
+  stripeIntentId String   @unique
+  paymentMethod  String?
+  amount         Float
+  currency       String   @default("usd")
+  status         String
+  description    String?
+  booking        Booking? @relation(fields: [bookingId], references: [id])
+}
+
+model MercuryAccount {
+  id           Int                  @id @default(autoincrement())
+  externalId   String               @unique
+  name         String?
+  status       String?
+  balance      Float?               @default(0)
+  updatedAt    DateTime             @updatedAt
+  createdAt    DateTime             @default(now())
+  transactions MercuryTransaction[]
+}
+
+model MercuryTransaction {
+  id            Int             @id @default(autoincrement())
+  externalId    String          @unique
+  createdAt     DateTime        @default(now())
+  transactionAt DateTime?
+  description   String?
+  category      String?
+  amount        Float?
+  status        String?
+  accountId     Int?
+  account       MercuryAccount? @relation(fields: [accountId], references: [id])
+  accountingEntry AccountingEntry? @relation("AccountingEntryMercury")
+}
+
+model Lead {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  name      String
+  email     String
+  phone     String
+  source    String
+  message   String
+  status    String
+}
+
+model AITranscript {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+  callId     Int
+  transcript String
+  analysis   Json?
+  call       CallLog  @relation(fields: [callId], references: [id])
+}
+
+model SocialMediaPost {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  platform    String
+  content     String
+  scheduledAt DateTime?
+  postedAt    DateTime?
+  status      String
+}
+
+model DiscountConfig {
+  id        Int          @id @default(1)
+  active    Boolean      @default(false)
+  type      DiscountType @default(PERCENT)
+  value     Float        @default(0)
+  label     String       @default("Get Discount")
+  updatedAt DateTime     @updatedAt
+}
+
+model OtpVerification {
+  id           Int       @id @default(autoincrement())
+  phone        String
+  otpHash      String
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  attemptCount Int       @default(0)
+  resendCount  Int       @default(0)
+  lockedUntil  DateTime?
+  verifiedAt   DateTime?
+  supersededAt DateTime?
+}
+
+model CleanQuizSubmission {
+  id                       Int       @id @default(autoincrement())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  fullName                 String
+  email                    String
+  phone                    String
+  phoneVerified            Boolean   @default(false)
+  cleanType                String?
+  bedrooms                 Int?
+  bathrooms                Int?
+  messiness                Int?
+  kids                     Boolean?
+  pets                     Boolean?
+  addressLine1             String?
+  addressLine2             String?
+  city                     String?
+  state                    String?
+  postalCode               String?
+  country                  String?
+  placeId                  String?
+  latitude                 Float?
+  longitude                Float?
+  extras                   Json?
+  recommendedCleanType     String?
+  recommendedDurationHours Float?
+  originalTotalCents       Int?
+  discountCents            Int?
+  finalTotalCents          Int?
+  stripeCustomerId         String?
+  stripeSetupIntentId      String?
+  stripePaymentMethodId    String?
+  stripePaymentIntentId    String?
+  appointmentDateTime      DateTime?
+  willBeHome               Boolean?
+  homeType                 String?
+  parkingNotes             String?
+  entryInstructions        String?
+  cleaningInstructions     String?
+  termsAccepted            Boolean   @default(false)
+  status                   String    @default("draft")
+}
+
+model SEOMetadata {
+  id          Int    @id @default(autoincrement())
+  path        String @unique
+  title       String
+  description String
+  keywords    String
+}
+
+model TrainingVideo {
+  id                      Int                       @id @default(autoincrement())
+  title                   String
+  description             String
+  videoUrl                String
+  duration                Int
+  cleanerTrainingProgress CleanerTrainingProgress[]
+}
+
+model CleanerTrainingProgress {
+  id          Int           @id @default(autoincrement())
+  cleanerId   Int
+  videoId     Int
+  completedAt DateTime
+  score       Float?
+  cleaner     User          @relation(fields: [cleanerId], references: [id])
+  video       TrainingVideo @relation(fields: [videoId], references: [id])
+}
+
+model FAQ {
+  id       Int    @id @default(autoincrement())
+  question String
+  answer   String
+  category String
+  order    Int    @default(0)
+}
+
+model Transaction {
+  id               Int      @id @default(autoincrement())
+  transaction_date DateTime
+  description      String
+  category         String
+  debit            Float?
+  credit           Float?
+  notes            String?
+}
+
+model LeadSourceCategory {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  name      String   @unique
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bookingId Int      @unique
+  rating    Int
+  comment   String?
+  isPublic  Boolean  @default(false)
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  CLIENT
+  CLEANER
+  ADMIN
+  OWNER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceFrequency {
+  ONE_TIME
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  CASH
+  ZELLE
+  VENMO
+  OTHER
+}
+
+enum PricingRuleType {
+  BASE_PRICE
+  SQFT_RATE
+  BEDROOM_RATE
+  BATHROOM_RATE
+  EXTRA_SERVICE
+  TIME_ESTIMATE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BookingImageType {
+  BEFORE
+  AFTER
+  DURING
+}
+
+enum AccountingCategory {
+  INCOME
+  EXPENSE
+  ASSET
+  LIABILITY
+  EQUITY
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED_AMOUNT
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}

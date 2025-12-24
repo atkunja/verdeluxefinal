@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #7d8393;
+    background: #fff;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Roboto Slab", serif;
+    color: #000;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  a {
+    text-decoration: none;
+    outline: 0;
+    transition: all 0.5s ease;
+  }
+
+  /* Global select styling to unify dropdown appearance */
+  select {
+    @apply w-full px-4 py-2.5 pr-10 border border-[#d7d1c4] rounded-lg shadow-sm bg-[#f7f4ed] text-[#163022] transition-shadow appearance-none focus:ring-2 focus:ring-primary focus:border-[#163022];
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%235c5a55' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    background-size: 16px 16px;
+  }
+
+  select:focus {
+    outline: none;
+  }
+
+  select::-ms-expand {
+    display: none;
+  }
+}
+
+@layer components {
+  /* Bootstrap Icons in contact info boxes */
+  .cn-list i[class*="bi-"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cn-list i[class*="bi-"]::before {
+    display: inline-block;
+  }
+
+  .cn-social i[class*="bi-"]::before {
+    display: inline-block;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  /* Number input spinner controls - hide by default to prevent overlap */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  /* Show spinners on hover and focus for better usability */
+  input[type="number"]:hover::-webkit-inner-spin-button,
+  input[type="number"]:hover::-webkit-outer-spin-button,
+  input[type="number"]:focus::-webkit-inner-spin-button,
+  input[type="number"]:focus::-webkit-outer-spin-button {
+    -webkit-appearance: auto;
+    opacity: 1;
+  }
+
+  /* Firefox - hide default spinner */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  /* Firefox - restore spinner on hover and focus */
+  input[type="number"]:hover,
+  input[type="number"]:focus {
+    -moz-appearance: number-input;
+    appearance: auto;
+  }
+}
+
+@keyframes upDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

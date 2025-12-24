@@ -1,0 +1,13 @@
+-- Add structured address fields and note fields to Booking
+ALTER TABLE "Booking"
+  ADD COLUMN IF NOT EXISTS "addressLine1" TEXT,
+  ADD COLUMN IF NOT EXISTS "addressLine2" TEXT,
+  ADD COLUMN IF NOT EXISTS "city" TEXT,
+  ADD COLUMN IF NOT EXISTS "state" TEXT,
+  ADD COLUMN IF NOT EXISTS "postalCode" TEXT,
+  ADD COLUMN IF NOT EXISTS "placeId" TEXT,
+  ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "privateBookingNote" TEXT,
+  ADD COLUMN IF NOT EXISTS "privateCustomerNote" TEXT,
+  ADD COLUMN IF NOT EXISTS "providerNote" TEXT;
