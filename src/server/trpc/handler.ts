@@ -42,9 +42,13 @@ export default defineEventHandler((event) => {
 
         // Primary: verify token with Supabase
         try {
-          const { data } = await supabaseServer.auth.getUser(token);
-          candidateEmail = data?.user?.email ?? null;
-          candidateId = data?.user?.id ?? null;
+          if (supabaseServer) {
+            const { data } = await supabaseServer.auth.getUser(token);
+            candidateEmail = data?.user?.email ?? null;
+            candidateId = data?.user?.id ?? null;
+          } else {
+            console.error("Supabase server client not available for token verification");
+          }
         } catch (err) {
           console.error("Supabase auth.getUser failed, attempting decode fallback", err);
         }

@@ -43,6 +43,14 @@ function getBaseUrl() {
 
   console.log(`[tRPC] Server detected, VERCEL_URL missing. apiBase: ${apiBase}`);
 
+  // In the browser, if we are NOT on localhost, we should ignore any apiBase that points to localhost
+  if (isBrowser && !window.location.hostname.includes("localhost")) {
+    if (apiBase && apiBase.includes("localhost")) {
+      console.warn(`[tRPC] Ignoring localhost apiBase "${apiBase}" because we are on ${window.location.origin}`);
+      return window.location.origin;
+    }
+  }
+
   if (apiBase && !apiBase.includes("localhost")) return apiBase as string;
 
   return `http://localhost:3000`;
