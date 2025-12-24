@@ -58,7 +58,8 @@
     "vite": "^6",
     "vite-plugin-node-polyfills": "^0.23.0",
     "zod": "^3.25.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",
@@ -78,7 +79,7 @@
     "prisma": "^6.5.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.31.1",
-    "vite-tsconfig-paths": "^5.1.4"
+    "typescript-eslint": "^8.31.1"
   },
   "private": true,
   "type": "module"
