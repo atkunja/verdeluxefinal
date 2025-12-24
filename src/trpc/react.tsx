@@ -21,38 +21,8 @@ const { TRPCProvider, useTRPC, useTRPCClient } = createTRPCContext<AppRouter>();
 export { useTRPC, useTRPCClient };
 
 function getBaseUrl() {
-  const isBrowser = typeof window !== "undefined";
-  console.log(`[tRPC] getBaseUrl check. isBrowser: ${isBrowser}`);
-
-  if (isBrowser) {
-    console.log(`[tRPC] Browser detected, using origin: ${window.location.origin}`);
-    return window.location.origin;
-  }
-
-  // Server-side (during SSR or build)
-  if (process.env.VERCEL_URL) {
-    const url = `https://${process.env.VERCEL_URL}`;
-    console.log(`[tRPC] Server detected, VERCEL_URL found: ${url}`);
-    return url;
-  }
-
-  const apiBase =
-    import.meta.env.VITE_API_BASE_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    import.meta.env.BASE_URL;
-
-  console.log(`[tRPC] Server detected, VERCEL_URL missing. apiBase: ${apiBase}`);
-
-  // In the browser, if we are NOT on localhost, we should ignore any apiBase that points to localhost
-  if (isBrowser && !window.location.hostname.includes("localhost")) {
-    if (apiBase && apiBase.includes("localhost")) {
-      console.warn(`[tRPC] Ignoring localhost apiBase "${apiBase}" because we are on ${window.location.origin}`);
-      return window.location.origin;
-    }
-  }
-
-  if (apiBase && !apiBase.includes("localhost")) return apiBase as string;
-
+  if (typeof window !== "undefined") return ""; // use relative url in the browser
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return `http://localhost:3000`;
 }
 
