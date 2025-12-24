@@ -1,5 +1,5 @@
 import { z } from "zod";
-import bcryptjs from "bcryptjs";
+// import bcryptjs from "bcryptjs";
 import { db } from "~/server/db";
 import { requireAdmin } from "~/server/trpc/main";
 
@@ -25,6 +25,8 @@ export const createUserAdmin = requireAdmin
       throw new Error("Email already registered");
     }
 
+    // Dynamic import to prevent startup crashes on Vercel
+    const bcryptjs = (await import("bcryptjs")).default;
     const hashedPassword = await bcryptjs.hash(input.password, 10);
 
     const newUser = await db.user.create({

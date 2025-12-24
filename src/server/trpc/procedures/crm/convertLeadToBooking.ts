@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { requireAdmin } from "~/server/trpc/main";
 import { TRPCError } from "@trpc/server";
-import bcrypt from "bcryptjs";
+// import bcrypt from "bcryptjs";
 
 export const convertLeadToBooking = requireAdmin
     .input(z.object({ leadId: z.number() }))
@@ -22,6 +22,8 @@ export const convertLeadToBooking = requireAdmin
 
         if (!client) {
             const tempPassword = Math.random().toString(36).slice(-8);
+            // Dynamic import to prevent startup crashes on Vercel
+            const bcrypt = (await import("bcryptjs")).default;
             const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
             const nameParts = lead.name.split(" ");

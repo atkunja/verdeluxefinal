@@ -1,5 +1,5 @@
 import { z } from "zod";
-import bcryptjs from "bcryptjs";
+// import bcryptjs from "bcryptjs";
 import { baseProcedure } from "~/server/trpc/main";
 import { db } from "~/server/db";
 import { supabaseServer } from "~/server/supabase";
@@ -46,6 +46,8 @@ export const verifyQuizOtp = baseProcedure
       throw new Error("Verification code expired. Please request a new one.");
     }
 
+    // Dynamic import to prevent startup crashes on Vercel
+    const bcryptjs = (await import("bcryptjs")).default;
     const isValid = await bcryptjs.compare(input.code, latest.otpHash);
     if (!isValid) {
       const nextAttempts = latest.attemptCount + 1;
@@ -165,4 +167,3 @@ export const verifyQuizOtp = baseProcedure
       } : null,
     };
   });
-
