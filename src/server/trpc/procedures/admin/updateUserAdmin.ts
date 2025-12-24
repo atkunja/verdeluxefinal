@@ -1,5 +1,5 @@
 import { z } from "zod";
-import bcryptjs from "bcryptjs";
+// import bcryptjs from "bcryptjs";
 import { db } from "~/server/db";
 import { requireAdmin } from "~/server/trpc/main";
 
@@ -45,6 +45,8 @@ export const updateUserAdmin = requireAdmin
     if (input.color !== undefined) updateData.color = input.color;
 
     if (input.password) {
+      // Dynamic import to prevent startup crashes on Vercel
+      const bcryptjs = (await import("bcryptjs")).default;
       updateData.password = await bcryptjs.hash(input.password, 10);
     }
 

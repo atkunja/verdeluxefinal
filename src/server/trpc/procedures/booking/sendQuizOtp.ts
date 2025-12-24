@@ -1,5 +1,5 @@
 import { z } from "zod";
-import bcryptjs from "bcryptjs";
+// import bcryptjs from "bcryptjs";
 import { baseProcedure } from "~/server/trpc/main";
 import { db } from "~/server/db";
 import { env } from "~/server/env";
@@ -45,6 +45,8 @@ export const sendQuizOtp = baseProcedure
     }
 
     let code = generateOtp();
+    // Dynamic import to prevent startup crashes on Vercel
+    const bcryptjs = (await import("bcryptjs")).default;
     let otpHash = await bcryptjs.hash(code, 10);
     const expiresAt = new Date(now.getTime() + OTP_TTL_MINUTES * 60 * 1000);
 

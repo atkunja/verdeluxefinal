@@ -1,5 +1,5 @@
 import { z } from "zod";
-import bcryptjs from "bcryptjs";
+// import bcryptjs from "bcryptjs";
 import { baseProcedure } from "~/server/trpc/main";
 import { db } from "~/server/db";
 import { env } from "~/server/env";
@@ -42,6 +42,8 @@ export const resendQuizOtp = baseProcedure
     }
 
     let code = generateOtp();
+    // Dynamic import to prevent startup crashes on Vercel
+    const bcryptjs = (await import("bcryptjs")).default;
     let otpHash = await bcryptjs.hash(code, 10);
     const expiresAt = new Date(now.getTime() + OTP_TTL_MINUTES * 60 * 1000);
 
@@ -66,7 +68,7 @@ export const resendQuizOtp = baseProcedure
         otpHash = await bcryptjs.hash(code, 10);
         console.warn(
           "[resendQuizOtp] SMS resend failed; falling back to dev mode. Ensure OpenPhone creds are set. " +
-            `status=${response.status} body=${errorText} devCode=${code} from=${env.OPENPHONE_PHONE_NUMBER} keyPrefix=${env.OPENPHONE_API_KEY?.slice(0,6) || "missing"}`
+          `status=${response.status} body=${errorText} devCode=${code} from=${env.OPENPHONE_PHONE_NUMBER} keyPrefix=${env.OPENPHONE_API_KEY?.slice(0, 6) || "missing"}`
         );
       } else {
         if (response.status === 401) {
