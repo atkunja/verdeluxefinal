@@ -44,8 +44,10 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const token = useAuthStore((state) => state.token);
 
   const trpcClient = useMemo(
-    () =>
-      createTRPCClient<AppRouter>({
+    () => {
+      const url = getBaseUrl() + "/trpc";
+      console.log(`[tRPC] Creating client with URL: ${url}`);
+      return createTRPCClient<AppRouter>({
         links: [
           loggerLink({
             enabled: (op) =>
@@ -56,18 +58,19 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
             condition: (op) => op.type === "subscription",
             false: httpBatchStreamLink({
               transformer: SuperJSON,
-              url: getBaseUrl() + "/trpc",
+              url,
               headers() {
                 return token ? { Authorization: `Bearer ${token}` } : {};
               },
             }),
             true: httpSubscriptionLink({
               transformer: SuperJSON,
-              url: getBaseUrl() + "/trpc",
+              url,
             }),
           }),
         ],
-      }),
+      });
+    },
     [token],
   );
 
