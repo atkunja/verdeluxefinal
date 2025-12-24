@@ -22,6 +22,7 @@ export { useTRPC, useTRPCClient };
 
 function getBaseUrl() {
   if (typeof window !== "undefined") return ""; // use relative url on client
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // use vercel url on server
   const apiBase =
     import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_BASE_URL ||
