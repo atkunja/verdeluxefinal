@@ -10,7 +10,6 @@ import { consoleForwardPlugin } from "./vite-console-forward-plugin";
 
 export default createApp({
   server: {
-    preset: "vercel", // optimized for Vercel hosting
     experimental: {
       asyncContext: true,
     },
