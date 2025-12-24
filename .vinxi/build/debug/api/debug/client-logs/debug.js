@@ -1,1 +1,0 @@
-import{defineEventHandler as a,readBody as o}from"@tanstack/react-start/server";const n=a(async e=>{try{e.method==="POST"&&await o(e)}catch(r){console.error("Failed to read client log payload",r)}return new Response(null,{status:204})});export{n as default};

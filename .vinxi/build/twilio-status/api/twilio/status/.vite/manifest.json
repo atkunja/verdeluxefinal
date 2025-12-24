@@ -1,8 +1,0 @@
-{
-  "virtual:$vinxi/handler/twilio-status": {
-    "file": "twilio-status.js",
-    "name": "twilio-status",
-    "src": "virtual:$vinxi/handler/twilio-status",
-    "isEntry": true
-  }
-}

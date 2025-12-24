@@ -1,8 +1,0 @@
-{
-  "virtual:$vinxi/handler/twilio-voice": {
-    "file": "twilio-voice.js",
-    "name": "twilio-voice",
-    "src": "virtual:$vinxi/handler/twilio-voice",
-    "isEntry": true
-  }
-}

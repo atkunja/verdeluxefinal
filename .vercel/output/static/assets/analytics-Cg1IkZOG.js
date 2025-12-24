@@ -1,1 +1,0 @@
-const i={stepViewed(o){console.info("analytics: booking_step_viewed",o)},selectionMade(o,e){console.info("analytics: booking_selection_made",{type:o,value:e})},submitted(o){console.info("analytics: booking_submitted",o)}};export{i as b};

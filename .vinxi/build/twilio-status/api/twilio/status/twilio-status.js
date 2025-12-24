@@ -1,1 +1,0 @@
-import{defineEventHandler as r,readBody as t}from"@tanstack/react-start/server";const n=r(async e=>{try{await t(e)}catch(a){console.error("Failed to read Twilio status payload",a)}return new Response(null,{status:204})});export{n as default};
