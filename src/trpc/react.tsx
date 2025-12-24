@@ -21,18 +21,27 @@ const { TRPCProvider, useTRPC, useTRPCClient } = createTRPCContext<AppRouter>();
 export { useTRPC, useTRPCClient };
 
 function getBaseUrl() {
-  if (typeof window !== "undefined") {
-    // In the browser, we should always use the current origin
+  const isBrowser = typeof window !== "undefined";
+  console.log(`[tRPC] getBaseUrl check. isBrowser: ${isBrowser}`);
+
+  if (isBrowser) {
+    console.log(`[tRPC] Browser detected, using origin: ${window.location.origin}`);
     return window.location.origin;
   }
 
   // Server-side (during SSR or build)
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (process.env.VERCEL_URL) {
+    const url = `https://${process.env.VERCEL_URL}`;
+    console.log(`[tRPC] Server detected, VERCEL_URL found: ${url}`);
+    return url;
+  }
 
   const apiBase =
     import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_BASE_URL ||
     import.meta.env.BASE_URL;
+
+  console.log(`[tRPC] Server detected, VERCEL_URL missing. apiBase: ${apiBase}`);
 
   if (apiBase && !apiBase.includes("localhost")) return apiBase as string;
 
