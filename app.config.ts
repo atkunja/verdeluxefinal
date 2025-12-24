@@ -62,6 +62,18 @@ export default createApp({
       ],
     },
     {
+      type: "http",
+      name: "health",
+      base: "/api/health",
+      handler: "./src/server/debug/health-handler.ts",
+      target: "server",
+      plugins: () => [
+        tsConfigPaths({
+          projects: ["./tsconfig.json"],
+        }),
+      ],
+    },
+    {
       type: "spa",
       name: "client",
       handler: "./index.html",
