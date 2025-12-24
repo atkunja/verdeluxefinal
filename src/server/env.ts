@@ -18,15 +18,15 @@ const envSchema = z.object({
   JWT_SECRET: z.string(),
 
   // OpenPhone
-  OPENPHONE_API_KEY: z.string(),
-  OPENPHONE_PHONE_NUMBER: z.string(),
+  OPENPHONE_API_KEY: z.string().optional(),
+  OPENPHONE_PHONE_NUMBER: z.string().optional(),
   OPENPHONE_USER_ID: z.string().optional(),
   OPENPHONE_NUMBER_ID: z.string().optional(),
 
 
   // Stripe
-  STRIPE_SECRET_KEY: z.string(),
-  STRIPE_PUBLISHABLE_KEY: z.string(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
 
   // OpenAI
   OPENAI_API_KEY: z.string().optional(),
@@ -42,4 +42,17 @@ const envSchema = z.object({
   STORAGE_BUCKET_BOOKING_PHOTOS: z.string().optional(),
 });
 
-export const env = envSchema.parse(process.env);
+let envData;
+try {
+  envData = envSchema.parse(process.env);
+} catch (error) {
+  if (error instanceof z.ZodError) {
+    const missing = error.errors.map(e => e.path.join('.')).join(', ');
+    console.error(`❌ Missing or invalid environment variables: ${missing}`);
+    // Instead of crashing, we can provide a partially valid env or throw a more descriptive error
+    throw new Error(`Environment validation failed. Missing: ${missing}`);
+  }
+  throw error;
+}
+
+export const env = envData;
