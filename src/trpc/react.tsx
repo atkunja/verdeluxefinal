@@ -21,13 +21,13 @@ const { TRPCProvider, useTRPC, useTRPCClient } = createTRPCContext<AppRouter>();
 export { useTRPC, useTRPCClient };
 
 function getBaseUrl() {
+  if (typeof window !== "undefined") return ""; // use relative url on client
   const apiBase =
     import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_BASE_URL ||
     import.meta.env.BASE_URL;
 
   if (apiBase) return apiBase as string;
-  if (typeof window !== "undefined") return window.location.origin;
   return `http://localhost:3000`;
 }
 

@@ -1,10 +1,3 @@
-import { db } from "./src/server/db";
-
-console.log("Checking database connection...");
-db.$connect()
-  .then(() => console.log("Database connected successfully"))
-  .catch((e) => console.error("Database connection failed", e));
-
 import "dotenv/config.js";
 import { createApp } from "vinxi";
 import reactRefresh from "@vitejs/plugin-react";
