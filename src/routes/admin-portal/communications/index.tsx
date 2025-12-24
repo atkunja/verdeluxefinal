@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import { AdminShell } from "~/components/admin/AdminShell";
 import { Phone, RefreshCw, User, Image, Download, MessageSquare, Send, Search, Edit2, Trash2, X, Check } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
+import { ActionConfirmationModal } from "~/components/admin/ActionConfirmationModal";
 import { useAuthStore } from "~/stores/authStore";
 
 export const Route = createFileRoute("/admin-portal/communications/")({
@@ -20,6 +21,7 @@ function CommunicationsPage() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [editFirstName, setEditFirstName] = useState("");
     const [editLastName, setEditLastName] = useState("");
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({}));
     const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}));
@@ -77,6 +79,14 @@ function CommunicationsPage() {
         })
     );
 
+    const markConversationReadMutation = useMutation(
+        trpc.messaging.markConversationRead.mutationOptions({
+            onSuccess: () => {
+                messagesQuery.refetch();
+            }
+        })
+    );
+
     const handleSyncAll = async () => {
         await Promise.all([
             syncMessagesMutation.mutateAsync(),
@@ -107,10 +117,13 @@ function CommunicationsPage() {
                     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                 );
 
+                const unreadCount = filteredMessages.filter(m => m.recipientId === user?.id && !m.isRead).length;
+
                 return {
                     user: contactUser,
                     lastItem: allItems[allItems.length - 1],
-                    items: allItems
+                    items: allItems,
+                    unreadCount
                 };
             })
             .filter(conv => {
@@ -165,10 +178,12 @@ function CommunicationsPage() {
     };
 
     const handleDeleteConversation = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDeleteConversation = async () => {
         if (!selectedContactId) return;
-        if (window.confirm("Are you sure you want to delete this Entire conversation? This cannot be undone.")) {
-            deleteConversationMutation.mutate({ contactId: selectedContactId });
-        }
+        await deleteConversationMutation.mutateAsync({ contactId: selectedContactId });
     };
 
     const activeConversationItems = selectedConversation?.items || [];
@@ -250,12 +265,20 @@ function CommunicationsPage() {
                             currentList.map(conv => (
                                 <div
                                     key={conv.user.id}
-                                    onClick={() => setSelectedContactId(conv.user.id)}
-                                    className={`group p-4 rounded-3xl cursor-pointer transition-all duration-300 ${selectedContactId === conv.user.id
+                                    onClick={() => {
+                                        setSelectedContactId(conv.user.id);
+                                        if (conv.unreadCount > 0) {
+                                            markConversationReadMutation.mutate({ contactId: conv.user.id });
+                                        }
+                                    }}
+                                    className={`group p-4 rounded-3xl cursor-pointer transition-all duration-300 relative ${selectedContactId === conv.user.id
                                         ? 'bg-gradient-to-br from-[#163022] to-[#0d1d14] text-white shadow-[0_10px_30px_rgba(22,48,34,0.3)]'
                                         : 'bg-white/40 hover:bg-white shadow-sm hover:shadow-md'
                                         }`}
                                 >
+                                    {conv.unreadCount > 0 && (
+                                        <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse" />
+                                    )}
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="min-w-0 pr-2">
                                             <div className="flex items-center gap-1.5 mb-0.5">
@@ -450,7 +473,10 @@ function CommunicationsPage() {
                                                             ))}
                                                         </div>
                                                     )}
-                                                    <div className={`text-[10px] mt-2 flex items-center gap-1 justify-end font-bold uppercase tracking-tight ${isMe ? 'text-white/50' : 'text-gray-300'}`}>
+                                                    <div className={`text-[10px] mt-2 flex items-center gap-2 justify-end font-bold uppercase tracking-tight ${isMe ? 'text-white/50' : 'text-gray-300'}`}>
+                                                        {isMe && item.isRead && (
+                                                            <span className="text-[9px] text-emerald-400 font-black tracking-tighter mr-1">Read</span>
+                                                        )}
                                                         {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </div>
@@ -491,6 +517,16 @@ function CommunicationsPage() {
                 </div>
 
             </div>
+
+            <ActionConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                title="Delete Conversation"
+                description={`This will permanently delete all messages and call logs with ${selectedConversation?.user.firstName} ${selectedConversation?.user.lastName}. This action cannot be undone.`}
+                confirmLabel="Delete Everything"
+                variant="danger"
+                onConfirm={confirmDeleteConversation}
+            />
         </AdminShell>
     );
 }
