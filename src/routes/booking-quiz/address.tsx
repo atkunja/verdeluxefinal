@@ -32,6 +32,14 @@ function AddressStepContent() {
   const { draft, updateDraft } = useBookingDraft();
   const [addressSelected, setAddressSelected] = React.useState(Boolean(draft.address.formatted));
   const [showErrors, setShowErrors] = React.useState(false);
+
+  React.useEffect(() => {
+    console.log("[AddressStep] Env Diagnosis:", {
+      VITE_GOOGLE_PLACES_KEY: import.meta.env.VITE_GOOGLE_PLACES_KEY ? "EXISTS" : "MISSING",
+      VITE_STRIPE_PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? "EXISTS" : "MISSING",
+    });
+  }, []);
+
   const hasPlacesKey = Boolean(import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   React.useEffect(() => {
