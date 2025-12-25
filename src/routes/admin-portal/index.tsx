@@ -51,18 +51,17 @@ function StatCard({
   );
 }
 
-function StockChart({ points, labels }: { points: number[]; labels: string[] }) {
+function StockChart({ points, labels, height = 120 }: { points: number[]; labels: string[]; height?: number }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (points.length < 2) {
-    return <div className="h-32 flex items-center justify-center text-gray-400 text-sm italic">Insufficient data for trend</div>;
+    return <div className={`h-[${height}px] flex items-center justify-center text-gray-400 text-sm italic`}>Insufficient data for trend</div>;
   }
 
   const max = Math.max(...points, 1);
   const min = Math.min(...points, 0);
   const range = max - min || 1;
-  const height = 120;
-  const width = 500;
+  const width = 500; // SVG viewBox width (arbitrary relative units)
   const paddingX = 10;
   const paddingY = 15;
   const chartWidth = width - paddingX * 2;
@@ -104,8 +103,8 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
   const isPositive = points[points.length - 1] >= points[0];
 
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full" preserveAspectRatio="none">
+    <div className="relative w-full">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: height }} preserveAspectRatio="none">
         <defs>
           <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#1f2937" stopOpacity="0.4" />
@@ -187,7 +186,7 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
           </g>
         )}
       </svg>
-      <div className="flex justify-between px-2 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+      <div className="flex justify-between px-2 text-[10px] font-medium uppercase tracking-wider text-gray-400 mt-2">
         {labels.map((l, i) => (
           <span key={i} className={hoveredIdx === i ? "text-gray-700 font-bold" : ""}>{l}</span>
         ))}
@@ -271,83 +270,92 @@ function AdminDashboardPage() {
         />
       </div>
 
-      {/* Main 3-Column Layout */}
+      {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Column 1: Revenue Overview */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-fit">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-gray-900">Revenue Overview</h3>
-            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mb-2">
-            <span className="text-xs text-gray-500 uppercase tracking-wider">Last 6 months</span>
-          </div>
-          <StockChart
-            points={statsQuery.data?.revenueTrends.map((t) => t.revenue) ?? []}
-            labels={statsQuery.data?.revenueTrends.map((t) => t.month) ?? []}
-          />
-        </div>
+        {/* Left Column Group (Revenue + Pending Charges) - Spans 2 columns */}
+        <div className="lg:col-span-2 space-y-6">
 
-        {/* Column 2: Pending Charges */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-fit">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="font-bold text-gray-900">Pending Charges</h3>
-              <p className="text-xs text-gray-500 mt-1">{pendingChargesQuery.data?.length ?? 0} jobs ready to charge</p>
+          {/* Revenue Overview - Taller */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Revenue Overview</h3>
+                <span className="text-xs text-gray-500 uppercase tracking-wider block mt-1">Last 6 months</span>
+              </div>
+              <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
+                <TrendingUp className="h-5 w-5" />
+              </div>
             </div>
-            <div className="bg-yellow-50 text-yellow-600 p-2 rounded-xl">
-              <DollarSign className="h-4 w-4" />
+
+            <div className="flex-1 flex items-end w-full">
+              <StockChart
+                points={statsQuery.data?.revenueTrends.map((t) => t.revenue) ?? []}
+                labels={statsQuery.data?.revenueTrends.map((t) => t.month) ?? []}
+                height={280}
+              />
             </div>
           </div>
 
-          <div className="space-y-4">
-            {pendingChargesQuery.data?.map((charge) => (
-              <div key={charge.id} className="flex items-center justify-between pb-4 border-b border-gray-50 last:border-0 last:pb-0">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <UserPlus className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">{charge.customer.name}</div>
-                    <div className="text-xs text-gray-500">{charge.serviceType || 'Standard Cleaning'}</div>
-                    <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3" />
-                      {charge.serviceDate}
+          {/* Pending Charges */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-bold text-gray-900">Pending Charges</h3>
+                <p className="text-xs text-gray-500 mt-1">{pendingChargesQuery.data?.length ?? 0} jobs ready to charge</p>
+              </div>
+              <div className="bg-yellow-50 text-yellow-600 p-2 rounded-xl">
+                <DollarSign className="h-4 w-4" />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {pendingChargesQuery.data?.map((charge) => (
+                <div key={charge.id} className="flex items-center justify-between pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+                  <div className="flex items-start gap-4">
+                    <div className="mt-1 h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center">
+                      <UserPlus className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-gray-900">{charge.customer.name}</div>
+                      <div className="text-xs text-gray-500">{charge.serviceType || 'Standard Cleaning'}</div>
+                      <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {charge.serviceDate}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-emerald-600 mb-2">${charge.amount.toFixed(2)}</div>
+                    <button
+                      onClick={() => handleCharge(charge.id, charge.customer.id, charge.customer.name, charge.amount)}
+                      disabled={chargeMutation.isPending}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-50 shadow-sm hover:shadow-md"
+                    >
+                      {chargeMutation.isPending ? "..." : "Charge Card"}
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-emerald-600 mb-2">${charge.amount.toFixed(2)}</div>
-                  <button
-                    onClick={() => handleCharge(charge.id, charge.customer.id, charge.customer.name, charge.amount)}
-                    disabled={chargeMutation.isPending}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {chargeMutation.isPending ? "..." : "$ Charge"}
-                  </button>
+              ))}
+              {(!pendingChargesQuery.data || pendingChargesQuery.data.length === 0) && (
+                <div className="text-center py-12">
+                  <div className="text-sm font-medium text-gray-400 italic mb-2">No pending charges</div>
+                  <p className="text-xs text-gray-300">Great job staying on top of payments!</p>
                 </div>
-              </div>
-            ))}
-            {(!pendingChargesQuery.data || pendingChargesQuery.data.length === 0) && (
-              <div className="text-center py-8 text-gray-400 text-sm italic">
-                No pending charges
-              </div>
-            )}
-            {(pendingChargesQuery.data?.length ?? 0) > 5 && (
-              <div className="text-center pt-2">
-                <span className="text-xs text-gray-400 font-medium">+{(pendingChargesQuery.data?.length ?? 0) - 5} more pending charges</span>
-              </div>
-            )}
+              )}
+              {(pendingChargesQuery.data?.length ?? 0) > 5 && (
+                <div className="text-center pt-2">
+                  <span className="text-xs text-gray-400 font-medium">+{(pendingChargesQuery.data?.length ?? 0) - 5} more pending charges</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Column 3: Calendar */}
+        {/* Right Column - Calendar (Unchanged mostly, just ensure it spans 1 col) */}
         <div className="space-y-6">
           {/* Calendar Card */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-full">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="font-bold text-gray-900">My Calendar</h3>
@@ -359,14 +367,14 @@ function AdminDashboardPage() {
             </div>
 
             {/* Big Date Card */}
-            <div className="bg-[#163022] rounded-xl p-4 text-white mb-6">
-              <div className="text-xs opacity-80 uppercase tracking-wider">{new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(selectedDate)}</div>
-              <div className="text-4xl font-bold mt-1">{selectedDate.getDate()}</div>
-              <div className="text-xs opacity-80 mt-1">{new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(selectedDate)}</div>
+            <div className="bg-[#163022] rounded-2xl p-6 text-white mb-8 shadow-lg shadow-[#163022]/20">
+              <div className="text-xs opacity-70 uppercase tracking-widest font-bold">{new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(selectedDate)}</div>
+              <div className="text-6xl font-bold mt-2 tracking-tight">{selectedDate.getDate()}</div>
+              <div className="text-sm opacity-90 mt-2 font-medium">{new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(selectedDate)}</div>
             </div>
 
             {/* Week Row */}
-            <div className="grid grid-cols-7 gap-1 text-center mb-6">
+            <div className="grid grid-cols-7 gap-1 text-center mb-8">
               {Array.from({ length: 7 }).map((_, idx) => {
                 const day = new Date(todaysDate);
                 day.setDate(todaysDate.getDate() + idx);
@@ -376,9 +384,9 @@ function AdminDashboardPage() {
                   <button
                     key={idx}
                     onClick={() => setSelectedDate(new Date(day))}
-                    className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isSelected ? 'bg-[#163022] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-all ${isSelected ? 'bg-[#163022] text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-50'}`}
                   >
-                    <span className="text-[10px] font-bold uppercase">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
                     <span className={`text-sm font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{day.getDate()}</span>
                   </button>
                 )
@@ -387,11 +395,11 @@ function AdminDashboardPage() {
 
             {/* Today's Tasks */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-4">
                 <CheckCircle className="h-4 w-4 text-gray-400" />
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Today's Tasks</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {/* Integrate Action Center tasks here effectively */}
                 {tasksQuery.data?.slice(0, 3).map(task => {
                   const parts = task.color.split(' ');
@@ -399,56 +407,66 @@ function AdminDashboardPage() {
                   const textColor = parts[1] || 'text-gray-700';
 
                   return (
-                    <div key={task.id} className={`p-3 rounded-xl border border-gray-100 ${bgColor} bg-opacity-30`}>
-                      <div className="flex justify-between items-start">
+                    <div key={task.id} className="p-4 rounded-2xl border border-gray-50 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
+                      <div className="flex justify-between items-start mb-1">
                         <div className="text-xs font-bold text-gray-900 line-clamp-1">{task.title}</div>
-                        <div className="text-[10px] text-gray-500">{task.time}</div>
+                        <div className="text-[10px] font-bold text-gray-400">{task.time}</div>
                       </div>
-                      <div className="text-[10px] text-gray-500 mt-1 line-clamp-1">{task.description}</div>
+                      <div className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">{task.description}</div>
                     </div>
                   )
                 })}
                 {(!tasksQuery.data || tasksQuery.data.length === 0) && (
-                  <div className="text-xs text-gray-400 italic">No tasks for today</div>
+                  <div className="text-xs text-gray-400 italic text-center py-4">No tasks for today</div>
                 )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Upcoming Jobs Widget - Moved to match layout better vertically */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900">Upcoming Jobs</h3>
-              <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
-                <CalendarDays className="h-4 w-4" />
-              </div>
-            </div>
+        {/* Bottom Section - Upcoming Jobs in full width? User didn't specify, but often good to keep upcoming jobs accessible. 
+            The user said "with pending charges below it". 
+            I'll put upcoming jobs at the very bottom or integrated into the right column if desired, but sticking to the 2/3 + 1/3 split for now. 
+            I will essentially remove the separate "Upcoming Jobs" widget from the bottom and rely on the calendar or add it back if space permits.
+            Actually, let's keep it simply as:
+            [ Revenue (Tall) ] [ Calendar ]
+            [ Pending Charges] [          ]
+            
+            Wait, user said "revenue overview take all that space, with pending charges below it".
+            Reference Image shows:
+            [ Revenue Overview ] [ Calendar ]
+            [ Pending Charges  ] [          ]
+            
+            Effectively:
+            Col 1 (2/3 width): [ Revenue ]
+                               [ Pending ]
+            Col 2 (1/3 width): [ Calendar ]
+         */}
+      </div>
 
-            {statsQuery.data?.upcomingAppointments.slice(0, 2).map((job) => (
-              <div key={job.id} className="mb-4 last:mb-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                    <UserPlus className="h-4 w-4 text-gray-500" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-gray-900">{job.client.firstName} {job.client.lastName}</div>
-                    <div className="text-[10px] text-gray-500">{job.serviceType}</div>
-                  </div>
+      {/* Upcoming Jobs - Optional, putting at bottom full width or hidden. 
+           I'll add it as a full width section at the bottom to ensure no data loss.
+       */}
+      <div className="mt-8">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-900">Upcoming Jobs</h3>
+            <Link to="/admin-portal/bookings" className="text-xs font-bold text-[#163022] hover:underline">View All</Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {statsQuery.data?.upcomingAppointments.slice(0, 4).map((job) => (
+              <div key={job.id} className="p-4 rounded-2xl border border-gray-50 bg-gray-50/30 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shrink-0">
+                  <CalendarDays className="h-5 w-5 text-gray-400" />
                 </div>
-                <div className="pl-11 text-[10px] text-gray-400">
-                  {new Date(job.scheduledDate).toLocaleDateString()} • {job.scheduledTime}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-gray-900 truncate">{job.client.firstName} {job.client.lastName}</div>
+                  <div className="text-[10px] text-gray-500">{new Date(job.scheduledDate).toLocaleDateString()}</div>
                 </div>
               </div>
             ))}
-            {(!statsQuery.data?.upcomingAppointments || statsQuery.data.upcomingAppointments.length === 0) && (
-              <div className="text-center py-4">
-                <CalendarDays className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                <div className="text-xs text-gray-400">No jobs scheduled</div>
-              </div>
-            )}
           </div>
         </div>
-
       </div>
     </AdminShell>
   );
