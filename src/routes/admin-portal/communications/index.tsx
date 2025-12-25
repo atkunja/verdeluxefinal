@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { AdminShell } from "~/components/admin/AdminShell";
 import { Phone, RefreshCw, User, Image, Download, MessageSquare, Send, Search, Edit2, Trash2, X, Check } from "lucide-react";
@@ -93,6 +93,15 @@ function CommunicationsPage() {
             syncCallsMutation.mutateAsync()
         ]);
     };
+
+    // Auto-sync messages and calls when page loads
+    useEffect(() => {
+        // Only sync if mutations are not already pending
+        if (!syncMessagesMutation.isPending && !syncCallsMutation.isPending) {
+            syncMessagesMutation.mutate();
+            syncCallsMutation.mutate();
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const [activeTab, setActiveTab] = useState<'clients' | 'employees'>('clients');
 
