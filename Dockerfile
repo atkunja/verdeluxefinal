@@ -45,5 +45,5 @@ COPY --from=builder /app/node_modules ./node_modules
 EXPOSE 3000
 
 # Start the server
-# Vinxi's default output is a standout server at .output/server/index.mjs
-CMD ["node", ".output/server/index.mjs"]
+# Enable experimental-specifier-resolution to handle strict ESM imports from external packages
+CMD ["node", "--experimental-specifier-resolution=node", ".output/server/index.mjs"]
