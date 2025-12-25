@@ -48,12 +48,71 @@ export const openPhone = {
         return await response.json();
     },
 
-    async getMessages(phoneNumber?: string, pageToken?: string) {
-        const url = new URL(`${BASE_URL}/messages`);
-        url.searchParams.append("phoneNumber", env.OPENPHONE_PHONE_NUMBER);
-        if (phoneNumber) {
-            url.searchParams.append("participants", phoneNumber);
+    // Cache the phone number ID to avoid fetching it every time
+    _phoneNumberId: null as string | null,
+
+    async getPhoneNumberId(): Promise<string> {
+        if (this._phoneNumberId) return this._phoneNumberId;
+
+        const url = `${BASE_URL}/phone-numbers`;
+        const response = await fetch(url, {
+            headers: { Authorization: `${env.OPENPHONE_API_KEY}` },
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`OpenPhone API Error (getPhoneNumbers): ${response.status} ${text}`);
         }
+
+        const data = await response.json();
+        // Find the ID for the configured phone number
+        // Clean the env number to match format if needed, assuming E.164 match
+        const matching = data.data?.find((p: any) => p.number === env.OPENPHONE_PHONE_NUMBER);
+
+        if (!matching) {
+            // Fallback: use first number if specific one not found or not configured
+            if (data.data && data.data.length > 0) {
+                this._phoneNumberId = data.data[0].id;
+                return data.data[0].id;
+            }
+            throw new Error(`Could not find ID for phone number ${env.OPENPHONE_PHONE_NUMBER}`);
+        }
+
+        this._phoneNumberId = matching.id;
+        return matching.id;
+    },
+
+    async getConversations(pageToken?: string) {
+        const phoneNumberId = await this.getPhoneNumberId();
+        const url = new URL(`${BASE_URL}/conversations`);
+        url.searchParams.append("phoneNumberId", phoneNumberId);
+
+        if (pageToken) {
+            url.searchParams.append("pageToken", pageToken);
+        }
+
+        const response = await fetch(url.toString(), {
+            headers: { Authorization: `${env.OPENPHONE_API_KEY}` },
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`OpenPhone API Error (getConversations): ${response.status} ${text}`);
+        }
+
+        return await response.json();
+    },
+
+    async getMessages(participants: string[], pageToken?: string) {
+        // We need the phone number ID, not just the number
+        const phoneNumberId = await this.getPhoneNumberId();
+
+        const url = new URL(`${BASE_URL}/messages`);
+        url.searchParams.append("phoneNumberId", phoneNumberId);
+
+        // participants must be an array of E.164 strings
+        participants.forEach(p => url.searchParams.append("participants", p));
+
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);
         }
@@ -66,14 +125,17 @@ export const openPhone = {
 
         if (!response.ok) {
             const text = await response.text();
-            throw new Error(`OpenPhone API Error: ${response.status} ${text}`);
+            throw new Error(`OpenPhone API Error (getMessages): ${response.status} ${text}`);
         }
 
         return await response.json();
     },
 
     async getCalls(pageToken?: string) {
+        const phoneNumberId = await this.getPhoneNumberId();
         const url = new URL(`${BASE_URL}/calls`);
+        url.searchParams.append("phoneNumberId", phoneNumberId);
+
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);
         }
@@ -86,7 +148,7 @@ export const openPhone = {
 
         if (!response.ok) {
             const text = await response.text();
-            throw new Error(`OpenPhone API Error: ${response.status} ${text}`);
+            throw new Error(`OpenPhone API Error (getCalls): ${response.status} ${text}`);
         }
 
         return await response.json();
