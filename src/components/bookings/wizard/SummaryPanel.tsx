@@ -44,15 +44,17 @@ export function SummaryPanel({ draft }: { draft: BookingDraft }) {
           <span>{clean?.title || "Clean"}</span>
           <span className="text-[#163022]">{formatDuration(durationMinutes)}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span>Beds / Baths</span>
-          <span>{draft.beds} / {draft.baths}</span>
-        </div>
+        {draft.beds > 0 && draft.baths > 0 && (
+          <div className="flex items-center justify-between">
+            <span>Beds / Baths</span>
+            <span>{draft.beds} / {draft.baths}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span>Pets / Kids</span>
           <span>{draft.pets ? "Pets" : "No pets"} · {draft.kids ? "Kids" : "No kids"}</span>
         </div>
-        {draft.cleanliness && (
+        {draft.cleanliness > 0 && (
           <div className="flex items-center justify-between">
             <span>Cleanliness</span>
             <span>{CLEANLINESS_LABELS[draft.cleanliness]}</span>

@@ -55,6 +55,9 @@ export function BookingWizardProvider({ children }: { children: React.ReactNode 
   }, []);
 
   const resetDraft = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
     setDraftState(defaultDraft);
   }, []);
 

@@ -81,6 +81,7 @@ export function AddressAutocomplete({
   enablePlaces,
 }: AddressAutocompleteProps) {
   const [open, setOpen] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
   const [placesReady, setPlacesReady] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const googleApiKey = (import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY) as string | undefined;
@@ -90,6 +91,11 @@ export function AddressAutocomplete({
   useEffect(() => {
     handlersRef.current = { onChange, onSelect, onPlaceSelect };
   }, [onChange, onSelect, onPlaceSelect]);
+
+  // Sync localValue with value prop when it changes externally (e.g. on reset)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
 
   useEffect(() => {
     if (!enablePlaces || !googleApiKey) return;
@@ -135,6 +141,7 @@ export function AddressAutocomplete({
       const route = getComponent("route");
 
       const { onChange: _onChange, onSelect: _onSelect, onPlaceSelect: _onPlaceSelect } = handlersRef.current;
+      setLocalValue(address);
       _onChange(address);
       _onSelect?.(address);
       _onPlaceSelect?.({
@@ -177,9 +184,11 @@ export function AddressAutocomplete({
         id="address-input"
         type="text"
         ref={inputRef}
-        value={value}
+        value={localValue}
         onChange={(e) => {
-          onChange(e.target.value);
+          const val = e.target.value;
+          setLocalValue(val);
+          onChange(val);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
@@ -202,6 +211,7 @@ export function AddressAutocomplete({
               type="button"
               onMouseDown={(e) => e.preventDefault()} // Prevent blur
               onClick={() => {
+                setLocalValue(s);
                 onChange(s);
                 onSelect?.(s);
                 // Extract city from address for service area check

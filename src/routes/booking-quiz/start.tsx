@@ -20,20 +20,8 @@ function StartChoiceContent() {
   const { resetDraft, updateDraft, draft } = useBookingDraft();
 
   React.useEffect(() => {
-    // If user is already logged in, auto-start a new booking for them
+    // If user is already logged in, we sync their data but let them choose to start new or manage
     if (user) {
-      const userEmail = user.email;
-      const draftEmail = draft.contact.email;
-
-      // If draft is already synced with user email, proceed to booking flow
-      if (draftEmail === userEmail) {
-        console.log("[Start] User already synced, going to address page...");
-        navigate({ to: "/booking-quiz/address" });
-        return;
-      }
-
-      console.log("[Start] Syncing draft with user details...");
-      // Update draft with user details and wait for next render cycle
       updateDraft({
         contact: {
           ...draft.contact,
@@ -42,9 +30,8 @@ function StartChoiceContent() {
           phone: user.phone || undefined,
         }
       });
-      // After update, the effect will run again and the email check will pass
     }
-  }, [user, draft.contact.email, navigate, updateDraft, draft.contact]);
+  }, [user, updateDraft]);
 
   return (
     <QuizIdentityLayout
