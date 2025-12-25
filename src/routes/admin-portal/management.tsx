@@ -10,7 +10,7 @@ type Tab = "customers" | "cleaners" | "admins";
 
 export const Route = createFileRoute("/admin-portal/management")({
   component: ManagementPage,
-  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
+  validateSearch: (search: Record<string, unknown>): { tab: Tab } => {
     return {
       tab: (search.tab as Tab) || "customers",
     };
@@ -25,11 +25,16 @@ interface FormState {
   permissions?: Record<string, boolean>;
 }
 
+import { useAuthStore } from "~/stores/authStore";
+
+// ...
+
 function ManagementPage() {
   const trpc = useTRPC();
   const navigate = useNavigate();
   const search = useSearch({ from: Route.id });
   const tab = search.tab || "customers";
+  const { user } = useAuthStore();
 
   const setTab = (t: Tab) => {
     navigate({ search: { tab: t } });
