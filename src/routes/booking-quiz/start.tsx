@@ -5,22 +5,30 @@ import { bookingAnalytics } from "~/components/bookings/wizard/analytics";
 import { useAuthStore } from "~/stores/authStore";
 import React from "react";
 import { QuizIdentityLayout } from "~/components/bookings/wizard/QuizIdentityLayout";
+import { z } from "zod";
+import { zodValidator } from "@tanstack/zod-adapter";
 
 const cardBase = "rounded-2xl border border-[#e3ded2] bg-white p-6 shadow-[0_14px_30px_rgba(22,48,34,0.08)]";
 const buttonPrimary =
   "rounded-xl bg-[#163022] text-white px-6 py-3 font-semibold transition hover:translate-y-[-1px] hover:shadow-lg hover:shadow-[#163022]/20";
 
+const startSearchSchema = z.object({
+  intent: z.string().optional(),
+});
+
 export const Route = createFileRoute("/booking-quiz/start")({
   component: StartChoicePage,
+  validateSearch: zodValidator(startSearchSchema),
 });
 
 function StartChoiceContent() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { resetDraft, updateDraft, draft } = useBookingDraft();
+  const { intent } = Route.useSearch();
 
   React.useEffect(() => {
-    // If user is already logged in, we sync their data but let them choose to start new or manage
+    // If user is already logged in, we sync their data
     if (user) {
       updateDraft({
         contact: {
@@ -30,8 +38,16 @@ function StartChoiceContent() {
           phone: user.phone || undefined,
         }
       });
+
+      // If they came from the portal (no choice intent) OR have a synced email
+      // automatically jump them to the next relevant step (address)
+      // BUT don't do this if they specifically clicked "Start Over" (intent=choose)
+      if (intent !== "choose") {
+        console.log("[Start] Auto-navigating logged in user to address...");
+        navigate({ to: "/booking-quiz/address" });
+      }
     }
-  }, [user, updateDraft]);
+  }, [user, updateDraft, intent, navigate]);
 
   return (
     <QuizIdentityLayout
