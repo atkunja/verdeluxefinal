@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 
 export function Footer() {
   return (
@@ -10,15 +10,16 @@ export function Footer() {
           <div className="lg:col-span-4">
             <Link to="/" className="inline-block w-[100px] mb-5">
               <img
-                src="/imported/images/logo.png"
+                src="/verde-leaf-logo.png"
                 alt="Verde Luxe Cleaning"
                 className="w-full"
               />
             </Link>
             <p className="text-sm text-gray-text leading-relaxed font-normal mb-[30px]">
-              Our cleaners are professionally trained, background-checked, and fully equipped to provide top-quality
-              service through Verde Luxe Cleaning, ensuring a reliable and consistent cleaning experience for every
-              client.
+              Our cleaners are professionally trained, background-checked, and
+              equipped to provide top-quality service. Verde Luxe is a referral
+              agency that connects clients with trusted independent cleaning
+              professionals, who are not employees of Verde Luxe.
             </p>
           </div>
 
@@ -126,10 +127,6 @@ export function Footer() {
               {/* Contact */}
               <div className="mb-[30px]">
                 <h2 className="text-base font-bold text-black mb-5">Contact</h2>
-                <p className="text-sm text-gray-text font-normal mb-[15px]">
-                  <Phone className="w-[14px] h-[14px] text-primary-dark inline-block mr-1" />
-                  +1 (734) 892-0931
-                </p>
                 <p className="text-sm text-gray-text font-normal mb-[15px]">
                   <Mail className="w-[14px] h-[14px] text-primary-dark inline-block mr-1" />
                   contact@verdeluxecleaning.com

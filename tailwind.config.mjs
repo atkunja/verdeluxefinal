@@ -12,8 +12,9 @@ export default {
       },
       colors: {
         primary: {
-          DEFAULT: "#5e870d",
-          dark: "#3d550c",
+          DEFAULT: "#163022",
+          dark: "#0d1f16",
+          light: "#EDEAE1",
         },
         gray: {
           bg: "#f6f3f2",

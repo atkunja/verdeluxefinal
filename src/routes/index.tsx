@@ -14,19 +14,15 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronUp,
-
-  Sparkles,
 } from "lucide-react";
-import { SEO } from "~/components/SEO";
 import { useState } from "react";
-import { formatTime12Hour } from "~/utils/formatTime";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -34,7 +30,6 @@ function HomePage() {
 
   return (
     <Layout>
-      <SEO />
       {/* Hero Section */}
       <section className="relative pt-[150px] pb-[100px] overflow-hidden h-screen">
         <div
@@ -43,39 +38,34 @@ function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40" />
 
-        <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
+        <div className="relative z-10 container mx-auto px-4">
           <div className="max-w-4xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/20 mb-6 animate-in slide-in-from-top duration-700">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-bold text-white uppercase tracking-widest">Premium Service</span>
-            </div>
-            <h2 className="font-heading text-[52px] md:text-[72px] leading-[1.1] text-white mb-6 font-bold tracking-tight animate-in slide-in-from-left duration-700">
-              Professional Cleaning<br />
-              <span className="text-emerald-400 italic">Effortless</span> Results
+            <h2 className="font-opensans text-[48px] md:text-[58px] leading-[1.2] text-white mb-5 font-normal">
+              <span className="font-bold">Professional Cleaning</span>
+              <br />
+              Effortless Results
             </h2>
-            <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl leading-relaxed animate-in slide-in-from-left delay-150 duration-700">
-              Verde Luxe delivers meticulous, eco-friendly cleaning services tailored to
-              your lifestyle — so you can reclaim your time and enjoy a pristine space.
+            <p className="text-lg text-white mb-[30px] max-w-2xl">
+              We deliver meticulous, eco-friendly cleaning services tailored to
+              your space — so you can enjoy more and stress less.
             </p>
-            <div className="flex flex-wrap gap-4 animate-in slide-in-from-left delay-300 duration-700">
+            <div className="flex flex-wrap gap-2">
               <Link
                 to="/book-now"
-                className="inline-block px-8 py-4 text-sm font-bold text-white bg-primary rounded-xl hover:scale-[1.05] hover:shadow-2xl hover:shadow-primary/40 transition-all uppercase tracking-wider"
+                className="inline-block px-[22px] py-[13px] text-[14px] md:px-[25px] md:py-[15px] md:text-[15px] font-semibold text-white bg-primary rounded-full hover:bg-primary-dark transition-all uppercase"
               >
-                Book Your Clean
+                Book Now
               </Link>
-              <a
-                href="tel:+17348920931"
-                className="inline-block px-8 py-4 text-sm font-bold text-white bg-white/10 backdrop-blur border border-white/30 rounded-xl hover:bg-white hover:text-black transition-all uppercase tracking-wider"
+              <Link
+                to="/contact-us"
+                className="inline-block px-[22px] py-[13px] text-[14px] md:px-[25px] md:py-[15px] md:text-[15px] font-semibold text-white bg-transparent border border-white rounded-full hover:border-primary transition-all uppercase"
               >
-                Call Us Now
-              </a>
+                Contact Us
+              </Link>
             </div>
           </div>
         </div>
       </section>
-
-
 
       {/* Services Section */}
       <section className="py-10 md:py-[60px] bg-gray-bg">
@@ -372,10 +362,11 @@ function HomePage() {
               >
                 <button
                   onClick={() => toggleFaq(index)}
-                  className={`w-full px-6 py-4 text-left font-semibold text-base flex items-center justify-between transition-colors ${openFaq === index
-                    ? "bg-primary-dark text-white rounded-t-lg"
-                    : "bg-gray-200 text-gray-900 hover:bg-gray-300 rounded-lg"
-                    }`}
+                  className={`w-full px-6 py-4 text-left font-semibold text-base flex items-center justify-between transition-colors ${
+                    openFaq === index
+                      ? "bg-primary-dark text-white rounded-t-lg"
+                      : "bg-gray-200 text-gray-900 hover:bg-gray-300 rounded-lg"
+                  }`}
                 >
                   <span>{faq.question}</span>
                   {openFaq === index ? (
@@ -430,7 +421,7 @@ const faqData = [
   {
     question: "How do I book my first appointment?",
     answer:
-      "You can fill out our contact form on the Book Now page. You can also call or text us too for help! +1 (734) 892-0931.",
+      "You can fill out our contact form on the Book Now page or reach out via email at contact@verdeluxecleaning.com.",
   },
   {
     question: "Do you bring your own supplies?",
