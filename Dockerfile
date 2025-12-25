@@ -44,6 +44,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # Expose port
 EXPOSE 3000
 
+# Force experimental resolution globally via environment variable
+ENV NODE_OPTIONS="--experimental-specifier-resolution=node"
+
 # Start the server
-# Enable experimental-specifier-resolution to handle strict ESM imports from external packages
-CMD ["node", "--experimental-specifier-resolution=node", ".output/server/index.mjs"]
+CMD ["node", ".output/server/index.mjs"]
