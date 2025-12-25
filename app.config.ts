@@ -42,6 +42,11 @@ export default createApp({
               : undefined,
           },
         }),
+        config("ssr-deps", {
+          ssr: {
+            noExternal: ["@supabase/supabase-js"],
+          },
+        }),
         tsConfigPaths({
           projects: ["./tsconfig.json"],
         }),
