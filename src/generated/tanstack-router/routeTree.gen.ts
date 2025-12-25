@@ -30,13 +30,13 @@ import { Route as BookingQuizPaymentImport } from './../../routes/booking-quiz/p
 import { Route as BookingQuizDetailsImport } from './../../routes/booking-quiz/details'
 import { Route as BookingQuizAddressDetailsImport } from './../../routes/booking-quiz/address-details'
 import { Route as BookingQuizAddressImport } from './../../routes/booking-quiz/address'
+import { Route as AdminPortalStoreOptionsImport } from './../../routes/admin-portal/store-options'
 import { Route as AdminPortalStorageImport } from './../../routes/admin-portal/storage'
 import { Route as AdminPortalSignupsImport } from './../../routes/admin-portal/signups'
 import { Route as AdminPortalSettingsImport } from './../../routes/admin-portal/settings'
 import { Route as AdminPortalScheduleRequestsImport } from './../../routes/admin-portal/schedule-requests'
 import { Route as AdminPortalReviewsImport } from './../../routes/admin-portal/reviews'
 import { Route as AdminPortalRevenueReportsImport } from './../../routes/admin-portal/revenue-reports'
-import { Route as AdminPortalPricingImport } from './../../routes/admin-portal/pricing'
 import { Route as AdminPortalManagementImport } from './../../routes/admin-portal/management'
 import { Route as AdminPortalLogsImport } from './../../routes/admin-portal/logs'
 import { Route as AdminPortalLeadsImport } from './../../routes/admin-portal/leads'
@@ -210,6 +210,12 @@ const BookingQuizAddressRoute = BookingQuizAddressImport.update({
   getParentRoute: () => BookingQuizRoute,
 } as any)
 
+const AdminPortalStoreOptionsRoute = AdminPortalStoreOptionsImport.update({
+  id: '/admin-portal/store-options',
+  path: '/admin-portal/store-options',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AdminPortalStorageRoute = AdminPortalStorageImport.update({
   id: '/admin-portal/storage',
   path: '/admin-portal/storage',
@@ -244,12 +250,6 @@ const AdminPortalReviewsRoute = AdminPortalReviewsImport.update({
 const AdminPortalRevenueReportsRoute = AdminPortalRevenueReportsImport.update({
   id: '/admin-portal/revenue-reports',
   path: '/admin-portal/revenue-reports',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AdminPortalPricingRoute = AdminPortalPricingImport.update({
-  id: '/admin-portal/pricing',
-  path: '/admin-portal/pricing',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -532,13 +532,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPortalManagementImport
       parentRoute: typeof rootRoute
     }
-    '/admin-portal/pricing': {
-      id: '/admin-portal/pricing'
-      path: '/admin-portal/pricing'
-      fullPath: '/admin-portal/pricing'
-      preLoaderRoute: typeof AdminPortalPricingImport
-      parentRoute: typeof rootRoute
-    }
     '/admin-portal/revenue-reports': {
       id: '/admin-portal/revenue-reports'
       path: '/admin-portal/revenue-reports'
@@ -579,6 +572,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-portal/storage'
       fullPath: '/admin-portal/storage'
       preLoaderRoute: typeof AdminPortalStorageImport
+      parentRoute: typeof rootRoute
+    }
+    '/admin-portal/store-options': {
+      id: '/admin-portal/store-options'
+      path: '/admin-portal/store-options'
+      fullPath: '/admin-portal/store-options'
+      preLoaderRoute: typeof AdminPortalStoreOptionsImport
       parentRoute: typeof rootRoute
     }
     '/booking-quiz/address': {
@@ -960,13 +960,13 @@ export interface FileRoutesByFullPath {
   '/admin-portal/leads': typeof AdminPortalLeadsRoute
   '/admin-portal/logs': typeof AdminPortalLogsRoute
   '/admin-portal/management': typeof AdminPortalManagementRoute
-  '/admin-portal/pricing': typeof AdminPortalPricingRoute
   '/admin-portal/revenue-reports': typeof AdminPortalRevenueReportsRoute
   '/admin-portal/reviews': typeof AdminPortalReviewsRoute
   '/admin-portal/schedule-requests': typeof AdminPortalScheduleRequestsRoute
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
+  '/admin-portal/store-options': typeof AdminPortalStoreOptionsRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
@@ -1024,13 +1024,13 @@ export interface FileRoutesByTo {
   '/admin-portal/leads': typeof AdminPortalLeadsRoute
   '/admin-portal/logs': typeof AdminPortalLogsRoute
   '/admin-portal/management': typeof AdminPortalManagementRoute
-  '/admin-portal/pricing': typeof AdminPortalPricingRoute
   '/admin-portal/revenue-reports': typeof AdminPortalRevenueReportsRoute
   '/admin-portal/reviews': typeof AdminPortalReviewsRoute
   '/admin-portal/schedule-requests': typeof AdminPortalScheduleRequestsRoute
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
+  '/admin-portal/store-options': typeof AdminPortalStoreOptionsRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
@@ -1090,13 +1090,13 @@ export interface FileRoutesById {
   '/admin-portal/leads': typeof AdminPortalLeadsRoute
   '/admin-portal/logs': typeof AdminPortalLogsRoute
   '/admin-portal/management': typeof AdminPortalManagementRoute
-  '/admin-portal/pricing': typeof AdminPortalPricingRoute
   '/admin-portal/revenue-reports': typeof AdminPortalRevenueReportsRoute
   '/admin-portal/reviews': typeof AdminPortalReviewsRoute
   '/admin-portal/schedule-requests': typeof AdminPortalScheduleRequestsRoute
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
+  '/admin-portal/store-options': typeof AdminPortalStoreOptionsRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
@@ -1157,13 +1157,13 @@ export interface FileRouteTypes {
     | '/admin-portal/leads'
     | '/admin-portal/logs'
     | '/admin-portal/management'
-    | '/admin-portal/pricing'
     | '/admin-portal/revenue-reports'
     | '/admin-portal/reviews'
     | '/admin-portal/schedule-requests'
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
+    | '/admin-portal/store-options'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
@@ -1220,13 +1220,13 @@ export interface FileRouteTypes {
     | '/admin-portal/leads'
     | '/admin-portal/logs'
     | '/admin-portal/management'
-    | '/admin-portal/pricing'
     | '/admin-portal/revenue-reports'
     | '/admin-portal/reviews'
     | '/admin-portal/schedule-requests'
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
+    | '/admin-portal/store-options'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
@@ -1284,13 +1284,13 @@ export interface FileRouteTypes {
     | '/admin-portal/leads'
     | '/admin-portal/logs'
     | '/admin-portal/management'
-    | '/admin-portal/pricing'
     | '/admin-portal/revenue-reports'
     | '/admin-portal/reviews'
     | '/admin-portal/schedule-requests'
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
+    | '/admin-portal/store-options'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
@@ -1350,13 +1350,13 @@ export interface RootRouteChildren {
   AdminPortalLeadsRoute: typeof AdminPortalLeadsRoute
   AdminPortalLogsRoute: typeof AdminPortalLogsRoute
   AdminPortalManagementRoute: typeof AdminPortalManagementRoute
-  AdminPortalPricingRoute: typeof AdminPortalPricingRoute
   AdminPortalRevenueReportsRoute: typeof AdminPortalRevenueReportsRoute
   AdminPortalReviewsRoute: typeof AdminPortalReviewsRoute
   AdminPortalScheduleRequestsRoute: typeof AdminPortalScheduleRequestsRoute
   AdminPortalSettingsRoute: typeof AdminPortalSettingsRoute
   AdminPortalSignupsRoute: typeof AdminPortalSignupsRoute
   AdminPortalStorageRoute: typeof AdminPortalStorageRoute
+  AdminPortalStoreOptionsRoute: typeof AdminPortalStoreOptionsRoute
   AdminPortalIndexRoute: typeof AdminPortalIndexRoute
   BookNowIndexRoute: typeof BookNowIndexRoute
   ChecklistIndexRoute: typeof ChecklistIndexRoute
@@ -1396,13 +1396,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPortalLeadsRoute: AdminPortalLeadsRoute,
   AdminPortalLogsRoute: AdminPortalLogsRoute,
   AdminPortalManagementRoute: AdminPortalManagementRoute,
-  AdminPortalPricingRoute: AdminPortalPricingRoute,
   AdminPortalRevenueReportsRoute: AdminPortalRevenueReportsRoute,
   AdminPortalReviewsRoute: AdminPortalReviewsRoute,
   AdminPortalScheduleRequestsRoute: AdminPortalScheduleRequestsRoute,
   AdminPortalSettingsRoute: AdminPortalSettingsRoute,
   AdminPortalSignupsRoute: AdminPortalSignupsRoute,
   AdminPortalStorageRoute: AdminPortalStorageRoute,
+  AdminPortalStoreOptionsRoute: AdminPortalStoreOptionsRoute,
   AdminPortalIndexRoute: AdminPortalIndexRoute,
   BookNowIndexRoute: BookNowIndexRoute,
   ChecklistIndexRoute: ChecklistIndexRoute,
@@ -1454,13 +1454,13 @@ export const routeTree = rootRoute
         "/admin-portal/leads",
         "/admin-portal/logs",
         "/admin-portal/management",
-        "/admin-portal/pricing",
         "/admin-portal/revenue-reports",
         "/admin-portal/reviews",
         "/admin-portal/schedule-requests",
         "/admin-portal/settings",
         "/admin-portal/signups",
         "/admin-portal/storage",
+        "/admin-portal/store-options",
         "/admin-portal/",
         "/book-now/",
         "/checklist/",
@@ -1540,9 +1540,6 @@ export const routeTree = rootRoute
     "/admin-portal/management": {
       "filePath": "admin-portal/management.tsx"
     },
-    "/admin-portal/pricing": {
-      "filePath": "admin-portal/pricing.tsx"
-    },
     "/admin-portal/revenue-reports": {
       "filePath": "admin-portal/revenue-reports.tsx"
     },
@@ -1560,6 +1557,9 @@ export const routeTree = rootRoute
     },
     "/admin-portal/storage": {
       "filePath": "admin-portal/storage.tsx"
+    },
+    "/admin-portal/store-options": {
+      "filePath": "admin-portal/store-options.tsx"
     },
     "/booking-quiz/address": {
       "filePath": "booking-quiz/address.tsx",

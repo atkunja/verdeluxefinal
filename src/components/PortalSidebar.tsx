@@ -70,12 +70,12 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
           ],
         },
         {
-          label: "Store Options",
-          view: "store-options",
+          label: "Settings",
+          view: "settings",
           icon: Settings,
           subItems: [
-            { label: "Checklist", view: "store-options-checklist", icon: ClipboardList },
-            { label: "Pricing", view: "store-options-pricing", icon: DollarSign },
+            { label: "Checklist Rules", view: "store-options-checklist", icon: ClipboardList, routePath: "/admin-portal/store-options?tab=checklist" },
+            { label: "Pricing Rules", view: "store-options-pricing", icon: DollarSign, routePath: "/admin-portal/store-options?tab=pricing" },
           ],
         },
       ];
