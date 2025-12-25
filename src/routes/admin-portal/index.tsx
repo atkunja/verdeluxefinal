@@ -6,7 +6,7 @@ import { AdminShell } from "~/components/admin/AdminShell";
 import { dashboardOverviewMock } from "~/mocks/adminPortal";
 import { chargeBooking } from "~/api/adminPortal";
 import { useAuthStore } from "~/stores/authStore";
-import { CalendarDays, CreditCard, TrendingDown, TrendingUp, CheckCircle } from "lucide-react";
+import { CalendarDays, CreditCard, TrendingDown, TrendingUp, CheckCircle, UserPlus, Mail, AlertCircle, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/admin-portal/")({
   component: AdminDashboardPage,
@@ -115,12 +115,13 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
       <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full" preserveAspectRatio="none">
         <defs>
           <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.3" />
-            <stop offset="50%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.1" />
-            <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0" />
+            <stop offset="0%" stopColor="#1f2937" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#1f2937" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#1f2937" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={isPositive ? "#059669" : "#dc2626"} />
+            <stop offset="0%" stopColor="#374151" />
+            <stop offset="50%" stopColor="#1f2937" />
             <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} />
           </linearGradient>
         </defs>
@@ -167,12 +168,11 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
               r="12"
               fill="transparent"
             />
-            {/* Visible dot */}
             <circle
               cx={paddingX + idx * step}
               cy={height - paddingY - y}
               r={hoveredIdx === idx ? 6 : 4}
-              fill={isPositive ? "#059669" : "#dc2626"}
+              fill={hoveredIdx === idx ? (isPositive ? "#10b981" : "#ef4444") : "#1f2937"}
               stroke="white"
               strokeWidth="2"
               className="transition-all duration-200"
@@ -441,17 +441,39 @@ function AdminDashboardPage() {
               const parts = task.color.split(' ');
               const bgColor = parts[0] || 'bg-gray-100';
               const textColor = parts[1] || 'text-gray-700';
+              const borderColor = parts[2] || 'border-gray-200';
+
+              // Get appropriate icon based on task type
+              const getIcon = () => {
+                if (task.id.startsWith('unassigned')) return <UserPlus className="h-5 w-5" />;
+                if (task.id.startsWith('lead')) return <Mail className="h-5 w-5" />;
+                if (task.id.startsWith('charge')) return <CreditCard className="h-5 w-5" />;
+                return <AlertCircle className="h-5 w-5" />;
+              };
+
               return (
-                <div key={task.id} className="flex items-start gap-4 rounded-2xl border border-gray-50 bg-white/80 p-4 transition-all hover:shadow-sm">
-                  <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm border border-white ${bgColor} ${textColor.replace('text-', 'text-opacity-80 text-')}`}>
-                    <CheckCircle className="h-5 w-5" />
+                <button
+                  key={task.id}
+                  onClick={() => navigate({ to: (task as any).actionUrl || "/admin-portal/bookings" })}
+                  className={`w-full flex items-start gap-4 rounded-2xl border ${borderColor} bg-white p-4 transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer text-left group`}
+                >
+                  <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bgColor} ${textColor}`}>
+                    {getIcon()}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold text-[#0f172a]">{task.title}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-bold text-[#0f172a]">{task.title}</div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${bgColor} ${textColor}`}>
+                        {task.time}
+                      </span>
+                    </div>
                     <div className="mt-1 text-xs leading-relaxed text-gray-500">{task.description}</div>
-                    <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">{task.time}</div>
+                    <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#163022] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span>Take Action</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </div>
                   </div>
-                </div>
+                </button>
               );
             })}
             {tasksQuery.isLoading && <div className="py-12 text-center text-sm text-gray-400 italic">Busy organizing...</div>}

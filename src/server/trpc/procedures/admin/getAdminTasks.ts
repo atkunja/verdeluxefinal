@@ -22,31 +22,43 @@ export const getAdminTasks = requireAdmin.query(async () => {
         include: { payments: true, client: true },
     });
 
-    const tasks: { id: string; title: string; description: string; time: string; color: string }[] = [];
+    const tasks: {
+        id: string;
+        title: string;
+        description: string;
+        time: string;
+        color: string;
+        actionUrl: string;
+        icon: string;
+    }[] = [];
 
-    // Generate unassigned tasks
+    // Generate unassigned tasks - RED theme
     unassignedBookings.forEach((b) => {
         tasks.push({
             id: `unassigned-${b.id}`,
             title: "Unassigned Job",
             description: `${b.serviceType} at ${b.address.split(",")[0]} needs a cleaner.`,
-            time: "Asap",
-            color: "bg-red-100 text-red-700",
+            time: "ASAP",
+            color: "bg-red-100 text-red-700 border-red-200",
+            actionUrl: "/admin-portal/bookings",
+            icon: "user-plus",
         });
     });
 
-    // Generate lead tasks
+    // Generate lead tasks - BLUE theme
     newLeads.forEach((l) => {
         tasks.push({
             id: `lead-${l.id}`,
             title: "New Lead",
             description: `${l.name} sent an inquiry via ${l.source}.`,
-            time: "New",
-            color: "bg-blue-100 text-blue-700",
+            time: "NEW",
+            color: "bg-blue-100 text-blue-700 border-blue-200",
+            actionUrl: "/admin-portal/leads",
+            icon: "mail",
         });
     });
 
-    // Generate payment tasks
+    // Generate payment tasks - AMBER theme
     completedBookings.forEach((b) => {
         const totalPaid = b.payments.reduce((sum, p) => (p.paidAt ? sum + p.amount : sum), 0);
         if ((b.finalPrice || 0) > totalPaid) {
@@ -54,8 +66,10 @@ export const getAdminTasks = requireAdmin.query(async () => {
                 id: `charge-${b.id}`,
                 title: "Pending Charge",
                 description: `Completed job for ${b.client.firstName} is ready to be charged.`,
-                time: "Action Required",
-                color: "bg-green-100 text-green-700",
+                time: "ACTION",
+                color: "bg-amber-100 text-amber-700 border-amber-200",
+                actionUrl: "/admin-portal/bookings",
+                icon: "credit-card",
             });
         }
     });
