@@ -54,7 +54,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
           subItems: [
             { label: "Customers", view: "management-customers", icon: Users, routePath: "/admin-portal/management?tab=customers" },
             { label: "Cleaners", view: "management-cleaners", icon: UserCog, routePath: "/admin-portal/management?tab=cleaners" },
-            { label: "Admins", view: "management-admins", icon: Settings, routePath: "/admin-portal/management?tab=admins" },
+            { label: "Admins & Owners", view: "management-admins", icon: Settings, routePath: "/admin-portal/management?tab=admins" },
           ],
         },
         { label: "Requests", view: "cleaner-requests", icon: CalendarOff },
