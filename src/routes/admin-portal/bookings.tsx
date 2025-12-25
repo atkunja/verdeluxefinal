@@ -345,157 +345,167 @@ function BookingsPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <div className="text-lg font-semibold text-[#0f172a]">Calendar</div>
-                  <div className="text-xs text-gray-500 capitalize">{view} view</div>
-                </div>
-              </div>
-              {view === "month" && (
-                <div className="grid grid-cols-7 gap-2 text-sm">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dow) => (
-                    <div key={dow} className="text-center text-xs font-semibold text-gray-500">
-                      {dow}
+            <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              {/* MaahikT-style gradient header */}
+              <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                      <CalendarClock className="w-5 h-5" />
                     </div>
-                  ))}
-                  {daysThisMonth.map((day) => {
-                    const dateStr = day.toISOString().slice(0, 10);
-                    const dayEvents = filteredEvents.filter((ev) => ev.scheduledDate === dateStr);
-                    return (
-                      <div
-                        key={day.toISOString()}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          const id = e.dataTransfer.getData("text/plain");
-                          if (id) handleMovePrompt(id, dateStr);
-                        }}
-                        className={`min-h-[120px] rounded-xl border ${selectedDay === dateStr ? "border-[#163022]" : "border-gray-200"} bg-[#f9fafb] p-2`}
-                      >
-                        <div className="flex items-center justify-between text-xs font-semibold text-gray-700">
-                          <span>{day.getDate()}</span>
-                          <button
-                            className="text-[10px] text-gray-500 hover:text-[#163022]"
-                            onClick={() => setSelectedDay(dateStr)}
-                          >
-                            Select
-                          </button>
-                        </div>
-                        <div className="mt-1 space-y-2">
-                          {dayEvents.map((event) => (
-                            <button
-                              key={event.id}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, event.id)}
-                              onClick={() => setActiveBooking(event)}
-                              className="block w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs shadow hover:border-[#163022]"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold text-gray-800">{event.scheduledTime}</span>
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ backgroundColor: event.providerColor }}
-                                />
-                              </div>
-                              <div className="truncate text-gray-700">{event.customer}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {view !== "month" && (
-                <div className="overflow-x-auto">
-                  <div className="min-w-[980px]">
-                    <div className="grid grid-cols-[80px,1fr] gap-2">
-                      <div className="text-[11px] text-gray-500">
-                        {getTimeSlots().map((slot) => (
-                          <div key={slot} className="h-10 border-b border-dashed border-gray-200 pr-2 text-right leading-10">
-                            {slot}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${view === "week" ? 7 : 1}, minmax(0, 1fr))` }}>
-                        {(view === "week" ? getWeekDays() : getSingleDay()).map((day) => {
-                          const dateStr = day.toISOString().slice(0, 10);
-                          const dayEvents = filteredEvents.filter((ev) => ev.scheduledDate === dateStr);
-                          return (
-                            <div key={dateStr} className="rounded-xl border border-gray-200 bg-[#f9fafb] p-2">
-                              <div className="mb-2 flex items-center justify-between text-xs font-semibold text-gray-700">
-                                <span>{day.toDateString()}</span>
-                                <button
-                                  className="text-[10px] text-gray-500 hover:text-[#163022]"
-                                  onClick={() => setSelectedDay(dateStr)}
-                                >
-                                  Select
-                                </button>
-                              </div>
-                              <div className="relative h-[920px]">
-                                {dayEvents.map((event) => {
-                                  const top = getMinutesFromStart(event.scheduledTime);
-                                  const height = Math.max(50, (event.durationHours || 1) * 60);
-                                  return (
-                                    <div
-                                      key={event.id}
-                                      draggable
-                                      onDragStart={(e) => handleDragStart(e, event.id)}
-                                      onClick={() => setActiveBooking(event)}
-                                      className="absolute left-1 right-1 rounded-lg border border-gray-200 bg-white p-2 shadow hover:border-[#163022]"
-                                      style={{
-                                        top,
-                                        height,
-                                      }}
-                                    >
-                                      <div className="flex items-center justify-between text-[11px]">
-                                        <span className="font-semibold text-gray-800">
-                                          {event.scheduledTime} • {formatDurationLabel(event.durationHours || 1)}
-                                          {event.cleaners?.length && event.cleaners.length > 1
-                                            ? ` (≈ ${formatDurationLabel((event.durationHours || 1) / event.cleaners.length)} each)`
-                                            : ""}
-                                        </span>
-                                        <span
-                                          className="h-2 w-2 rounded-full"
-                                          style={{ backgroundColor: event.providerColor }}
-                                        />
-                                      </div>
-                                      <div className="text-sm font-semibold text-[#0f172a]">{event.customer}</div>
-                                      <div className="text-[11px] text-gray-500">
-                                        {event.serviceType} • {event.location}
-                                      </div>
-                                      {event.cleaners && event.cleaners.length > 0 && (
-                                        <div className="mt-1 flex flex-wrap gap-1">
-                                          {event.cleaners.map((cl) => (
-                                            <span
-                                              key={cl.name}
-                                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                              style={{ backgroundColor: `${cl.color} 20`, color: cl.color }}
-                                            >
-                                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: cl.color }} />
-                                              {cl.name}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                                <div className="absolute inset-0 pointer-events-none">
-                                  {getTimeSlots().map((slot, idx) => (
-                                    <div key={slot} className="absolute left-0 right-0 border-b border-dashed border-gray-200" style={{ top: idx * 40 + 40 }} />
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                    <div>
+                      <div className="text-lg font-bold">Calendar</div>
+                      <div className="text-xs text-white/70 capitalize">{view} view</div>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+              <div className="p-4">
+                {view === "month" && (
+                  <div className="grid grid-cols-7 gap-2 text-sm">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dow) => (
+                      <div key={dow} className="text-center text-xs font-semibold text-gray-500">
+                        {dow}
+                      </div>
+                    ))}
+                    {daysThisMonth.map((day) => {
+                      const dateStr = day.toISOString().slice(0, 10);
+                      const dayEvents = filteredEvents.filter((ev) => ev.scheduledDate === dateStr);
+                      return (
+                        <div
+                          key={day.toISOString()}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            const id = e.dataTransfer.getData("text/plain");
+                            if (id) handleMovePrompt(id, dateStr);
+                          }}
+                          className={`min-h-[120px] rounded-xl border ${selectedDay === dateStr ? "border-[#163022]" : "border-gray-200"} bg-[#f9fafb] p-2`}
+                        >
+                          <div className="flex items-center justify-between text-xs font-semibold text-gray-700">
+                            <span>{day.getDate()}</span>
+                            <button
+                              className="text-[10px] text-gray-500 hover:text-[#163022]"
+                              onClick={() => setSelectedDay(dateStr)}
+                            >
+                              Select
+                            </button>
+                          </div>
+                          <div className="mt-1 space-y-2">
+                            {dayEvents.map((event) => (
+                              <button
+                                key={event.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, event.id)}
+                                onClick={() => setActiveBooking(event)}
+                                className="block w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs shadow hover:border-[#163022]"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-gray-800">{event.scheduledTime}</span>
+                                  <span
+                                    className="h-2 w-2 rounded-full"
+                                    style={{ backgroundColor: event.providerColor }}
+                                  />
+                                </div>
+                                <div className="truncate text-gray-700">{event.customer}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {view !== "month" && (
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[980px]">
+                      <div className="grid grid-cols-[80px,1fr] gap-2">
+                        <div className="text-[11px] text-gray-500">
+                          {getTimeSlots().map((slot) => (
+                            <div key={slot} className="h-10 border-b border-dashed border-gray-200 pr-2 text-right leading-10">
+                              {slot}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${view === "week" ? 7 : 1}, minmax(0, 1fr))` }}>
+                          {(view === "week" ? getWeekDays() : getSingleDay()).map((day) => {
+                            const dateStr = day.toISOString().slice(0, 10);
+                            const dayEvents = filteredEvents.filter((ev) => ev.scheduledDate === dateStr);
+                            return (
+                              <div key={dateStr} className="rounded-xl border border-gray-200 bg-[#f9fafb] p-2">
+                                <div className="mb-2 flex items-center justify-between text-xs font-semibold text-gray-700">
+                                  <span>{day.toDateString()}</span>
+                                  <button
+                                    className="text-[10px] text-gray-500 hover:text-[#163022]"
+                                    onClick={() => setSelectedDay(dateStr)}
+                                  >
+                                    Select
+                                  </button>
+                                </div>
+                                <div className="relative h-[920px]">
+                                  {dayEvents.map((event) => {
+                                    const top = getMinutesFromStart(event.scheduledTime);
+                                    const height = Math.max(50, (event.durationHours || 1) * 60);
+                                    return (
+                                      <div
+                                        key={event.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, event.id)}
+                                        onClick={() => setActiveBooking(event)}
+                                        className="absolute left-1 right-1 rounded-lg border border-gray-200 bg-white p-2 shadow hover:border-[#163022]"
+                                        style={{
+                                          top,
+                                          height,
+                                        }}
+                                      >
+                                        <div className="flex items-center justify-between text-[11px]">
+                                          <span className="font-semibold text-gray-800">
+                                            {event.scheduledTime} • {formatDurationLabel(event.durationHours || 1)}
+                                            {event.cleaners?.length && event.cleaners.length > 1
+                                              ? ` (≈ ${formatDurationLabel((event.durationHours || 1) / event.cleaners.length)} each)`
+                                              : ""}
+                                          </span>
+                                          <span
+                                            className="h-2 w-2 rounded-full"
+                                            style={{ backgroundColor: event.providerColor }}
+                                          />
+                                        </div>
+                                        <div className="text-sm font-semibold text-[#0f172a]">{event.customer}</div>
+                                        <div className="text-[11px] text-gray-500">
+                                          {event.serviceType} • {event.location}
+                                        </div>
+                                        {event.cleaners && event.cleaners.length > 0 && (
+                                          <div className="mt-1 flex flex-wrap gap-1">
+                                            {event.cleaners.map((cl) => (
+                                              <span
+                                                key={cl.name}
+                                                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                                style={{ backgroundColor: `${cl.color} 20`, color: cl.color }}
+                                              >
+                                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: cl.color }} />
+                                                {cl.name}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  <div className="absolute inset-0 pointer-events-none">
+                                    {getTimeSlots().map((slot, idx) => (
+                                      <div key={slot} className="absolute left-0 right-0 border-b border-dashed border-gray-200" style={{ top: idx * 40 + 40 }} />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
