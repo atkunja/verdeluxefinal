@@ -89,6 +89,11 @@ export function AddressAutocomplete({
   // Loud debug for API key
   useEffect(() => {
     if (enablePlaces) {
+      console.log("[AddressAutocomplete] Environment Check:", {
+        hasGoogleKey: !!googleApiKey,
+        hasStripeKey: !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+        googleKeyPrefix: googleApiKey ? googleApiKey.substring(0, 4) : "NONE",
+      });
       if (googleApiKey) {
         console.log("%c[AddressAutocomplete] API Key DETECTED:", "color: #00ff00; font-weight: bold;", googleApiKey.substring(0, 8) + "...");
       } else {
