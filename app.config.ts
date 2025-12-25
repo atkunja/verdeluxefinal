@@ -14,6 +14,11 @@ export default createApp({
     experimental: {
       asyncContext: true,
     },
+    nitro: {
+      externals: {
+        inline: ["@supabase/supabase-js"],
+      },
+    },
   },
   routers: [
     {
