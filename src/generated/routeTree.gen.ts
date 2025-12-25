@@ -30,7 +30,6 @@ import { Route as BookingQuizPaymentImport } from './../routes/booking-quiz/paym
 import { Route as BookingQuizDetailsImport } from './../routes/booking-quiz/details'
 import { Route as BookingQuizAddressDetailsImport } from './../routes/booking-quiz/address-details'
 import { Route as BookingQuizAddressImport } from './../routes/booking-quiz/address'
-import { Route as AdminPortalStoreOptionsImport } from './../routes/admin-portal/store-options'
 import { Route as AdminPortalStorageImport } from './../routes/admin-portal/storage'
 import { Route as AdminPortalSignupsImport } from './../routes/admin-portal/signups'
 import { Route as AdminPortalSettingsImport } from './../routes/admin-portal/settings'
@@ -208,12 +207,6 @@ const BookingQuizAddressRoute = BookingQuizAddressImport.update({
   id: '/address',
   path: '/address',
   getParentRoute: () => BookingQuizRoute,
-} as any)
-
-const AdminPortalStoreOptionsRoute = AdminPortalStoreOptionsImport.update({
-  id: '/admin-portal/store-options',
-  path: '/admin-portal/store-options',
-  getParentRoute: () => rootRoute,
 } as any)
 
 const AdminPortalStorageRoute = AdminPortalStorageImport.update({
@@ -572,13 +565,6 @@ declare module '@tanstack/react-router' {
       path: '/admin-portal/storage'
       fullPath: '/admin-portal/storage'
       preLoaderRoute: typeof AdminPortalStorageImport
-      parentRoute: typeof rootRoute
-    }
-    '/admin-portal/store-options': {
-      id: '/admin-portal/store-options'
-      path: '/admin-portal/store-options'
-      fullPath: '/admin-portal/store-options'
-      preLoaderRoute: typeof AdminPortalStoreOptionsImport
       parentRoute: typeof rootRoute
     }
     '/booking-quiz/address': {
@@ -966,7 +952,6 @@ export interface FileRoutesByFullPath {
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
-  '/admin-portal/store-options': typeof AdminPortalStoreOptionsRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
@@ -1030,7 +1015,6 @@ export interface FileRoutesByTo {
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
-  '/admin-portal/store-options': typeof AdminPortalStoreOptionsRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
@@ -1096,7 +1080,6 @@ export interface FileRoutesById {
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
-  '/admin-portal/store-options': typeof AdminPortalStoreOptionsRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
@@ -1163,7 +1146,6 @@ export interface FileRouteTypes {
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
-    | '/admin-portal/store-options'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
@@ -1226,7 +1208,6 @@ export interface FileRouteTypes {
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
-    | '/admin-portal/store-options'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
@@ -1290,7 +1271,6 @@ export interface FileRouteTypes {
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
-    | '/admin-portal/store-options'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
@@ -1356,7 +1336,6 @@ export interface RootRouteChildren {
   AdminPortalSettingsRoute: typeof AdminPortalSettingsRoute
   AdminPortalSignupsRoute: typeof AdminPortalSignupsRoute
   AdminPortalStorageRoute: typeof AdminPortalStorageRoute
-  AdminPortalStoreOptionsRoute: typeof AdminPortalStoreOptionsRoute
   AdminPortalIndexRoute: typeof AdminPortalIndexRoute
   BookNowIndexRoute: typeof BookNowIndexRoute
   ChecklistIndexRoute: typeof ChecklistIndexRoute
@@ -1402,7 +1381,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPortalSettingsRoute: AdminPortalSettingsRoute,
   AdminPortalSignupsRoute: AdminPortalSignupsRoute,
   AdminPortalStorageRoute: AdminPortalStorageRoute,
-  AdminPortalStoreOptionsRoute: AdminPortalStoreOptionsRoute,
   AdminPortalIndexRoute: AdminPortalIndexRoute,
   BookNowIndexRoute: BookNowIndexRoute,
   ChecklistIndexRoute: ChecklistIndexRoute,
@@ -1460,7 +1438,6 @@ export const routeTree = rootRoute
         "/admin-portal/settings",
         "/admin-portal/signups",
         "/admin-portal/storage",
-        "/admin-portal/store-options",
         "/admin-portal/",
         "/book-now/",
         "/checklist/",
@@ -1557,9 +1534,6 @@ export const routeTree = rootRoute
     },
     "/admin-portal/storage": {
       "filePath": "admin-portal/storage.tsx"
-    },
-    "/admin-portal/store-options": {
-      "filePath": "admin-portal/store-options.tsx"
     },
     "/booking-quiz/address": {
       "filePath": "booking-quiz/address.tsx",

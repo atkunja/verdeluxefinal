@@ -74,8 +74,8 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
           view: "settings",
           icon: Settings,
           subItems: [
-            { label: "Checklist Rules", view: "store-options-checklist", icon: ClipboardList, routePath: "/admin-portal/store-options?tab=checklist" },
-            { label: "Pricing Rules", view: "store-options-pricing", icon: DollarSign, routePath: "/admin-portal/store-options?tab=pricing" },
+            { label: "Checklist Rules", view: "settings-checklist", icon: ClipboardList, routePath: "/admin-portal/settings?tab=checklist" },
+            { label: "Pricing Rules", view: "settings-pricing", icon: DollarSign, routePath: "/admin-portal/settings?tab=pricing" },
           ],
         },
       ];
