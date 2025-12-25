@@ -86,6 +86,17 @@ export function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const googleApiKey = (import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY) as string | undefined;
 
+  // Loud debug for API key
+  useEffect(() => {
+    if (enablePlaces) {
+      if (googleApiKey) {
+        console.log("%c[AddressAutocomplete] API Key DETECTED:", "color: #00ff00; font-weight: bold;", googleApiKey.substring(0, 8) + "...");
+      } else {
+        console.warn("%c[AddressAutocomplete] API Key MISSING in browser environment", "color: #ff0000; font-weight: bold;");
+      }
+    }
+  }, [enablePlaces, googleApiKey]);
+
   // Stable refs for handlers to avoid re-initializing autocomplete on every keystroke
   const handlersRef = useRef({ onChange, onSelect, onPlaceSelect });
   useEffect(() => {
@@ -195,6 +206,7 @@ export function AddressAutocomplete({
         type="text"
         ref={inputRef}
         value={localValue}
+        placeholder={enablePlaces && !placesReady ? "Loading Google Maps..." : placeholder}
         onChange={(e) => {
           const val = e.target.value;
           setLocalValue(val);
@@ -206,7 +218,6 @@ export function AddressAutocomplete({
           // Delay close to allow click on suggestions
           setTimeout(() => setOpen(false), 200);
         }}
-        placeholder={placeholder}
         className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#163022] focus:outline-none focus:ring-2 focus:ring-[#163022]"
         autoComplete="off"
       />
