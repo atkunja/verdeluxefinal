@@ -97,10 +97,8 @@ export function SummaryPanel({ draft }: { draft: BookingDraft }) {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm("Are you sure you want to clear your current booking draft and start over?")) {
-                  resetDraft();
-                  navigate({ to: "/booking-quiz/start", search: { intent: "choose" } });
-                }
+                resetDraft();
+                navigate({ to: "/booking-quiz/start", search: { intent: "choose" } });
               }}
               className="w-full text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
             >

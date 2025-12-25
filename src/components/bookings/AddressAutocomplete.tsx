@@ -98,7 +98,11 @@ export function AddressAutocomplete({
   }, [value]);
 
   useEffect(() => {
-    if (!enablePlaces || !googleApiKey) return;
+    if (!enablePlaces) return;
+    if (!googleApiKey) {
+      console.warn("[AddressAutocomplete] Google Places enabled but API key is missing (VITE_GOOGLE_PLACES_KEY or VITE_GOOGLE_MAPS_API_KEY)");
+      return;
+    }
     if (window.google?.maps?.places) {
       setPlacesReady(true);
       return;
