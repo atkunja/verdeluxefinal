@@ -9,19 +9,18 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
-# Debug: Verify schema existence
-RUN ls -laR prisma
-
 # Install dependencies without running scripts immediately
 RUN pnpm install --frozen-lockfile --ignore-scripts
-# Run postinstall explicitly (prisma generate + tsr generate)
-RUN pnpm run postinstall
 
 # Build stage
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Now that we have the code, run postinstall (prisma generate + tsr generate)
+RUN pnpm run postinstall
+
+# Ensure we build for production
 # Ensure we build for production
 ENV NODE_ENV=production
 # We need to ensure build uses the correct keys or is build-safe
