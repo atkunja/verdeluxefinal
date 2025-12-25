@@ -2,11 +2,11 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import toast from "react-hot-toast";
-import { BillingConfig, ChecklistTemplate } from "~/mocks/adminPortal";
-import { getBillingConfig, listChecklistTemplates } from "~/api/adminPortal";
+import { BillingConfig } from "~/mocks/adminPortal"; // Keeping Billing mock for now
+import { getBillingConfig } from "~/api/adminPortal";
 
 type SettingsTab = "checklist" | "pricing" | "billing" | "website" | "leadSources";
 
@@ -37,10 +37,10 @@ function SettingsPage() {
   return (
     <AdminShell
       title="Settings"
-      subtitle="Checklist templates, pricing, billing."
+      subtitle="Checklist templates, pricing, website configs."
       actions={
         <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1 text-sm flex-wrap">
-          {(["checklist", "pricing", "billing", "website", "leadSources"] as SettingsTab[]).map((tabKey) => (
+          {(["checklist", "pricing", "website", "leadSources", "billing"] as SettingsTab[]).map((tabKey) => (
             <button
               key={tabKey}
               onClick={() => setTab(tabKey)}
@@ -59,6 +59,7 @@ function SettingsPage() {
       {tab === "leadSources" && (
         <div className="space-y-6">
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            {/* Lead Sources Content (Unchanged) */}
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 <span className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">LSC</span>
@@ -121,14 +122,18 @@ function SettingsPage() {
 }
 
 function ChecklistTab() {
-  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery(trpc.getChecklistTemplates.queryOptions());
+  const createMutation = useMutation(trpc.createChecklistTemplate.mutationOptions());
+  const deleteMutation = useMutation(trpc.deleteChecklistTemplate.mutationOptions());
 
-  useEffect(() => {
-    listChecklistTemplates().then(setTemplates);
-  }, []);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const templates = data?.templates || [];
 
   const groupedTemplates = useMemo(() => {
-    return templates.reduce<Record<string, ChecklistTemplate[]>>((acc, template) => {
+    return templates.reduce<Record<string, typeof templates>>((acc, template) => {
       const type = (template.serviceType || "OTHER") as string;
       if (!acc[type]) acc[type] = [];
       acc[type]!.push(template);
@@ -136,54 +141,64 @@ function ChecklistTab() {
     }, {});
   }, [templates]);
 
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <div>
+          <h2 className="font-bold text-lg text-[#0f172a]">Checklist Templates</h2>
+          <p className="text-sm text-gray-500">Manage cleaning checklists for different service types.</p>
+        </div>
+        <button
+          onClick={() => setIsCreating(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#163022] px-4 py-2 text-sm font-bold text-white hover:bg-[#0f241a] transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          New Template
+        </button>
+      </div>
+
+      {isCreating && (
+        <CreateChecklistForm
+          onCancel={() => setIsCreating(false)}
+          onSuccess={() => { setIsCreating(false); queryClient.invalidateQueries({ queryKey: trpc.getChecklistTemplates.queryOptions().queryKey }) }}
+        />
+      )}
+
       {Object.entries(groupedTemplates).map(([serviceType, group]) => (
         <div key={serviceType} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-lg font-semibold text-[#0f172a]">{serviceType}</div>
-            <button
-              onClick={() =>
-                setTemplates((prev) => [
-                  ...prev,
-                  {
-                    id: `CT-${Date.now()}`,
-                    name: "New Template",
-                    serviceType: serviceType as ChecklistTemplate["serviceType"],
-                    items: ["Add details..."],
-                  },
-                ])
-              }
-              className="inline-flex items-center gap-2 rounded-lg bg-[#163022] px-3 py-1.5 text-xs font-semibold text-white"
-            >
-              <Plus className="h-4 w-4" />
-              Create Template
-            </button>
+          <div className="mb-3 flex items-center justify-between border-b border-gray-50 pb-2">
+            <div className="text-sm font-bold uppercase tracking-wider text-gray-400">{serviceType}</div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {group.map((template) => (
-              <article key={template.id} className="rounded-xl border border-gray-200 bg-[#f9fafb] p-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold text-[#0f172a]">{template.name}</div>
+              <article key={template.id} className="rounded-xl border border-gray-200 bg-[#f9fafb] p-4 hover:border-gray-300 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-bold text-[#0f172a]">{template.name}</div>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!window.confirm("Delete template?")) return;
-                        setTemplates((prev) => prev.filter((t) => t.id !== template.id));
+                        try {
+                          await deleteMutation.mutateAsync({ id: template.id });
+                          queryClient.invalidateQueries({ queryKey: trpc.getChecklistTemplates.queryOptions().queryKey });
+                          toast.success("Template deleted");
+                        } catch (e) { toast.error("Failed to delete"); }
                       }}
-                      className="rounded-lg border border-gray-200 bg-white p-2 text-red-600"
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
-                      <Trash className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-                <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-gray-700">
+                <ul className="space-y-1 pl-4 text-sm text-gray-600 list-disc marker:text-gray-300">
                   {template.items.slice(0, 4).map((item, idx) => (
-                    <li key={idx}>{item}</li>
+                    <li key={idx}>{(item as any).description}</li>
                   ))}
                   {template.items.length > 4 && (
-                    <li className="text-xs text-gray-500">
-                      +{template.items.length - 4} more
+                    <li className="text-xs text-gray-500 font-medium italic">
+                      +{template.items.length - 4} more items
                     </li>
                   )}
                 </ul>
@@ -192,13 +207,254 @@ function ChecklistTab() {
           </div>
         </div>
       ))}
-      {templates.length === 0 && (
-        <div className="text-center py-12 text-gray-500">No templates found.</div>
+      {templates.length === 0 && !isCreating && (
+        <div className="text-center py-12 text-gray-400 italic bg-gray-50 rounded-2xl border border-dashed border-gray-200">No templates found. Create one to get started.</div>
       )}
     </div>
   );
 }
 
+function CreateChecklistForm({ onCancel, onSuccess }: { onCancel: () => void, onSuccess: () => void }) {
+  const trpc = useTRPC();
+  const createMutation = useMutation(trpc.createChecklistTemplate.mutationOptions());
+  const [items, setItems] = useState<string[]>([""]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const serviceType = formData.get("serviceType") as string;
+
+    const validItems = items.filter(i => i.trim() !== "").map((desc, idx) => ({ description: desc, order: idx }));
+
+    if (!name || !serviceType || validItems.length === 0) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      await createMutation.mutateAsync({
+        name,
+        serviceType,
+        items: validItems
+      });
+      toast.success("Template created!");
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
+      <h3 className="font-bold text-lg mb-4 text-[#163022]">New Checklist Template</h3>
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Template Name</label>
+          <input name="name" placeholder="e.g. Standard Kitchen" className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm" required />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Service Type</label>
+          <select name="serviceType" className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm" required>
+            <option value="REGULAR">Regular Clean</option>
+            <option value="DEEP">Deep Clean</option>
+            <option value="MOVE_IN_OUT">Move In/Out</option>
+            <option value="POST_CONSTRUCTION">Post Construction</option>
+          </select>
+        </div>
+      </div>
+
+      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Checklist Items</label>
+      <div className="space-y-2 mb-4 max-h-60 overflow-y-auto pr-2">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex gap-2">
+            <span className="text-gray-400 text-sm py-2 font-mono w-6 text-right">{idx + 1}.</span>
+            <input
+              value={item}
+              onChange={(e) => {
+                const newItems = [...items];
+                newItems[idx] = e.target.value;
+                setItems(newItems);
+              }}
+              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm"
+              placeholder="Task description..."
+              autoFocus={idx === items.length - 1}
+            />
+            <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-gray-400 hover:text-red-500 px-2"><X className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={() => setItems([...items, ""])} className="text-sm font-semibold text-[#163022] hover:underline mb-6 pl-8">+ Add Item</button>
+
+      <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+        <button type="button" onClick={onCancel} className="px-5 py-2 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100">Cancel</button>
+        <button type="submit" className="px-5 py-2 rounded-xl text-sm font-bold bg-[#163022] text-white hover:bg-[#0f241a]">Save Template</button>
+      </div>
+    </form>
+  )
+}
+
+function WebsiteTab() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  // SEO Queries
+  const seoQuery = useQuery(trpc.seo.getSEOMetadata.queryOptions());
+  const updateSEOMutation = useMutation(trpc.seo.updateSEOMetadata.mutationOptions());
+  const createSEOMutation = useMutation(trpc.seo.createSEOMetadata.mutationOptions());
+
+  // FAQ Queries
+  const faqQuery = useQuery(trpc.faq.getFaqs.queryOptions());
+  const createFaqMutation = useMutation(trpc.faq.createFaq.mutationOptions());
+  const deleteFaqMutation = useMutation(trpc.faq.deleteFaq.mutationOptions());
+
+  const [editingSEO, setEditingSEO] = useState(false);
+
+  // Find Home Page SEO ("/")
+  const homeSEO = (seoQuery.data as any[])?.find((m: any) => m.path === "/") || null;
+
+  const handleUpdateSEO = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      keywords: formData.get("keywords") as string,
+    };
+
+    try {
+      if (homeSEO) {
+        await updateSEOMutation.mutateAsync({ id: homeSEO.id, ...data });
+        toast.success("Home SEO updated");
+      } else {
+        await createSEOMutation.mutateAsync({ path: "/", ...data });
+        toast.success("Home SEO created");
+      }
+      queryClient.invalidateQueries({ queryKey: trpc.seo.getSEOMetadata.queryOptions().queryKey });
+      setEditingSEO(false);
+    } catch (err) {
+      toast.error("Failed to save SEO");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10"><Globe className="w-32 h-32 text-[#163022]" /></div>
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight relative z-10">
+          <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">SEO</span>
+          Home Page META
+        </h3>
+
+        {seoQuery.isLoading ? <Loader2 className="animate-spin text-gray-400" /> : (
+          <form onSubmit={handleUpdateSEO} className="relative z-10 grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">Site Title</label>
+              <input
+                name="title"
+                defaultValue={homeSEO?.title || "V-Luxe Cleaning | Premium Residential Cleaning"}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">Meta Keywords</label>
+              <input
+                name="keywords"
+                defaultValue={homeSEO?.keywords || "cleaning, luxury, residential, maid service, house cleaning"}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              />
+            </div>
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-sm font-semibold text-gray-700">Meta Description</label>
+              <textarea
+                name="description"
+                rows={2}
+                defaultValue={homeSEO?.description || "V-Luxe provides premium residential cleaning services with a focus on quality, reliability, and luxury experience."}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+              />
+            </div>
+            <div className="md:col-span-2 flex justify-end">
+              <button type="submit" className="rounded-xl bg-[#163022] px-6 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform flex items-center gap-2">
+                <Save className="w-4 h-4" /> Save SEO
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">FAQ</span>
+          Frequently Asked Questions
+        </h3>
+        <div className="space-y-3">
+          {(faqQuery.data as any[])?.map((faq: any) => (
+            <div key={faq.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 group relative hover:bg-white hover:shadow-sm transition-all">
+              <div className="flex justify-between items-start mb-2">
+                <div className="font-bold text-gray-900">{faq.question}</div>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Delete FAQ?")) return;
+                    await deleteFaqMutation.mutateAsync({ id: faq.id });
+                    queryClient.invalidateQueries({ queryKey: trpc.faq.getFaqs.queryOptions().queryKey });
+                  }}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="text-sm text-gray-600">{faq.answer}</div>
+            </div>
+          ))}
+
+          {/* Quick Add FAQ Form */}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const q = fd.get("question") as string;
+              const a = fd.get("answer") as string;
+              if (!q || !a) return;
+
+              try {
+                await createFaqMutation.mutateAsync({ question: q, answer: a, category: "General" });
+                (e.target as HTMLFormElement).reset();
+                queryClient.invalidateQueries({ queryKey: trpc.faq.getFaqs.queryOptions().queryKey });
+                toast.success("FAQ Added");
+              } catch (err) { toast.error("Failed to add FAQ"); }
+            }}
+            className="mt-4 p-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50"
+          >
+            <input name="question" placeholder="New Question..." className="w-full bg-transparent font-bold text-sm mb-2 outline-none placeholder:text-gray-400" required />
+            <textarea name="answer" placeholder="Answer..." rows={2} className="w-full bg-transparent text-sm text-gray-600 outline-none resize-none placeholder:text-gray-300" required />
+            <div className="flex justify-end mt-2">
+              <button type="submit" className="text-xs font-bold text-[#163022] bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all">+ Add FAQ</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {/* Keeping Legal as Mock for now since no backend yet */}
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm opacity-60 pointer-events-none grayscale">
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">Coming Soon to Backend</span>
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">LGL</span>
+          Legal & Policy Pages
+        </h3>
+        <div className="space-y-4 blur-[2px]">
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-gray-700">Privacy Policy</label>
+            <textarea rows={2} defaultValue="..." className="w-full rounded-xl border border-gray-200 px-4 py-2" />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// Pricing Tab Logic (Reused from previous step)
 function PricingTab() {
   const [isCreating, setIsCreating] = useState(false);
   const trpc = useTRPC();
@@ -492,6 +748,7 @@ function PricingRuleForm({ initialData, onSubmit, onCancel }: { initialData?: an
   );
 }
 
+// Keeping Billing as Mock for now
 function BillingTab() {
   const [billing, setBilling] = useState<BillingConfig | null>(null);
 
@@ -557,114 +814,6 @@ function BillingTab() {
           {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
             <DayAvailability key={day} day={day} />
           ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function WebsiteTab() {
-  return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
-          <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">SEO</span>
-          SEO & Meta Tags
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gray-700">Site Title</label>
-            <input
-              type="text"
-              defaultValue="V-Luxe Cleaning | Premium Residential Cleaning"
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gray-700">Meta Keywords</label>
-            <input
-              type="text"
-              defaultValue="cleaning, luxury, residential, maid service, house cleaning"
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            />
-          </div>
-          <div className="md:col-span-2 space-y-1">
-            <label className="text-sm font-semibold text-gray-700">Meta Description</label>
-            <textarea
-              rows={2}
-              defaultValue="V-Luxe provides premium residential cleaning services with a focus on quality, reliability, and luxury experience."
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
-            />
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <button className="rounded-xl bg-[#163022] px-6 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
-            Update SEO
-          </button>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
-          <span className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">FAQ</span>
-          Frequently Asked Questions
-        </h3>
-        <div className="space-y-3">
-          {[
-            { q: "Do you bring your own supplies?", a: "Yes, we provide all eco-friendly cleaning supplies and professional equipment." },
-            { q: "What is your cancellation policy?", a: "Cancellations must be made at least 24 hours in advance to avoid a fee." },
-          ].map((faq, i) => (
-            <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 group relative">
-              <div className="flex justify-between items-start mb-2">
-                <input
-                  type="text"
-                  defaultValue={faq.q}
-                  className="bg-transparent font-bold text-gray-900 outline-none w-full border-none p-0 focus:ring-0"
-                />
-                <button className="text-gray-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100">
-                  <Trash className="w-4 h-4" />
-                </button>
-              </div>
-              <textarea
-                rows={2}
-                defaultValue={faq.a}
-                className="bg-transparent text-sm text-gray-600 outline-none w-full border-none p-0 focus:ring-0 resize-none"
-              />
-            </div>
-          ))}
-          <button className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 font-bold text-sm hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2">
-            <Plus className="w-4 h-4" /> Add Question
-          </button>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
-          <span className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">LGL</span>
-          Legal & Policy Pages
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gray-700">Privacy Policy (Markdown/HTML)</label>
-            <textarea
-              rows={6}
-              defaultValue="# Privacy Policy\n\nYour privacy is important to us..."
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gray-700">Terms of Service (Markdown/HTML)</label>
-            <textarea
-              rows={6}
-              defaultValue="# Terms of Service\n\nBy using our services, you agree..."
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            />
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <button className="rounded-xl bg-gray-900 px-6 py-2 text-sm font-bold text-white shadow-lg hover:scale-[1.02] transition-transform">
-            Save Legal Documents
-          </button>
         </div>
       </section>
     </div>
