@@ -1,11 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
-import { env } from "./env";
+// import { env } from "./env";
+import { createClient } from "@supabase/supabase-js";
 
 // Server-side Supabase client for auth/admin operations.
-export const supabaseServer = (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+export const supabaseServer = (supabaseUrl && supabaseKey)
   ? createClient(
-    env.SUPABASE_URL,
-    env.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseUrl,
+    supabaseKey,
     {
       auth: {
         autoRefreshToken: false,
@@ -17,4 +21,5 @@ export const supabaseServer = (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseServer) {
   console.error("❌ Supabase Server Client failed to initialize: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  console.error("Values:", { url: !!supabaseUrl, key: !!supabaseKey });
 }
