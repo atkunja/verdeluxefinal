@@ -15,6 +15,8 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   VITE_STRIPE_PUBLISHABLE_KEY: z.string().optional(), // Browser key
+  VITE_GOOGLE_PLACES_KEY: z.string().optional(),
+  VITE_GOOGLE_MAPS_API_KEY: z.string().optional(),
   VITE_API_BASE_URL: z.string().optional(),
   VITE_BASE_URL: z.string().optional(),
   BASE_URL: z.string().optional(),

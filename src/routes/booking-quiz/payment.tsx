@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import toast from "react-hot-toast";
 import { BookingWizardProvider, useBookingDraft } from "~/components/bookings/wizard/BookingWizardProvider";
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/booking-quiz/payment")({
   component: PaymentPage,
 });
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+// No longer using top-level loadStripe because env vars may be missing at build time
 
 function StripeSetupForm({ onComplete }: { onComplete: (setupIntentId: string) => void }) {
   const stripe = useStripe();
@@ -58,6 +58,18 @@ function StripeSetupForm({ onComplete }: { onComplete: (setupIntentId: string) =
 function PaymentContent() {
   const navigate = useNavigate();
   const trpc = useTRPC();
+
+  const { data: config } = useQuery(trpc.system.getPublicConfig.queryOptions(undefined, {
+    staleTime: Infinity,
+  }));
+
+  const stripeKey = (config?.stripePublishableKey || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) as string | undefined;
+
+  const stripePromise = useMemo(() => {
+    if (!stripeKey) return null;
+    return loadStripe(stripeKey);
+  }, [stripeKey]);
+
   const { draft, updateDraft } = useBookingDraft();
   const [clientSecret, setClientSecret] = React.useState<string | null>(null);
   const [setupIntentId, setSetupIntentId] = React.useState<string | null>(null);
@@ -107,7 +119,7 @@ function PaymentContent() {
         <div className="rounded-2xl border border-[#e3ded2] bg-white p-5">
           <div className="text-sm font-semibold text-[#163022]">Payment method</div>
           <p className="mt-2 text-sm text-[#5c5a55]">We'll only store your card for the upcoming booking. No charge in dev.</p>
-          {import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY && clientSecret ? (
+          {stripePromise && clientSecret ? (
             <Elements stripe={stripePromise} options={{ clientSecret }}>
               <StripeSetupForm
                 onComplete={(intentId) => {
@@ -118,7 +130,7 @@ function PaymentContent() {
             </Elements>
           ) : (
             <div className="mt-4 rounded-xl border border-dashed border-[#e3ded2] px-4 py-3 text-sm text-[#5c5a55]">
-              Add `VITE_STRIPE_PUBLISHABLE_KEY` to enable payment collection.
+              {!stripeKey ? "Loading payment system..." : "Add `VITE_STRIPE_PUBLISHABLE_KEY` to enable payment collection."}
             </div>
           )}
           <div className="mt-4 flex gap-2 text-xs text-[#5c5a55]">
