@@ -29,15 +29,24 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
     portalType === "admin"
       ? "/admin-portal"
       : portalType === "cleaner"
-      ? "/cleaner-portal"
-      : "/client-portal";
+        ? "/cleaner-portal"
+        : "/client-portal";
 
   // Define navigation items based on portal type
   const getNavItems = (): NavItem[] => {
     if (portalType === "admin") {
       return [
         { label: "Dashboard", view: "dashboard", icon: LayoutDashboard },
-        { label: "Calendar", view: "calendar", icon: Calendar },
+        {
+          label: "Bookings",
+          view: "bookings-group",
+          icon: Calendar, // Using Calendar as the group icon
+          subItems: [
+            { label: "Calendar", view: "calendar", icon: Calendar, routePath: "/admin-portal?view=calendar" }, // Assuming query param logic for calendar
+            { label: "Charges", view: "booking-charges", icon: DollarSign, routePath: "/admin-portal/booking-charges" },
+            { label: "All Bookings", view: "bookings", icon: Package, routePath: "/admin-portal/bookings" }, // Assuming a list view exists or we add it
+          ]
+        },
         {
           label: "Management",
           view: "management",
@@ -52,13 +61,12 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
         { label: "Reports", view: "reports", icon: BarChart2 },
         { label: "Phone", view: "phone", icon: Phone },
         {
-          label: "Charges",
-          view: "charges",
+          label: "Finance",
+          view: "finance",
           icon: DollarSign,
           subItems: [
-            { label: "Booking Charges", view: "booking-charges", icon: DollarSign, routePath: "/admin-portal/booking-charges" },
-            { label: "Bank Transactions", view: "bank-transactions", icon: DollarSign, routePath: "/admin-portal/bank-transactions" },
-            { label: "Billing", view: "billing", icon: Settings, routePath: "/admin-portal/billing" },
+            { label: "Bank Transactions", view: "bank-transactions", icon: ClipboardList, routePath: "/admin-portal/bank-transactions" },
+            { label: "Billing Settings", view: "billing", icon: Settings, routePath: "/admin-portal/billing" },
           ],
         },
         {
@@ -128,28 +136,59 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-[70px] left-0 h-[calc(100vh-70px)] w-20 bg-white border-r border-gray-200 shadow-sm z-[998] transition-transform duration-300 ease-in-out ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className={`fixed top-[70px] left-0 h-[calc(100vh-70px)] w-20 bg-white border-r border-gray-200 shadow-sm z-[998] transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
       >
         <div className="flex flex-col h-full items-center py-6">
           {/* Navigation Items */}
-          <nav className="flex-1 w-full space-y-2 overflow-y-auto">
+          <nav className="flex-1 w-full space-y-2 overflow-visible">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const active = isActive(item.view, item.routePath);
+              const active = isActive(item.view, item.routePath) || (item.subItems?.some(sub => isActive(sub.view, sub.routePath)) ?? false);
+
               return (
-                <Link
-                  key={item.view}
-                  to={item.routePath || baseRoute}
-                  search={item.routePath ? undefined : { view: item.view }}
-                  className={`mx-3 flex items-center justify-center h-12 rounded-xl transition-all duration-200 ${
-                    active ? "bg-primary text-white shadow-md" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Icon className="w-6 h-6" />
-                </Link>
+                <div key={item.view} className="relative group px-3">
+                  <Link
+                    to={item.routePath || (item.subItems ? item.subItems[0].routePath || baseRoute : baseRoute)}
+                    search={item.routePath ? undefined : (item.subItems ? (item.subItems[0].routePath ? undefined : { view: item.subItems[0].view }) : { view: item.view })}
+                    className={`flex items-center justify-center h-12 rounded-xl transition-all duration-200 relative z-10 ${active ? "bg-[#163022] text-white shadow-md shadow-[#163022]/20" : "text-gray-500 hover:bg-gray-100 group-hover:bg-gray-50 group-hover:text-[#163022]"
+                      }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Icon className="w-6 h-6" />
+                  </Link>
+
+                  {/* Hover Submenu */}
+                  {item.subItems && (
+                    <div className="absolute left-full top-0 ml-3 hidden group-hover:block z-50">
+                      <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200 slide-in-from-left-2">
+                        <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50 mb-1">
+                          {item.label}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {item.subItems.map((sub) => {
+                            const isSubActive = isActive(sub.view, sub.routePath);
+                            const SubIcon = sub.icon;
+                            return (
+                              <Link
+                                key={sub.view}
+                                to={sub.routePath || baseRoute}
+                                search={sub.routePath ? undefined : { view: sub.view }}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isSubActive
+                                  ? "bg-[#163022] text-white shadow-sm"
+                                  : "text-gray-600 hover:bg-gray-50 hover:text-[#163022]"
+                                  }`}
+                              >
+                                {SubIcon && <SubIcon className="h-4 w-4" />}
+                                {sub.label}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -157,7 +196,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
           {/* Avatar at bottom */}
           <div className="mt-auto pb-2">
             {user ? (
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
+              <div className="w-10 h-10 rounded-full bg-[#163022] text-white flex items-center justify-center font-semibold text-sm shadow-md ring-2 ring-white">
                 {user.firstName?.[0] || user.email?.[0] || "U"}
               </div>
             ) : (
