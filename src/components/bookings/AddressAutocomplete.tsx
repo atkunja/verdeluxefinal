@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "~/trpc/react";
+import type { BookingDraft } from "./wizard/bookingDraft";
+
+type AddressComponent = BookingDraft["address"];
 
 declare global {
   interface Window {
@@ -84,23 +89,32 @@ export function AddressAutocomplete({
   const [localValue, setLocalValue] = useState(value);
   const [placesReady, setPlacesReady] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const googleApiKey = (import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY) as string | undefined;
+
+  const trpc = useTRPC();
+  const getPublicConfig = useQuery(trpc.system.getPublicConfig.queryOptions(undefined, {
+    staleTime: Infinity,
+  }));
+  const config = getPublicConfig.data;
+
+  const googleApiKey = (config?.googlePlacesKey || import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY) as string | undefined;
 
   // Loud debug for API key
   useEffect(() => {
     if (enablePlaces) {
       console.log("[AddressAutocomplete] Environment Check:", {
+        source: config ? "TRPC Server" : "Browser Env (Fallback)",
         hasGoogleKey: !!googleApiKey,
-        hasStripeKey: !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
         googleKeyPrefix: googleApiKey ? googleApiKey.substring(0, 4) : "NONE",
       });
       if (googleApiKey) {
-        console.log("%c[AddressAutocomplete] API Key DETECTED:", "color: #00ff00; font-weight: bold;", googleApiKey.substring(0, 8) + "...");
+        console.log("%c[AddressAutocomplete] API Key READY:", "color: #00ff00; font-weight: bold;", googleApiKey.substring(0, 8) + "...");
+      } else if (getPublicConfig.isLoading) {
+        console.log("[AddressAutocomplete] Waiting for TRPC config...");
       } else {
-        console.warn("%c[AddressAutocomplete] API Key MISSING in browser environment", "color: #ff0000; font-weight: bold;");
+        console.warn("%c[AddressAutocomplete] API Key MISSING everywhere", "color: #ff0000; font-weight: bold;");
       }
     }
-  }, [enablePlaces, googleApiKey]);
+  }, [enablePlaces, googleApiKey, config, getPublicConfig.isLoading]);
 
   // Stable refs for handlers to avoid re-initializing autocomplete on every keystroke
   const handlersRef = useRef({ onChange, onSelect, onPlaceSelect });
