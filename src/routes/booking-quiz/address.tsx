@@ -31,7 +31,7 @@ function AddressStepContent() {
   const navigate = useNavigate();
   const { draft, updateDraft } = useBookingDraft();
   const [addressSelected, setAddressSelected] = React.useState(Boolean(draft.address.formatted));
-  const [hasInteracted, setHasInteracted] = React.useState(false);
+  const [showErrors, setShowErrors] = React.useState(false);
   const hasPlacesKey = Boolean(import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   React.useEffect(() => {
@@ -41,7 +41,6 @@ function AddressStepContent() {
   const handleOnChange = React.useCallback((value: string) => {
     updateDraft({ address: { ...draft.address, formatted: value, city: undefined } });
     setAddressSelected(false);
-    setHasInteracted(true);
   }, [updateDraft, draft.address]);
 
   const handleOnSelect = React.useCallback((value: string) => {
@@ -110,7 +109,7 @@ function AddressStepContent() {
         </div>
       )}
 
-      {!hasValidInput && draft.address.formatted && hasPlacesKey && hasInteracted && addressValue.length > 3 && (
+      {!hasValidInput && draft.address.formatted && hasPlacesKey && showErrors && (
         <p className="text-sm text-red-600">Please pick an address from suggestions.</p>
       )}
 
@@ -118,11 +117,14 @@ function AddressStepContent() {
         type="button"
         className={`${buttonPrimary} mt-6 w-full md:w-auto`}
         onClick={() => {
-          if (!canProceed) return;
+          if (!canProceed) {
+            setShowErrors(true);
+            return;
+          }
           bookingAnalytics.selectionMade("address", draft.address.formatted);
           navigate({ to: "/booking-quiz/clean/type" });
         }}
-        disabled={!canProceed}
+        disabled={false} // Don't disable, let the error show on click
       >
         Get Started &rarr;
       </button>
