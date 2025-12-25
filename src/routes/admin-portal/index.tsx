@@ -3,10 +3,8 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { dashboardOverviewMock } from "~/mocks/adminPortal";
-import { chargeBooking } from "~/api/adminPortal";
 import { useAuthStore } from "~/stores/authStore";
-import { CalendarDays, CreditCard, TrendingDown, TrendingUp, CheckCircle, UserPlus, Mail, AlertCircle, ArrowRight } from "lucide-react";
+import { CalendarDays, CreditCard, TrendingDown, TrendingUp, CheckCircle, UserPlus, Mail, AlertCircle, ArrowRight, DollarSign } from "lucide-react";
 
 export const Route = createFileRoute("/admin-portal/")({
   component: AdminDashboardPage,
@@ -30,7 +28,6 @@ function StatCard({
   const positive = changePct >= 0;
   return (
     <div className="group relative overflow-hidden rounded-3xl border border-white/40 bg-white/60 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 opacity-50 transition-transform group-hover:scale-110" />
       <div className="relative flex items-start justify-between">
         <div>
           <div className="text-sm font-medium text-gray-500 uppercase tracking-wider">{label}</div>
@@ -39,16 +36,14 @@ function StatCard({
           </div>
           <div className="mt-4 flex items-center gap-2">
             <div
-              className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${positive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-                }`}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${positive ? "text-emerald-700" : "text-rose-700"}`}
             >
               {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {Math.abs(changePct)}%
+              {Math.abs(changePct)}% vs last month
             </div>
-            <span className="text-xs text-gray-400">vs last month</span>
           </div>
         </div>
-        <div className={`rounded-2xl bg-white p-3 shadow-sm border border-gray-100 ${colorClass}`}>
+        <div className={`rounded-2xl p-3 shadow-sm border border-gray-100 ${colorClass} bg-white`}>
           <Icon className="h-6 w-6" />
         </div>
       </div>
@@ -76,7 +71,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
 
   const normalized = points.map((p) => ((p - min) / range) * chartHeight);
 
-  // Create smooth bezier curve path
   const createSmoothPath = () => {
     const pts = normalized.map((y, idx) => ({
       x: paddingX + idx * step,
@@ -107,7 +101,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
   const linePath = createSmoothPath();
   const areaPath = linePath + ` L ${paddingX + (points.length - 1) * step} ${height - paddingY} L ${paddingX} ${height - paddingY} Z`;
 
-  // Check if trend is positive
   const isPositive = points[points.length - 1] >= points[0];
 
   return (
@@ -125,8 +118,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
             <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} />
           </linearGradient>
         </defs>
-
-        {/* Grid lines */}
         {[0, 1, 2, 3].map(i => (
           <line
             key={i}
@@ -139,11 +130,7 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
             strokeDasharray="4 4"
           />
         ))}
-
-        {/* Area fill */}
         <path d={areaPath} fill="url(#chartGradient)" />
-
-        {/* Line */}
         <path
           d={linePath}
           fill="none"
@@ -152,8 +139,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-
-        {/* Interactive dots */}
         {normalized.map((y, idx) => (
           <g
             key={idx}
@@ -161,7 +146,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
             onMouseLeave={() => setHoveredIdx(null)}
             className="cursor-pointer"
           >
-            {/* Larger invisible hit area */}
             <circle
               cx={paddingX + idx * step}
               cy={height - paddingY - y}
@@ -179,8 +163,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
             />
           </g>
         ))}
-
-        {/* Hover tooltip */}
         {hoveredIdx !== null && (
           <g>
             <rect
@@ -205,8 +187,6 @@ function StockChart({ points, labels }: { points: number[]; labels: string[] }) 
           </g>
         )}
       </svg>
-
-      {/* Labels */}
       <div className="flex justify-between px-2 text-[10px] font-medium uppercase tracking-wider text-gray-400">
         {labels.map((l, i) => (
           <span key={i} className={hoveredIdx === i ? "text-gray-700 font-bold" : ""}>{l}</span>
@@ -269,15 +249,16 @@ function AdminDashboardPage() {
   return (
     <AdminShell
       title={`Hello, ${firstName}!`}
-      subtitle="Here is what's happening with Verde Luxe today."
+      subtitle="Manage your cleaning business overview."
     >
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Stats Row */}
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
         <StatCard
           label="Monthly Revenue"
           value={statsQuery.data?.currentMonthRevenue ?? 0}
           previous={statsQuery.data?.previousMonthRevenue ?? 0}
           changePct={revenueChangePct}
-          icon={CreditCard}
+          icon={DollarSign}
           colorClass="text-emerald-600"
         />
         <StatCard
@@ -288,96 +269,21 @@ function AdminDashboardPage() {
           icon={CalendarDays}
           colorClass="text-indigo-600"
         />
-        <div className="rounded-3xl border border-white/40 bg-white/60 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium text-gray-500 uppercase tracking-wider">My Calendar</div>
-              <div className="text-xl font-bold text-[#0f172a]">
-                {new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(todaysDate)}
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white p-2.5 shadow-sm border border-gray-100 text-[#163022]">
-              <CalendarDays className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-7 gap-1.5 text-center">
-            {Array.from({ length: 7 }).map((_, idx) => {
-              const day = new Date(todaysDate);
-              day.setDate(todaysDate.getDate() + idx);
-              const isToday = idx === 0;
-              const isSelected = selectedDate.toDateString() === day.toDateString();
-              const dayBookings = statsQuery.data?.upcomingAppointments.filter(job => {
-                const jobDate = new Date(job.scheduledDate);
-                return jobDate.toDateString() === day.toDateString();
-              }) || [];
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedDate(new Date(day))}
-                  className={`rounded-xl py-2 transition-all cursor-pointer relative ${isSelected
-                    ? "bg-[#163022] text-white shadow-md ring-2 ring-[#163022]/30"
-                    : isToday
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-gray-50/50 text-gray-600 hover:bg-gray-100/50"
-                    }`}
-                >
-                  <div className={`text-[10px] font-bold uppercase ${isSelected ? "text-white/80" : isToday ? "text-emerald-600" : "text-gray-400"}`}>
-                    {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(day)[0]}
-                  </div>
-                  <div className="text-sm font-bold">{day.getDate()}</div>
-                  {dayBookings.length > 0 && (
-                    <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full text-[9px] font-bold flex items-center justify-center ${isSelected ? "bg-white text-[#163022]" : "bg-[#163022] text-white"}`}>
-                      {dayBookings.length}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected Day Bookings */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="text-xs font-bold uppercase text-gray-500 mb-2">
-              {new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" }).format(selectedDate)}
-            </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {statsQuery.data?.upcomingAppointments
-                .filter(job => new Date(job.scheduledDate).toDateString() === selectedDate.toDateString())
-                .map(job => (
-                  <button
-                    key={job.id}
-                    onClick={() => navigate({ to: "/admin-portal/bookings" })}
-                    className="w-full text-left rounded-lg bg-gray-50 p-2 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-700">{job.scheduledTime}</span>
-                      <span className="text-xs font-bold text-[#163022]">${(job.finalPrice ?? 0).toFixed(0)}</span>
-                    </div>
-                    <div className="text-xs text-gray-600 truncate">
-                      {job.client.firstName} {job.client.lastName}
-                    </div>
-                  </button>
-                )) ?? []}
-              {(statsQuery.data?.upcomingAppointments.filter(job =>
-                new Date(job.scheduledDate).toDateString() === selectedDate.toDateString()
-              ).length ?? 0) === 0 && (
-                  <div className="text-xs text-gray-400 italic py-2 text-center">No bookings</div>
-                )}
-            </div>
-          </div>
-        </div>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border border-white/40 bg-white/60 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md lg:col-span-2">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-[#0f172a]">Revenue Trends</h3>
-              <p className="text-sm text-gray-500">Performance over the last 6 months</p>
+      {/* Main 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Column 1: Revenue Overview */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-fit">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-bold text-gray-900">Revenue Overview</h3>
+            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
+              <TrendingUp className="h-4 w-4" />
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm border border-gray-100">
-              <TrendingUp className="h-5 w-5 text-[#163022]" />
-            </div>
+          </div>
+          <div className="mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Last 6 months</span>
           </div>
           <StockChart
             points={statsQuery.data?.revenueTrends.map((t) => t.revenue) ?? []}
@@ -385,166 +291,164 @@ function AdminDashboardPage() {
           />
         </div>
 
-        <div className="rounded-3xl border border-white/40 bg-white/60 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md">
-          <div className="mb-4 flex items-center justify-between px-1">
-            <h3 className="text-lg font-bold text-[#0f172a]">Pending Charges</h3>
-            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-100">
-              {pendingChargesQuery.data?.length ?? 0}
-            </span>
-          </div>
-          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-            {pendingChargesQuery.data?.map((charge) => (
-              <div key={charge.id} className="group rounded-2xl border border-gray-100 bg-white p-4 transition-all hover:border-gray-200 hover:shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-bold text-[#0f172a]">{charge.customer.name}</div>
-                    <div className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wider">
-                      {charge.serviceDate} • {charge.serviceTime}
-                    </div>
-                  </div>
-                  <div className="text-right ml-4">
-                    <div className="text-base font-bold text-[#163022]">${charge.amount.toFixed(2)}</div>
-                    <button
-                      onClick={() => handleCharge(charge.id, charge.customer.id, charge.customer.name, charge.amount)}
-                      disabled={chargeMutation.isPending}
-                      className="mt-2 inline-flex items-center rounded-xl bg-[#163022] px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[#10271b] hover:shadow-md disabled:opacity-50"
-                    >
-                      {chargeMutation.isPending ? "..." : "Charge"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {pendingChargesQuery.isLoading && <div className="py-8 text-center text-sm text-gray-400 italic">Finding charges...</div>}
-            {pendingChargesQuery.data?.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 rounded-2xl bg-gray-50 p-4">
-                  <CheckCircle className="h-6 w-6 text-gray-300" />
-                </div>
-                <p className="text-sm font-medium text-gray-400 italic">All jobs are squared away!</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border border-white/40 bg-white/60 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md lg:col-span-1 min-h-[460px]">
-          <div className="mb-6 flex items-center justify-between px-1">
-            <h3 className="text-lg font-bold text-[#0f172a]">Action Center</h3>
-            <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 border border-rose-100">
-              {tasksQuery.data?.length ?? 0}
-            </span>
-          </div>
-          <div className="space-y-4 max-h-[360px] overflow-y-auto pr-2 custom-scrollbar">
-            {tasksQuery.data?.map((task) => {
-              const parts = task.color.split(' ');
-              const bgColor = parts[0] || 'bg-gray-100';
-              const textColor = parts[1] || 'text-gray-700';
-              const borderColor = parts[2] || 'border-gray-200';
-
-              // Get appropriate icon based on task type
-              const getIcon = () => {
-                if (task.id.startsWith('unassigned')) return <UserPlus className="h-5 w-5" />;
-                if (task.id.startsWith('lead')) return <Mail className="h-5 w-5" />;
-                if (task.id.startsWith('charge')) return <CreditCard className="h-5 w-5" />;
-                return <AlertCircle className="h-5 w-5" />;
-              };
-
-              return (
-                <button
-                  key={task.id}
-                  onClick={() => navigate({ to: (task as any).actionUrl || "/admin-portal/bookings" })}
-                  className={`w-full flex items-start gap-4 rounded-2xl border ${borderColor} bg-white p-4 transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer text-left group`}
-                >
-                  <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bgColor} ${textColor}`}>
-                    {getIcon()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-[#0f172a]">{task.title}</div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${bgColor} ${textColor}`}>
-                        {task.time}
-                      </span>
-                    </div>
-                    <div className="mt-1 text-xs leading-relaxed text-gray-500">{task.description}</div>
-                    <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#163022] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>Take Action</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-            {tasksQuery.isLoading && <div className="py-12 text-center text-sm text-gray-400 italic">Busy organizing...</div>}
-            {tasksQuery.data?.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-4 rounded-3xl bg-emerald-50 p-6">
-                  <CheckCircle className="h-10 w-10 text-emerald-500" />
-                </div>
-                <h4 className="text-sm font-bold text-gray-900">Inbox Zero!</h4>
-                <p className="mt-1 text-xs text-gray-400">Everything is up to date.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/40 bg-white/60 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md lg:col-span-2">
-          <div className="mb-6 flex items-center justify-between px-1">
+        {/* Column 2: Pending Charges */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-fit">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-[#0f172a]">Upcoming Jobs</h3>
-              <p className="text-sm text-gray-500">Next 10 service appointments</p>
+              <h3 className="font-bold text-gray-900">Pending Charges</h3>
+              <p className="text-xs text-gray-500 mt-1">{pendingChargesQuery.data?.length ?? 0} jobs ready to charge</p>
             </div>
-            <Link to="/admin-portal/bookings" className="text-xs font-bold text-[#163022] hover:underline">View All</Link>
+            <div className="bg-yellow-50 text-yellow-600 p-2 rounded-xl">
+              <DollarSign className="h-4 w-4" />
+            </div>
           </div>
-          <div className="space-y-3 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
-            {statsQuery.data?.upcomingAppointments.map((job) => (
-              <div key={job.id} className="group flex items-center justify-between rounded-2xl border border-gray-50 bg-white p-4 transition-all hover:border-gray-100 hover:shadow-md">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 transition-colors group-hover:bg-[#163022]/5 group-hover:text-[#163022]">
-                    <CalendarDays className="h-6 w-6" />
+
+          <div className="space-y-4">
+            {pendingChargesQuery.data?.map((charge) => (
+              <div key={charge.id} className="flex items-center justify-between pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <UserPlus className="h-4 w-4 text-gray-400" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-[#0f172a]">
-                      {job.client.firstName} {job.client.lastName}
-                    </div>
-                    <div className="mt-0.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{job.serviceType}</div>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                      <span>{new Date(job.scheduledDate).toLocaleDateString()}</span>
-                      <span className="h-1 w-1 rounded-full bg-gray-300" />
-                      <span>{job.scheduledTime}</span>
+                    <div className="text-sm font-bold text-gray-900">{charge.customer.name}</div>
+                    <div className="text-xs text-gray-500">{charge.serviceType || 'Standard Cleaning'}</div>
+                    <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3" />
+                      {charge.serviceDate}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  {job.cleaner && (
-                    <div className="hidden items-center gap-2 sm:flex">
-                      <span
-                        className="inline-flex items-center gap-2 rounded-full border border-current border-opacity-10 px-3 py-1 text-[11px] font-bold"
-                        style={{ backgroundColor: `${job.cleaner.color ?? "#000000"}08`, color: job.cleaner.color ?? "#000000" }}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: job.cleaner.color ?? "#000000" }} />
-                        {job.cleaner.firstName}
-                      </span>
-                    </div>
-                  )}
-                  <div className="min-w-[80px] text-right">
-                    <div className="text-base font-bold text-[#0f172a]">${(job.finalPrice ?? 0).toFixed(0)}</div>
-                    <div className={`mt-0.5 text-[10px] font-bold uppercase tracking-widest ${job.paymentStatus === "Paid" ? "text-emerald-600" : "text-amber-600"}`}>
-                      {job.paymentStatus ?? "Unpaid"}
-                    </div>
-                  </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-emerald-600 mb-2">${charge.amount.toFixed(2)}</div>
+                  <button
+                    onClick={() => handleCharge(charge.id, charge.customer.id, charge.customer.name, charge.amount)}
+                    disabled={chargeMutation.isPending}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {chargeMutation.isPending ? "..." : "$ Charge"}
+                  </button>
                 </div>
               </div>
             ))}
-            {statsQuery.isLoading && <div className="py-12 text-center text-sm text-gray-400 italic">Syncing with calendar...</div>}
-            {(!statsQuery.data?.upcomingAppointments || statsQuery.data.upcomingAppointments.length === 0) && (
-              <div className="flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                <p className="text-sm font-medium text-gray-400">No upcoming jobs found.</p>
+            {(!pendingChargesQuery.data || pendingChargesQuery.data.length === 0) && (
+              <div className="text-center py-8 text-gray-400 text-sm italic">
+                No pending charges
+              </div>
+            )}
+            {(pendingChargesQuery.data?.length ?? 0) > 5 && (
+              <div className="text-center pt-2">
+                <span className="text-xs text-gray-400 font-medium">+{(pendingChargesQuery.data?.length ?? 0) - 5} more pending charges</span>
               </div>
             )}
           </div>
         </div>
+
+        {/* Column 3: Calendar */}
+        <div className="space-y-6">
+          {/* Calendar Card */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-bold text-gray-900">My Calendar</h3>
+                <p className="text-xs text-gray-500 mt-1">Personal tasks & reminders</p>
+              </div>
+              <div className="bg-purple-50 text-purple-600 p-2 rounded-xl">
+                <CalendarDays className="h-4 w-4" />
+              </div>
+            </div>
+
+            {/* Big Date Card */}
+            <div className="bg-[#163022] rounded-xl p-4 text-white mb-6">
+              <div className="text-xs opacity-80 uppercase tracking-wider">{new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(selectedDate)}</div>
+              <div className="text-4xl font-bold mt-1">{selectedDate.getDate()}</div>
+              <div className="text-xs opacity-80 mt-1">{new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(selectedDate)}</div>
+            </div>
+
+            {/* Week Row */}
+            <div className="grid grid-cols-7 gap-1 text-center mb-6">
+              {Array.from({ length: 7 }).map((_, idx) => {
+                const day = new Date(todaysDate);
+                day.setDate(todaysDate.getDate() + idx);
+                const isSelected = selectedDate.toDateString() === day.toDateString();
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedDate(new Date(day))}
+                    className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isSelected ? 'bg-[#163022] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                  >
+                    <span className="text-[10px] font-bold uppercase">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
+                    <span className={`text-sm font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{day.getDate()}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Today's Tasks */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className="h-4 w-4 text-gray-400" />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Today's Tasks</span>
+              </div>
+              <div className="space-y-2">
+                {/* Integrate Action Center tasks here effectively */}
+                {tasksQuery.data?.slice(0, 3).map(task => {
+                  const parts = task.color.split(' ');
+                  const bgColor = parts[0] || 'bg-gray-100';
+                  const textColor = parts[1] || 'text-gray-700';
+
+                  return (
+                    <div key={task.id} className={`p-3 rounded-xl border border-gray-100 ${bgColor} bg-opacity-30`}>
+                      <div className="flex justify-between items-start">
+                        <div className="text-xs font-bold text-gray-900 line-clamp-1">{task.title}</div>
+                        <div className="text-[10px] text-gray-500">{task.time}</div>
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-1 line-clamp-1">{task.description}</div>
+                    </div>
+                  )
+                })}
+                {(!tasksQuery.data || tasksQuery.data.length === 0) && (
+                  <div className="text-xs text-gray-400 italic">No tasks for today</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Upcoming Jobs Widget - Moved to match layout better vertically */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">Upcoming Jobs</h3>
+              <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
+                <CalendarDays className="h-4 w-4" />
+              </div>
+            </div>
+
+            {statsQuery.data?.upcomingAppointments.slice(0, 2).map((job) => (
+              <div key={job.id} className="mb-4 last:mb-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <UserPlus className="h-4 w-4 text-gray-500" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-900">{job.client.firstName} {job.client.lastName}</div>
+                    <div className="text-[10px] text-gray-500">{job.serviceType}</div>
+                  </div>
+                </div>
+                <div className="pl-11 text-[10px] text-gray-400">
+                  {new Date(job.scheduledDate).toLocaleDateString()} • {job.scheduledTime}
+                </div>
+              </div>
+            ))}
+            {(!statsQuery.data?.upcomingAppointments || statsQuery.data.upcomingAppointments.length === 0) && (
+              <div className="text-center py-4">
+                <CalendarDays className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                <div className="text-xs text-gray-400">No jobs scheduled</div>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </AdminShell>
   );
