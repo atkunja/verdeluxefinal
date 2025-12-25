@@ -5,6 +5,8 @@ import { AdminShell } from "~/components/admin/AdminShell";
 import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import toast from "react-hot-toast";
+import { BillingConfig, ChecklistTemplate } from "~/mocks/adminPortal";
+import { getBillingConfig, listChecklistTemplates } from "~/api/adminPortal";
 
 type SettingsTab = "checklist" | "pricing" | "billing" | "website" | "leadSources";
 
@@ -52,8 +54,7 @@ function SettingsPage() {
     >
       {tab === "checklist" && <ChecklistTab />}
       {tab === "pricing" && <PricingTab />}
-
-      {tab === "billing" && <BillingTab />} {/* Placeholder for existing billing tab if needed */}
+      {tab === "billing" && <BillingTab />}
       {tab === "website" && <WebsiteTab />}
       {tab === "leadSources" && (
         <div className="space-y-6">
@@ -120,15 +121,80 @@ function SettingsPage() {
 }
 
 function ChecklistTab() {
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+
+  useEffect(() => {
+    listChecklistTemplates().then(setTemplates);
+  }, []);
+
+  const groupedTemplates = useMemo(() => {
+    return templates.reduce<Record<string, ChecklistTemplate[]>>((acc, template) => {
+      const type = (template.serviceType || "OTHER") as string;
+      if (!acc[type]) acc[type] = [];
+      acc[type]!.push(template);
+      return acc;
+    }, {});
+  }, [templates]);
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
-      <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-        <ClipboardList className="h-8 w-8 text-gray-400" />
-      </div>
-      <h3 className="text-lg font-bold text-gray-900 mb-2">Checklist Configuration</h3>
-      <p className="text-gray-500 max-w-md mx-auto">
-        Dynamic checklist configuration is coming soon. Currently, checklists are managed in the code repository.
-      </p>
+    <div className="space-y-4">
+      {Object.entries(groupedTemplates).map(([serviceType, group]) => (
+        <div key={serviceType} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-lg font-semibold text-[#0f172a]">{serviceType}</div>
+            <button
+              onClick={() =>
+                setTemplates((prev) => [
+                  ...prev,
+                  {
+                    id: `CT-${Date.now()}`,
+                    name: "New Template",
+                    serviceType: serviceType as ChecklistTemplate["serviceType"],
+                    items: ["Add details..."],
+                  },
+                ])
+              }
+              className="inline-flex items-center gap-2 rounded-lg bg-[#163022] px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              <Plus className="h-4 w-4" />
+              Create Template
+            </button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {group.map((template) => (
+              <article key={template.id} className="rounded-xl border border-gray-200 bg-[#f9fafb] p-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-[#0f172a]">{template.name}</div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        if (!window.confirm("Delete template?")) return;
+                        setTemplates((prev) => prev.filter((t) => t.id !== template.id));
+                      }}
+                      className="rounded-lg border border-gray-200 bg-white p-2 text-red-600"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-gray-700">
+                  {template.items.slice(0, 4).map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                  {template.items.length > 4 && (
+                    <li className="text-xs text-gray-500">
+                      +{template.items.length - 4} more
+                    </li>
+                  )}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+      {templates.length === 0 && (
+        <div className="text-center py-12 text-gray-500">No templates found.</div>
+      )}
     </div>
   );
 }
@@ -426,21 +492,235 @@ function PricingRuleForm({ initialData, onSubmit, onCancel }: { initialData?: an
   );
 }
 
-// Simple placeholders for Billing and Website tabs until they are fully migrated
 function BillingTab() {
+  const [billing, setBilling] = useState<BillingConfig | null>(null);
+
+  useEffect(() => {
+    getBillingConfig().then(setBilling);
+  }, []);
+
+  if (!billing) return <div>Loading...</div>;
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
-      <h3 className="text-lg font-bold text-gray-900 mb-2">Billing Configuration</h3>
-      <p className="text-gray-500">Billing settings will be migrated here.</p>
+    <div className="space-y-4">
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="text-lg font-semibold text-[#0f172a]">Billing Configuration</div>
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <label className="text-sm text-gray-700">
+            Payment Hold Delay (hours)
+            <input
+              type="number"
+              value={billing.paymentHoldDelayHours}
+              onChange={(e) =>
+                setBilling((prev) => (prev ? { ...prev, paymentHoldDelayHours: Number(e.target.value) } : prev))
+              }
+              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <div className="mt-3 space-y-2 text-sm text-gray-700">
+          {billing.notes.map((note, idx) => (
+            <p key={idx} className="rounded-lg bg-[#f9fafb] px-3 py-2">
+              {note}
+            </p>
+          ))}
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => getBillingConfig().then(setBilling)}
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700"
+          >
+            Reset
+          </button>
+          <button className="rounded-lg bg-[#163022] px-4 py-2 text-sm font-semibold text-white">
+            Save Configuration
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 shadow-sm">
+        <div className="text-lg font-semibold text-[#0f172a]">Current Behavior</div>
+        <p className="mt-2 text-sm text-gray-600">
+          Holds are applied 24 hours before service start. Refunds and retried payments are stubbed until Stripe/Mercury are wired.
+        </p>
+        <div className="mt-3 grid gap-2 text-sm text-gray-700">
+          <div className="rounded-lg bg-[#f9fafb] px-3 py-2">Example: Friday booking → hold Thursday 10am.</div>
+          <div className="rounded-lg bg-[#f9fafb] px-3 py-2">Decline retry once per hour for 6 hours.</div>
+          <div className="rounded-lg bg-[#f9fafb] px-3 py-2">Funds settle to Operating Checking (mock).</div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="text-lg font-semibold text-[#0f172a]">Availability & Working Hours</div>
+        <p className="text-sm text-gray-600">Mock controls for cleaner default availability (Figure 10 style).</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+            <DayAvailability key={day} day={day} />
+          ))}
+        </div>
+      </section>
     </div>
-  )
+  );
 }
 
 function WebsiteTab() {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
-      <h3 className="text-lg font-bold text-gray-900 mb-2">Website Settings</h3>
-      <p className="text-gray-500">Website configuration (SEO, FAQ, Legal) will be migrated here.</p>
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">SEO</span>
+          SEO & Meta Tags
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-gray-700">Site Title</label>
+            <input
+              type="text"
+              defaultValue="V-Luxe Cleaning | Premium Residential Cleaning"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-gray-700">Meta Keywords</label>
+            <input
+              type="text"
+              defaultValue="cleaning, luxury, residential, maid service, house cleaning"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            />
+          </div>
+          <div className="md:col-span-2 space-y-1">
+            <label className="text-sm font-semibold text-gray-700">Meta Description</label>
+            <textarea
+              rows={2}
+              defaultValue="V-Luxe provides premium residential cleaning services with a focus on quality, reliability, and luxury experience."
+              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button className="rounded-xl bg-[#163022] px-6 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+            Update SEO
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">FAQ</span>
+          Frequently Asked Questions
+        </h3>
+        <div className="space-y-3">
+          {[
+            { q: "Do you bring your own supplies?", a: "Yes, we provide all eco-friendly cleaning supplies and professional equipment." },
+            { q: "What is your cancellation policy?", a: "Cancellations must be made at least 24 hours in advance to avoid a fee." },
+          ].map((faq, i) => (
+            <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 group relative">
+              <div className="flex justify-between items-start mb-2">
+                <input
+                  type="text"
+                  defaultValue={faq.q}
+                  className="bg-transparent font-bold text-gray-900 outline-none w-full border-none p-0 focus:ring-0"
+                />
+                <button className="text-gray-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100">
+                  <Trash className="w-4 h-4" />
+                </button>
+              </div>
+              <textarea
+                rows={2}
+                defaultValue={faq.a}
+                className="bg-transparent text-sm text-gray-600 outline-none w-full border-none p-0 focus:ring-0 resize-none"
+              />
+            </div>
+          ))}
+          <button className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 font-bold text-sm hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2">
+            <Plus className="w-4 h-4" /> Add Question
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">LGL</span>
+          Legal & Policy Pages
+        </h3>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-gray-700">Privacy Policy (Markdown/HTML)</label>
+            <textarea
+              rows={6}
+              defaultValue="# Privacy Policy\n\nYour privacy is important to us..."
+              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-gray-700">Terms of Service (Markdown/HTML)</label>
+            <textarea
+              rows={6}
+              defaultValue="# Terms of Service\n\nBy using our services, you agree..."
+              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button className="rounded-xl bg-gray-900 px-6 py-2 text-sm font-bold text-white shadow-lg hover:scale-[1.02] transition-transform">
+            Save Legal Documents
+          </button>
+        </div>
+      </section>
     </div>
-  )
+  );
+}
+
+function DayAvailability({ day }: { day: string }) {
+  const [enabled, setEnabled] = useState(day !== "Saturday" && day !== "Sunday");
+  const [start, setStart] = useState("07:30");
+  const [end, setEnd] = useState("17:00");
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-[#f9fafb] p-3">
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-[#0f172a]">{day}</div>
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+          <span className="text-xs text-gray-500">{enabled ? "On" : "Off"}</span>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="h-5 w-5 rounded border-gray-300 text-[#163022] focus:ring-[#163022]"
+          />
+        </label>
+      </div>
+      {enabled && (
+        <div className="mt-3 flex items-center gap-2 text-sm">
+          <div className="flex-1">
+            <label className="text-xs text-gray-500">Start Time</label>
+            <input
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+              type="time"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs text-gray-500">End Time</label>
+            <input
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+              type="time"
+            />
+          </div>
+          <button
+            className="mt-6 rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-[#0f172a]"
+            onClick={() => {
+              setStart("07:30");
+              setEnd("17:00");
+            }}
+          >
+            Copy
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
