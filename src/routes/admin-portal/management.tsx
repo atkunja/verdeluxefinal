@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Pencil, Plus, Trash2, UserPlus, CheckSquare, Square, ChevronDown, ShieldCheck, Eye, Key, CreditCard, Calendar, X, Mail, Phone, Lock } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Check, X, Search, CheckSquare, Square, UserPlus, FileText, UserCog, Settings, Shield, ShieldCheck, Eye, Key, CreditCard, Calendar, Mail, Phone, Lock } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -212,6 +212,28 @@ function ManagementPage() {
       }
     >
       <div className="mb-6 flex flex-col gap-6">
+
+        {/* Tab Switcher */}
+        <div className="flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white p-1 w-fit">
+          <button
+            onClick={() => setTab("customers")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === "customers" ? "bg-[#163022] text-white" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            <UserPlus className="h-4 w-4" /> Customers
+          </button>
+          <button
+            onClick={() => setTab("cleaners")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === "cleaners" ? "bg-[#163022] text-white" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            <CheckSquare className="h-4 w-4" /> Cleaners
+          </button>
+          <button
+            onClick={() => setTab("admins")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === "admins" ? "bg-[#163022] text-white" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            <ShieldCheck className="h-4 w-4" /> Admins & Owners
+          </button>
+        </div>
 
         {/* Table Container */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
