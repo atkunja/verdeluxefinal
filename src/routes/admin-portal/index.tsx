@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
@@ -56,49 +56,160 @@ function StatCard({
   );
 }
 
-function Sparkline({ points, labels }: { points: number[]; labels: string[] }) {
-  if (points.length < 2) return <div className="h-24 flex items-center justify-center text-gray-400 text-sm italic">Insufficient data for trend</div>;
+function StockChart({ points, labels }: { points: number[]; labels: string[] }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  if (points.length < 2) {
+    return <div className="h-32 flex items-center justify-center text-gray-400 text-sm italic">Insufficient data for trend</div>;
+  }
 
   const max = Math.max(...points, 1);
   const min = Math.min(...points, 0);
   const range = max - min || 1;
-  const height = 80;
-  const width = 400;
-  const step = width / (points.length - 1);
+  const height = 120;
+  const width = 500;
+  const paddingX = 10;
+  const paddingY = 15;
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingY * 2;
+  const step = chartWidth / (points.length - 1);
 
-  const normalized = points.map((p) => ((p - min) / range) * (height - 20) + 10);
-  const pathData = normalized.map((y, idx) => `${idx === 0 ? "M" : "L"} ${idx * step} ${height - y}`).join(" ");
+  const normalized = points.map((p) => ((p - min) / range) * chartHeight);
 
-  // Create a smoother curve using quadratic bezier if desired, but polyline is fine for now if styled well
-  // Let's add an area fill
-  const areaData = `${pathData} L ${width} ${height} L 0 ${height} Z`;
+  // Create smooth bezier curve path
+  const createSmoothPath = () => {
+    const pts = normalized.map((y, idx) => ({
+      x: paddingX + idx * step,
+      y: height - paddingY - y
+    }));
+
+    if (pts.length < 2) return "";
+
+    let path = `M ${pts[0].x} ${pts[0].y}`;
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] ?? pts[i];
+      const p1 = pts[i]!;
+      const p2 = pts[i + 1]!;
+      const p3 = pts[i + 2] ?? p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+
+    return path;
+  };
+
+  const linePath = createSmoothPath();
+  const areaPath = linePath + ` L ${paddingX + (points.length - 1) * step} ${height - paddingY} L ${paddingX} ${height - paddingY} Z`;
+
+  // Check if trend is positive
+  const isPositive = points[points.length - 1] >= points[0];
 
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-24 w-full overflow-visible" preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full" preserveAspectRatio="none">
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#163022" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#163022" stopOpacity="0" />
+          <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.3" />
+            <stop offset="50%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.1" />
+            <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={isPositive ? "#059669" : "#dc2626"} />
+            <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} />
           </linearGradient>
         </defs>
-        <path d={areaData} fill="url(#gradient)" />
-        <path d={pathData} fill="none" stroke="#163022" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Grid lines */}
+        {[0, 1, 2, 3].map(i => (
+          <line
+            key={i}
+            x1={paddingX}
+            y1={paddingY + (chartHeight / 3) * i}
+            x2={width - paddingX}
+            y2={paddingY + (chartHeight / 3) * i}
+            stroke="#e5e7eb"
+            strokeWidth="1"
+            strokeDasharray="4 4"
+          />
+        ))}
+
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#chartGradient)" />
+
+        {/* Line */}
+        <path
+          d={linePath}
+          fill="none"
+          stroke="url(#lineGradient)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Interactive dots */}
         {normalized.map((y, idx) => (
-          <g key={idx} className="group/dot">
+          <g
+            key={idx}
+            onMouseEnter={() => setHoveredIdx(idx)}
+            onMouseLeave={() => setHoveredIdx(null)}
+            className="cursor-pointer"
+          >
+            {/* Larger invisible hit area */}
             <circle
-              cx={idx * step}
-              cy={height - y}
-              r="4"
-              fill="#163022"
-              className="transition-all group-hover/dot:r-6"
+              cx={paddingX + idx * step}
+              cy={height - paddingY - y}
+              r="12"
+              fill="transparent"
+            />
+            {/* Visible dot */}
+            <circle
+              cx={paddingX + idx * step}
+              cy={height - paddingY - y}
+              r={hoveredIdx === idx ? 6 : 4}
+              fill={isPositive ? "#059669" : "#dc2626"}
+              stroke="white"
+              strokeWidth="2"
+              className="transition-all duration-200"
             />
           </g>
         ))}
+
+        {/* Hover tooltip */}
+        {hoveredIdx !== null && (
+          <g>
+            <rect
+              x={paddingX + hoveredIdx * step - 40}
+              y={height - paddingY - normalized[hoveredIdx] - 40}
+              width="80"
+              height="28"
+              rx="6"
+              fill="#1f2937"
+              className="drop-shadow-lg"
+            />
+            <text
+              x={paddingX + hoveredIdx * step}
+              y={height - paddingY - normalized[hoveredIdx] - 21}
+              textAnchor="middle"
+              fill="white"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              ${points[hoveredIdx].toLocaleString()}
+            </text>
+          </g>
+        )}
       </svg>
-      <div className="mt-4 flex justify-between px-1 text-[10px] font-medium uppercase tracking-widest text-gray-400">
+
+      {/* Labels */}
+      <div className="flex justify-between px-2 text-[10px] font-medium uppercase tracking-wider text-gray-400">
         {labels.map((l, i) => (
-          <span key={i}>{l}</span>
+          <span key={i} className={hoveredIdx === i ? "text-gray-700 font-bold" : ""}>{l}</span>
         ))}
       </div>
     </div>
@@ -122,6 +233,8 @@ function AdminDashboardPage() {
   }));
 
   const todaysDate = useMemo(() => new Date(), []);
+  const [selectedDate, setSelectedDate] = useState<Date>(todaysDate);
+  const navigate = useNavigate();
 
   const handleCharge = async (bookingId: string, customerId: number, customerName: string, amount: number) => {
     const ok = window.confirm(`Charge $${amount.toFixed(2)} to ${customerName}'s card?`);
@@ -192,18 +305,65 @@ function AdminDashboardPage() {
               const day = new Date(todaysDate);
               day.setDate(todaysDate.getDate() + idx);
               const isToday = idx === 0;
+              const isSelected = selectedDate.toDateString() === day.toDateString();
+              const dayBookings = statsQuery.data?.upcomingAppointments.filter(job => {
+                const jobDate = new Date(job.scheduledDate);
+                return jobDate.toDateString() === day.toDateString();
+              }) || [];
               return (
-                <div
+                <button
                   key={idx}
-                  className={`rounded-xl py-2 transition-colors ${isToday ? "bg-[#163022] text-white shadow-md" : "bg-gray-50/50 text-gray-600 hover:bg-gray-100/50"}`}
+                  onClick={() => setSelectedDate(new Date(day))}
+                  className={`rounded-xl py-2 transition-all cursor-pointer relative ${isSelected
+                    ? "bg-[#163022] text-white shadow-md ring-2 ring-[#163022]/30"
+                    : isToday
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-gray-50/50 text-gray-600 hover:bg-gray-100/50"
+                    }`}
                 >
-                  <div className={`text-[10px] font-bold uppercase ${isToday ? "text-white/80" : "text-gray-400"}`}>
+                  <div className={`text-[10px] font-bold uppercase ${isSelected ? "text-white/80" : isToday ? "text-emerald-600" : "text-gray-400"}`}>
                     {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(day)[0]}
                   </div>
                   <div className="text-sm font-bold">{day.getDate()}</div>
-                </div>
+                  {dayBookings.length > 0 && (
+                    <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full text-[9px] font-bold flex items-center justify-center ${isSelected ? "bg-white text-[#163022]" : "bg-[#163022] text-white"}`}>
+                      {dayBookings.length}
+                    </div>
+                  )}
+                </button>
               );
             })}
+          </div>
+
+          {/* Selected Day Bookings */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="text-xs font-bold uppercase text-gray-500 mb-2">
+              {new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" }).format(selectedDate)}
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {statsQuery.data?.upcomingAppointments
+                .filter(job => new Date(job.scheduledDate).toDateString() === selectedDate.toDateString())
+                .map(job => (
+                  <button
+                    key={job.id}
+                    onClick={() => navigate({ to: "/admin-portal/bookings" })}
+                    className="w-full text-left rounded-lg bg-gray-50 p-2 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-700">{job.scheduledTime}</span>
+                      <span className="text-xs font-bold text-[#163022]">${(job.finalPrice ?? 0).toFixed(0)}</span>
+                    </div>
+                    <div className="text-xs text-gray-600 truncate">
+                      {job.client.firstName} {job.client.lastName}
+                    </div>
+                  </button>
+                )) ?? []}
+              {(statsQuery.data?.upcomingAppointments.filter(job =>
+                new Date(job.scheduledDate).toDateString() === selectedDate.toDateString()
+              ).length ?? 0) === 0 && (
+                  <div className="text-xs text-gray-400 italic py-2 text-center">No bookings</div>
+                )}
+            </div>
           </div>
         </div>
       </div>
@@ -219,7 +379,7 @@ function AdminDashboardPage() {
               <TrendingUp className="h-5 w-5 text-[#163022]" />
             </div>
           </div>
-          <Sparkline
+          <StockChart
             points={statsQuery.data?.revenueTrends.map((t) => t.revenue) ?? []}
             labels={statsQuery.data?.revenueTrends.map((t) => t.month) ?? []}
           />
