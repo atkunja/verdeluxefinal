@@ -1,5 +1,7 @@
 import React from "react";
 import { CLEAN_TYPES, CLEANLINESS_LABELS, EXTRAS, BookingDraft } from "./bookingDraft";
+import { useBookingDraft } from "./BookingWizardProvider";
+import { useNavigate } from "@tanstack/react-router";
 
 const cardBase = "rounded-2xl border border-[#e3ded2] bg-white shadow-[0_14px_30px_rgba(22,48,34,0.08)]";
 
@@ -13,6 +15,8 @@ function formatDuration(minutes: number) {
 
 export function SummaryPanel({ draft }: { draft: BookingDraft }) {
   const [open, setOpen] = React.useState(false);
+  const { resetDraft } = useBookingDraft();
+  const navigate = useNavigate();
   const clean = CLEAN_TYPES.find((c) => c.id === draft.cleanType);
   const extras = EXTRAS.filter((extra) => draft.extras.includes(extra.id));
   const extrasTotal = extras.reduce((sum, e) => sum + e.price, 0);
@@ -86,6 +90,20 @@ export function SummaryPanel({ draft }: { draft: BookingDraft }) {
           <div className="mt-2 flex items-center justify-between border-t border-dashed border-[#e3ded2] pt-2 font-semibold text-[#163022]">
             <span>Total</span>
             <span>${total.toFixed(0)}</span>
+          </div>
+          <div className="mt-4 pt-4 border-t border-[#e3ded2]">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to clear your current booking draft and start over?")) {
+                  resetDraft();
+                  navigate({ to: "/booking-quiz/start" });
+                }
+              }}
+              className="w-full text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
+            >
+              Start Over
+            </button>
           </div>
         </div>
       </div>
