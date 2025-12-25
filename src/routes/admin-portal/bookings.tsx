@@ -1,6 +1,6 @@
 
 import { createFileRoute } from "@tanstack/react-router";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AdminShell } from "~/components/admin/AdminShell";
 import { CancelBookingModal } from "~/components/admin/CancelBookingModal";
@@ -15,6 +15,7 @@ import { useTRPC } from "~/trpc/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { LiveStatusTracker } from "~/components/admin/LiveStatusTracker";
 import { CleanerAssignmentModal } from "~/components/admin/CleanerAssignmentModal";
+import { BookingEventTooltip } from "~/components/BookingEventTooltip";
 
 
 
@@ -74,6 +75,9 @@ function BookingsPage() {
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [hoveredEvent, setHoveredEvent] = useState<BookingEvent | null>(null);
+  const [tooltipTarget, setTooltipTarget] = useState<HTMLElement | null>(null);
+  const hoverTimeoutRef = useRef<number | null>(null);
 
 
   const [actionModal, setActionModal] = useState<{
@@ -397,7 +401,28 @@ function BookingsPage() {
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, event.id)}
                                 onClick={() => setActiveBooking(event)}
-                                className="block w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs shadow hover:border-[#163022]"
+                                onMouseEnter={(e) => {
+                                  if (hoverTimeoutRef.current) {
+                                    clearTimeout(hoverTimeoutRef.current);
+                                    hoverTimeoutRef.current = null;
+                                  }
+                                  setHoveredEvent(event);
+                                  setTooltipTarget(e.currentTarget);
+                                }}
+                                onMouseLeave={() => {
+                                  if (hoverTimeoutRef.current) {
+                                    clearTimeout(hoverTimeoutRef.current);
+                                  }
+                                  hoverTimeoutRef.current = window.setTimeout(() => {
+                                    setHoveredEvent(null);
+                                    setTooltipTarget(null);
+                                  }, 200);
+                                }}
+                                className="block w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs shadow hover:border-[#163022] hover:shadow-md transition-all"
+                                style={{
+                                  borderLeftWidth: '3px',
+                                  borderLeftColor: event.providerColor,
+                                }}
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="font-semibold text-gray-800">{event.scheduledTime}</span>
@@ -709,6 +734,14 @@ function BookingsPage() {
         </div>
       </div>
 
+      {/* Booking Tooltip */}
+      {hoveredEvent && tooltipTarget && (
+        <BookingEventTooltip
+          event={hoveredEvent}
+          targetElement={tooltipTarget}
+          visible={true}
+        />
+      )}
     </AdminShell>
   );
 }
