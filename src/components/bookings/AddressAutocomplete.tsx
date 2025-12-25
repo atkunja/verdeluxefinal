@@ -83,7 +83,7 @@ export function AddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [placesReady, setPlacesReady] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const googleApiKey = import.meta.env.VITE_GOOGLE_PLACES_KEY as string | undefined;
+  const googleApiKey = (import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY) as string | undefined;
 
   useEffect(() => {
     if (!enablePlaces || !googleApiKey) return;
@@ -201,7 +201,14 @@ export function AddressAutocomplete({
                 const cityMatch = SERVICE_AREA_CITIES.find(city =>
                   s.toLowerCase().includes(city.toLowerCase())
                 );
-                onPlaceSelect?.({ address: s, city: cityMatch });
+                // When using mocks, we manually simulate a place selection so the parent knows the city
+                onPlaceSelect?.({
+                  address: s,
+                  city: cityMatch,
+                  // Add dummy lat/lng for Canton mocks to satisfy any calculations
+                  lat: 42.3086,
+                  lng: -83.4821
+                });
                 setOpen(false);
               }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"

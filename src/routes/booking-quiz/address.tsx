@@ -40,9 +40,15 @@ function AddressStepContent() {
   // Check service area
   const addressValue = draft.address.formatted || "";
   const cityValue = draft.address.city;
-  const inServiceArea = addressValue.length >= 5
+
+  // Only show warning if:
+  // 1. They have selected an address (addressSelected is true)
+  // 2. OR they have typed a fairly long address (> 15 chars) and haven't selected yet (as a hint)
+  const shouldShowWarning = addressSelected || addressValue.length > 20;
+
+  const inServiceArea = shouldShowWarning
     ? isInServiceArea(addressValue, cityValue)
-    : true; // Don't show error until they've typed something
+    : true; // Hide warning while typing initial characters
 
   // Allow proceeding if: address is selected from autocomplete OR (no Places API and address is typed)
   const hasValidInput = addressSelected || (!hasPlacesKey && addressValue.length >= 5);
