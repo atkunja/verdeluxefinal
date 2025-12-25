@@ -36,8 +36,10 @@ ENV HOST=0.0.0.0
 
 # Copy necessary files
 COPY --from=builder /app/.output ./.output
-# Copy package.json if needed for scripts, though we usually run node directly
+# Copy package.json if needed
 COPY --from=builder /app/package.json ./package.json
+# Copy node_modules (required for externalized dependencies & Prisma Client)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Expose port
 EXPOSE 3000
