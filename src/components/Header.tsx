@@ -18,7 +18,9 @@ export function Header() {
     clearAuth();
     toast.success("Logged out successfully");
     setMobileMenuOpen(false);
-    navigate({ to: "/" });
+    Promise.resolve().then(() => {
+      navigate({ to: "/" });
+    });
   };
 
   const getPortalLink = () => {
@@ -28,7 +30,7 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[1000] bg-white shadow-[0_8px_13px_-10px_#eee]">
+    <header className="fixed top-0 left-0 right-0 z-[1000] bg-white shadow-[0_8px_13px_-10px_#eee] border-b border-gray-200">
       <nav className="container mx-auto px-4 py-[10px]">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -133,16 +135,28 @@ export function Header() {
                   Service Areas
                 </Link>
               </li>
+
+              <li className="relative px-[5px]">
+                <Link
+                  to="/booking-quiz"
+                  className={`block py-[6px] px-5 text-[15px] font-medium transition-colors ${
+                    isActive("/booking-quiz") ? "text-primary-dark" : "text-black hover:text-primary-dark"
+                  }`}
+                >
+                  Booking Quiz
+                </Link>
+              </li>
+
             </ul>
 
             {/* CTA Buttons */}
             <div className="flex items-center space-x-1">
-              <Link
-                to="/contact-us"
+              <a
+                href="tel:+17348920931"
                 className="inline-block px-[25px] py-[10px] text-[13px] font-semibold text-primary-dark bg-transparent border border-gray-200 rounded-full hover:border-primary-dark transition-all uppercase"
               >
-                Contact Us
-              </Link>
+                Call Us
+              </a>
               <Link
                 to="/book-now"
                 className="inline-block px-[25px] py-[10px] text-[13px] font-semibold text-white bg-primary border border-primary rounded-full hover:bg-primary-dark hover:border-primary-dark transition-all uppercase"
@@ -294,16 +308,25 @@ export function Header() {
                   Service Areas
                 </Link>
               </li>
+
+              <li>
+                <Link
+                  to="/booking-quiz"
+                  className="block text-[15px] font-medium text-black hover:text-primary-dark"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Booking Quiz
+                </Link>
+              </li>
             </ul>
 
             <div className="flex flex-row space-x-1 pt-0 mb-[15px]">
-              <Link
-                to="/contact-us"
+              <a
+                href="tel:+17348920931"
                 className="inline-block px-[25px] py-[10px] text-[13px] font-semibold text-primary-dark bg-transparent border border-gray-200 rounded-full hover:border-primary-dark transition-all uppercase text-center"
-                onClick={() => setMobileMenuOpen(false)}
               >
-                Contact Us
-              </Link>
+                Call Us
+              </a>
               <Link
                 to="/book-now"
                 className="inline-block px-[25px] py-[10px] text-[13px] font-semibold text-white bg-primary border border-primary rounded-full hover:bg-primary-dark hover:border-primary-dark transition-all uppercase text-center"
