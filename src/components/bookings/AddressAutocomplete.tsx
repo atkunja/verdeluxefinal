@@ -85,6 +85,12 @@ export function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const googleApiKey = (import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY) as string | undefined;
 
+  // Stable refs for handlers to avoid re-initializing autocomplete on every keystroke
+  const handlersRef = useRef({ onChange, onSelect, onPlaceSelect });
+  useEffect(() => {
+    handlersRef.current = { onChange, onSelect, onPlaceSelect };
+  }, [onChange, onSelect, onPlaceSelect]);
+
   useEffect(() => {
     if (!enablePlaces || !googleApiKey) return;
     if (window.google?.maps?.places) {
@@ -128,9 +134,10 @@ export function AddressAutocomplete({
       const streetNumber = getComponent("street_number");
       const route = getComponent("route");
 
-      onChange(address);
-      onSelect?.(address);
-      onPlaceSelect?.({
+      const { onChange: _onChange, onSelect: _onSelect, onPlaceSelect: _onPlaceSelect } = handlersRef.current;
+      _onChange(address);
+      _onSelect?.(address);
+      _onPlaceSelect?.({
         address,
         placeId: place?.place_id,
         lat,
@@ -148,7 +155,7 @@ export function AddressAutocomplete({
         window.google.maps.event.clearInstanceListeners(autocomplete);
       }
     };
-  }, [placesReady, enablePlaces, onChange, onSelect, onPlaceSelect]);
+  }, [placesReady, enablePlaces]);
 
   const suggestions = useMemo(() => {
     // If Google Places is enabled and ready, we want to use its real results
