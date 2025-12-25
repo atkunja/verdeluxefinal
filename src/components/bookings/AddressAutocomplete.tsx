@@ -112,7 +112,13 @@ export function AddressAutocomplete({
     script.id = "google-places-script";
     script.src = `https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places`;
     script.async = true;
-    script.onload = () => setPlacesReady(true);
+    script.onload = () => {
+      console.log("[AddressAutocomplete] Google script loaded successfully");
+      setPlacesReady(true);
+    };
+    script.onerror = () => {
+      console.error("[AddressAutocomplete] Failed to load Google script");
+    };
     document.body.appendChild(script);
   }, [enablePlaces, googleApiKey]);
 
@@ -200,7 +206,11 @@ export function AddressAutocomplete({
         className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#163022] focus:outline-none focus:ring-2 focus:ring-[#163022]"
         autoComplete="off"
       />
-      {open && suggestions.length > 0 && (
+      {/* 
+          IMPORTANT: Only show our custom dropdown and messages IF Google is not ready.
+          If Google is ready, it handles the dropdown natively and we shouldn't show our own.
+      */}
+      {!placesReady && open && suggestions.length > 0 && (
         <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
           <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
             Select a service area address
@@ -236,7 +246,7 @@ export function AddressAutocomplete({
           ))}
         </div>
       )}
-      {open && value && suggestions.length === 0 && (
+      {!placesReady && open && value && suggestions.length === 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-dashed border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
           No matching addresses. Try entering a number and street in one of our service cities.
         </div>
