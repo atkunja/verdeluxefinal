@@ -14,6 +14,7 @@ export default createApp({
     experimental: {
       asyncContext: true,
     },
+    // @ts-ignore
     nitro: {
       externals: {
         inline: ["@supabase/supabase-js"],
