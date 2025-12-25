@@ -31,11 +31,40 @@ function AddressStepContent() {
   const navigate = useNavigate();
   const { draft, updateDraft } = useBookingDraft();
   const [addressSelected, setAddressSelected] = React.useState(Boolean(draft.address.formatted));
-  const hasPlacesKey = Boolean(import.meta.env.VITE_GOOGLE_PLACES_KEY);
+  const [hasInteracted, setHasInteracted] = React.useState(false);
+  const hasPlacesKey = Boolean(import.meta.env.VITE_GOOGLE_PLACES_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 
   React.useEffect(() => {
     bookingAnalytics.stepViewed("get-started");
   }, []);
+
+  const handleOnChange = React.useCallback((value: string) => {
+    updateDraft({ address: { ...draft.address, formatted: value, city: undefined } });
+    setAddressSelected(false);
+    setHasInteracted(true);
+  }, [updateDraft, draft.address]);
+
+  const handleOnSelect = React.useCallback((value: string) => {
+    updateDraft({ address: { ...draft.address, formatted: value } });
+    setAddressSelected(true);
+  }, [updateDraft, draft.address]);
+
+  const handleOnPlaceSelect = React.useCallback((payload: any) => {
+    updateDraft({
+      address: {
+        ...draft.address,
+        formatted: payload.address,
+        placeId: payload.placeId,
+        lat: payload.lat,
+        lng: payload.lng,
+        street: payload.streetNumber && payload.route ? `${payload.streetNumber} ${payload.route}` : payload.route || payload.streetNumber,
+        city: payload.city,
+        state: payload.state,
+        zip: payload.postalCode,
+      },
+    });
+    setAddressSelected(true);
+  }, [updateDraft, draft.address]);
 
   // Check service area
   const addressValue = draft.address.formatted || "";
@@ -62,30 +91,9 @@ function AddressStepContent() {
       </div>
       <AddressAutocomplete
         value={draft.address.formatted || ""}
-        onChange={(value) => {
-          updateDraft({ address: { ...draft.address, formatted: value, city: undefined } });
-          setAddressSelected(false);
-        }}
-        onSelect={(value) => {
-          updateDraft({ address: { ...draft.address, formatted: value } });
-          setAddressSelected(true);
-        }}
-        onPlaceSelect={(payload) => {
-          updateDraft({
-            address: {
-              ...draft.address,
-              formatted: payload.address,
-              placeId: payload.placeId,
-              lat: payload.lat,
-              lng: payload.lng,
-              street: payload.streetNumber && payload.route ? `${payload.streetNumber} ${payload.route}` : payload.route || payload.streetNumber,
-              city: payload.city,
-              state: payload.state,
-              zip: payload.postalCode,
-            },
-          });
-          setAddressSelected(true);
-        }}
+        onChange={handleOnChange}
+        onSelect={handleOnSelect}
+        onPlaceSelect={handleOnPlaceSelect}
         enablePlaces={hasPlacesKey}
       />
 
@@ -102,7 +110,7 @@ function AddressStepContent() {
         </div>
       )}
 
-      {!hasValidInput && draft.address.formatted && hasPlacesKey && (
+      {!hasValidInput && draft.address.formatted && hasPlacesKey && hasInteracted && addressValue.length > 3 && (
         <p className="text-sm text-red-600">Please pick an address from suggestions.</p>
       )}
 
