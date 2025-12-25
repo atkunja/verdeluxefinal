@@ -9,7 +9,13 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
-RUN pnpm install --frozen-lockfile
+# Debug: Verify schema existence
+RUN ls -laR prisma
+
+# Install dependencies without running scripts immediately
+RUN pnpm install --frozen-lockfile --ignore-scripts
+# Run postinstall explicitly (prisma generate + tsr generate)
+RUN pnpm run postinstall
 
 # Build stage
 FROM base AS builder
