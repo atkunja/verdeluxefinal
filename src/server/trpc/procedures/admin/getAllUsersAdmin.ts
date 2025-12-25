@@ -5,14 +5,21 @@ import { requireAdmin } from "~/server/trpc/main";
 export const getAllUsersAdmin = requireAdmin
   .input(
     z.object({
-      role: z.enum(["CLIENT", "CLEANER", "ADMIN", "OWNER"]).optional(),
+      role: z.union([
+        z.enum(["CLIENT", "CLEANER", "ADMIN", "OWNER"]),
+        z.array(z.enum(["CLIENT", "CLEANER", "ADMIN", "OWNER"]))
+      ]).optional(),
       search: z.string().optional(),
     })
   )
   .query(async ({ input }) => {
     const where: any = {};
     if (input.role) {
-      where.role = input.role;
+      if (Array.isArray(input.role)) {
+        where.role = { in: input.role };
+      } else {
+        where.role = input.role;
+      }
     }
     if (input.search) {
       const q = input.search;

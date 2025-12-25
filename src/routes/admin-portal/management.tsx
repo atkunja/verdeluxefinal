@@ -40,13 +40,13 @@ function ManagementPage() {
     navigate({ search: { tab: t } });
   };
 
-  const roleMap: Record<Tab, "CLIENT" | "CLEANER" | "ADMIN" | "OWNER"> = {
+  const roleMap: Record<Tab, "CLIENT" | "CLEANER" | ["ADMIN", "OWNER"]> = {
     customers: "CLIENT",
     cleaners: "CLEANER",
-    admins: "ADMIN",
+    admins: ["ADMIN", "OWNER"],
   };
 
-  const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({ role: roleMap[tab] }));
+  const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({ role: roleMap[tab] as any }));
   const users = usersQuery.data?.users || [];
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -132,7 +132,7 @@ function ManagementPage() {
       });
     } else {
       setEditId(null);
-      setForm({ name: "", email: "", phone: "", role: roleMap[tab], permissions: {} });
+      setForm({ name: "", email: "", phone: "", role: Array.isArray(roleMap[tab]) ? "ADMIN" : roleMap[tab] as string, permissions: {} });
     }
     setShowModal(true);
   };
