@@ -1,6 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-// import { env } from "./env";
-import { createClient } from "@supabase/supabase-js";
 
 // Server-side Supabase client for auth/admin operations.
 const supabaseUrl = process.env.SUPABASE_URL;
