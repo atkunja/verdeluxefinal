@@ -11,6 +11,7 @@ import { getSchedule } from "./procedures/cleaner/getSchedule";
 import { getPayments } from "./procedures/cleaner/getPayments";
 import { getUpcomingBookings } from "./procedures/client/getUpcomingBookings";
 import { getAllBookings } from "./procedures/client/getAllBookings";
+import { cancelBookingClient } from "./procedures/client/cancelBookingClient";
 import { getAllBookingsAdmin } from "./procedures/admin/getAllBookingsAdmin";
 import { getAllUsersAdmin } from "./procedures/admin/getAllUsersAdmin";
 import { getCustomerDetailsAdmin } from "./procedures/admin/getCustomerDetailsAdmin";
@@ -103,6 +104,7 @@ export const appRouter = createTRPCRouter({
   // Client procedures
   getUpcomingBookings,
   getAllBookings,
+  cancelBookingClient,
   // Admin procedures
   getAllBookingsAdmin,
   getAllUsersAdmin,
