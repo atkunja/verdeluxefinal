@@ -17,7 +17,7 @@ function isInServiceArea(address: string, city?: string): boolean {
   // If we have a city from Google Places, check it directly
   if (city) {
     return SERVICE_AREA_CITIES.some(
-      (c) => c.toLowerCase() === city.toLowerCase()
+      (c) => city.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(city.toLowerCase())
     );
   }
   // Otherwise check if address contains any service area city
@@ -73,7 +73,7 @@ function AddressStepContent() {
   // Only show warning if:
   // 1. They have selected an address (addressSelected is true)
   // 2. OR they have typed a fairly long address (> 15 chars) and haven't selected yet (as a hint)
-  const shouldShowWarning = addressSelected || addressValue.length > 20;
+  const shouldShowWarning = addressSelected || addressValue.length > 40;
 
   const inServiceArea = shouldShowWarning
     ? isInServiceArea(addressValue, cityValue)
