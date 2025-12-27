@@ -44,7 +44,7 @@ function OtpContent() {
                 fullName: `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || draft.contact.fullName
               }
             });
-            navigate({ to: "/booking-quiz/clean/type" });
+            navigate({ to: "/booking-quiz/address" });
           } else {
             navigate({ to: "/booking-quiz/new/create-account" });
           }

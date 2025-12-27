@@ -55,7 +55,7 @@ function CreateAccountContent() {
         onSuccess: (data) => {
           setAuth(data.token, data.user);
           toast.success("Account created!");
-          navigate({ to: "/booking-quiz/clean/type" });
+          navigate({ to: "/booking-quiz/address" });
         },
         onError: (err) => {
           console.log("[CreateAccount] Register failed, checking for existing account:", err.message);
@@ -71,7 +71,7 @@ function CreateAccountContent() {
                   console.log("[CreateAccount] Login successful!");
                   setAuth(data.token, data.user);
                   toast.success("Welcome back!");
-                  navigate({ to: "/booking-quiz/clean/type" });
+                  navigate({ to: "/booking-quiz/address" });
                 },
                 onError: (loginErr) => {
                   console.error("[CreateAccount] Login failed:", loginErr.message);
