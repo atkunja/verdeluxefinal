@@ -286,7 +286,7 @@ export const updateBookingAdmin = requireAdmin
     if (input.overrideConflict) {
       await db.systemLog.create({
         data: {
-          userId: existingBooking.clientId ?? null,
+          user: existingBooking.clientId ? { connect: { id: existingBooking.clientId } } : undefined,
           action: "booking.override_conflict",
           entity: "booking",
           entityId: booking?.id ?? input.bookingId,
