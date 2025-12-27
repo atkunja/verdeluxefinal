@@ -34,7 +34,6 @@ const navItems = [
   { label: "Revenue", icon: BarChart3, path: "/admin-portal/revenue-reports" },
   { label: "Signups", icon: Users, path: "/admin-portal/signups" },
   { label: "Pricing", icon: Banknote, path: "/admin-portal/pricing" },
-  { label: "Settings", icon: Settings, path: "/admin-portal/settings" },
 ];
 
 export function AdminShell({ title, subtitle, children, actions }: AdminShellProps) {
@@ -97,14 +96,18 @@ function AdminSidebar() {
   const router = useRouterState();
 
   return (
-    <aside className="w-20 bg-white border-r border-gray-200 shadow-sm hidden lg:flex flex-col items-center py-6">
+    <aside className="w-16 bg-[#f3f0e6] hidden lg:flex flex-col items-center py-6">
+      {/* Logo */}
       <div className="mb-8">
-        <img src="/imported/images/logo.png" alt="Verde Luxe" className="h-9 w-auto" />
+        <img src="/imported/images/logo.png" alt="Verde Luxe" className="h-8 w-auto" />
       </div>
-      <nav className="space-y-4 flex-1">
+
+      {/* Navigation Icons */}
+      <nav className="flex-1 flex flex-col items-center gap-2">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const active = router.location.pathname.startsWith(item.path);
+          const active = router.location.pathname === item.path ||
+            (item.path !== "/admin-portal" && router.location.pathname.startsWith(item.path));
           return (
             <Link
               key={item.path}
@@ -112,24 +115,35 @@ function AdminSidebar() {
               className="group relative flex items-center justify-center"
             >
               <div
-                className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all ${active
-                  ? "bg-[#163022] text-white shadow-lg"
-                  : "text-gray-600 hover:bg-gray-100"
+                className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200 ${active
+                  ? "bg-[#163022] text-white shadow-md"
+                  : "text-[#5c5a55] hover:bg-[#e8e5dc] hover:text-[#163022]"
                   }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
               </div>
-              <div className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 rounded-lg bg-[#111827] px-3 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+              {/* Tooltip */}
+              <div className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 rounded-lg bg-[#163022] px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 whitespace-nowrap z-50">
                 {item.label}
               </div>
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto">
-        <div className="h-11 w-11 rounded-full bg-[#163022] text-white flex items-center justify-center font-semibold">
-          VL
-        </div>
+
+      {/* Bottom section with settings icon */}
+      <div className="mt-auto flex flex-col items-center gap-3">
+        <a
+          href="/admin-portal/settings"
+          className="group relative flex items-center justify-center"
+        >
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-[#5c5a55] hover:bg-[#e8e5dc] hover:text-[#163022] transition-all duration-200">
+            <Settings className="h-5 w-5" strokeWidth={2} />
+          </div>
+          <div className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 rounded-lg bg-[#163022] px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 whitespace-nowrap z-50">
+            Settings
+          </div>
+        </a>
       </div>
     </aside>
   );
