@@ -10,7 +10,7 @@ export const updateTimeOffRequestStatus = requireAdmin
       adminNotes: z.string().nullable().optional(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     const request = await db.timeOffRequest.findUnique({
       where: { id: input.requestId },
     });
@@ -24,6 +24,8 @@ export const updateTimeOffRequestStatus = requireAdmin
       data: {
         status: input.status,
         adminNotes: input.adminNotes ?? null,
+        reviewedById: ctx.profile.id,
+        reviewedAt: new Date(),
       },
     });
 
