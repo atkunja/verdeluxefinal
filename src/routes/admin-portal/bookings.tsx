@@ -21,6 +21,9 @@ import { BookingEventTooltip } from "~/components/BookingEventTooltip";
 
 export const Route = createFileRoute("/admin-portal/bookings")({
   component: BookingsPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    createFromLeadId: search.createFromLeadId ? Number(search.createFromLeadId) : undefined,
+  }),
 });
 
 type ChargeTab = "pending" | "holds" | "declined" | "all";
@@ -61,7 +64,7 @@ function BookingsPage() {
   const cancelBookingMutation = useMutation(trpc.updateBookingAdmin.mutationOptions());
   const receiptMutation = useMutation(trpc.sendBookingReceipt.mutationOptions());
   const invoiceMutation = useMutation(trpc.sendBookingInvoice.mutationOptions());
-  const setupIntentMutation = useMutation(trpc.stripe.createSetupIntent.mutationOptions());
+  const setupIntentMutation = useMutation(trpc.sendAddCardLink.mutationOptions());
   const capturePaymentMutation = useMutation(trpc.stripe.capturePayment.mutationOptions());
   const refundPaymentMutation = useMutation(trpc.stripe.refundPayment.mutationOptions());
   const [actionPrefs, setActionPrefs] = useState<ActionPreferences>({
@@ -74,6 +77,7 @@ function BookingsPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [hoveredEvent, setHoveredEvent] = useState<BookingEvent | null>(null);
   const [tooltipTarget, setTooltipTarget] = useState<HTMLElement | null>(null);
@@ -186,6 +190,17 @@ function BookingsPage() {
       return matchesSearch && event.status !== "CANCELLED";
     });
   }, [events, providerFilter, bookingSearch]);
+
+  const { createFromLeadId } = Route.useSearch();
+  const leadQuery = useQuery(
+    trpc.crm.getLead.queryOptions({ leadId: createFromLeadId! }, { enabled: !!createFromLeadId })
+  );
+
+  useEffect(() => {
+    if (createFromLeadId && leadQuery.data?.lead) {
+      setCreateModalOpen(true);
+    }
+  }, [createFromLeadId, leadQuery.data]);
 
   const daysThisMonth = useMemo(() => {
     const now = new Date();
@@ -640,6 +655,18 @@ function BookingsPage() {
                 setAssignModalOpen(true);
                 return;
               }
+              if (action === "edit") {
+                console.log("Edit requested for:", activeBooking);
+                const id = Number(activeBooking?.id);
+                if (id) {
+                  toast.success("Opening editor for ID: " + id);
+                  setEditingBookingId(id);
+                  setCreateModalOpen(true);
+                } else {
+                  toast.error("Could not determine booking ID");
+                }
+                return;
+              }
               if (action === "cancel") {
 
                 setCancelModalOpen(true);
@@ -726,7 +753,23 @@ function BookingsPage() {
             variant={actionModal.variant}
             onConfirm={actionModal.onConfirm}
           />
-          <CreateBookingModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} />
+          <CreateBookingModal
+            isOpen={createModalOpen}
+            onClose={() => {
+              setCreateModalOpen(false);
+              setEditingBookingId(null);
+            }}
+            bookingId={editingBookingId}
+            initialData={createFromLeadId && leadQuery.data?.lead ? {
+              leadId: leadQuery.data.lead.id,
+              clientEmail: leadQuery.data.lead.email,
+              clientFirstName: leadQuery.data.lead.name.split(" ")[0] || "",
+              clientLastName: leadQuery.data.lead.name.split(" ").slice(1).join(" ") || "",
+              clientPhone: leadQuery.data.lead.phone,
+              specialInstructions: leadQuery.data.lead.message,
+              privateBookingNote: `Converted from Lead Source: ${leadQuery.data.lead.source}`,
+            } : undefined}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
@@ -917,10 +960,6 @@ async function handleBookingAction(
             toast.success("Invoice sent");
             return;
           }
-          if (action === "edit") {
-            toast("Opening editor (Coming Soon)", { icon: "🛠️" });
-            return;
-          }
           if (action === "time-log" || action === "payment-log") {
             toast(`Viewing ${action} (Coming Soon)`, { icon: "📋" });
             return;
@@ -969,6 +1008,7 @@ function BookingSummaryPanel({
   mutations?: any;
   setActionModal?: (data: any) => void;
 }) {
+  console.log("BookingSummaryPanel Rendered", booking?.id);
   if (!booking) return null;
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/30 animate-in fade-in duration-300">
