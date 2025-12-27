@@ -628,128 +628,129 @@ function BookingsPage() {
                 </div>
               </div>
             </div>
+          </div>
 
-            <BookingSummaryPanel
-              booking={activeBooking}
-              onClose={() => setActiveBooking(null)}
-              onMove={handleMovePrompt}
-              onAction={(action) => {
-                if (!activeBooking) return;
-                if (action === "assign") {
-                  setAssignModalOpen(true);
-                  return;
-                }
-                if (action === "cancel") {
+          <BookingSummaryPanel
+            booking={activeBooking}
+            onClose={() => setActiveBooking(null)}
+            onMove={handleMovePrompt}
+            onAction={(action) => {
+              if (!activeBooking) return;
+              if (action === "assign") {
+                setAssignModalOpen(true);
+                return;
+              }
+              if (action === "cancel") {
 
-                  setCancelModalOpen(true);
-                  return;
-                }
-                handleBookingAction(action, activeBooking, {
-                  cancel: cancelBookingMutation,
-                  receipt: receiptMutation,
-                  invoice: invoiceMutation,
-                  setupIntent: setupIntentMutation,
-                  capture: capturePaymentMutation,
-                  refund: refundPaymentMutation,
-                }, actionPrefs, setActionModal);
-              }}
-              actionPrefs={actionPrefs}
-              setActionPrefs={setActionPrefs}
-              mutations={{
+                setCancelModalOpen(true);
+                return;
+              }
+              handleBookingAction(action, activeBooking, {
                 cancel: cancelBookingMutation,
                 receipt: receiptMutation,
                 invoice: invoiceMutation,
                 setupIntent: setupIntentMutation,
                 capture: capturePaymentMutation,
                 refund: refundPaymentMutation,
-              }}
-              setActionModal={setActionModal}
-            />
+              }, actionPrefs, setActionModal);
+            }}
+            actionPrefs={actionPrefs}
+            setActionPrefs={setActionPrefs}
+            mutations={{
+              cancel: cancelBookingMutation,
+              receipt: receiptMutation,
+              invoice: invoiceMutation,
+              setupIntent: setupIntentMutation,
+              capture: capturePaymentMutation,
+              refund: refundPaymentMutation,
+            }}
+            setActionModal={setActionModal}
+          />
 
-            <CleanerAssignmentModal
-              isOpen={assignModalOpen}
-              onClose={() => setAssignModalOpen(false)}
-              bookingId={activeBooking ? Number(activeBooking.id) : null}
-              currentCleanerIds={(activeBooking as any)?.cleanerIds || []}
-            />
+          <CleanerAssignmentModal
+            isOpen={assignModalOpen}
+            onClose={() => setAssignModalOpen(false)}
+            bookingId={activeBooking ? Number(activeBooking.id) : null}
+            currentCleanerIds={(activeBooking as any)?.cleanerIds || []}
+          />
 
 
-            <CancelBookingModal
-              isOpen={cancelModalOpen}
-              onClose={() => setCancelModalOpen(false)}
-              booking={activeBooking ? {
-                id: activeBooking.id,
-                customerName: activeBooking.customer,
-                price: activeBooking.price,
-                date: activeBooking.scheduledDate,
-                time: activeBooking.scheduledTime,
-              } : null}
-              onConfirm={async (opts) => {
-                if (!activeBooking) return;
-                await cancelBookingMutation.mutateAsync({
-                  bookingId: Number(activeBooking.id),
-                  status: "CANCELLED",
-                  scope: opts.scope,
-                  cancellationFeeApplied: opts.applyFee,
-                  cancellationFeeAmount: opts.feeAmount,
-                  notifyEmail: opts.notifyEmail,
-                  notifySms: opts.notifySms,
-                });
-                toast.success("Booking cancelled successfully");
-                // Refresh data
-                queryClient.invalidateQueries(trpc.getAllBookingsAdmin.queryOptions({}, { enabled: true }).queryKey as any);
-                setActiveBooking(null);
-              }}
-            />
+          <CancelBookingModal
+            isOpen={cancelModalOpen}
+            onClose={() => setCancelModalOpen(false)}
+            booking={activeBooking ? {
+              id: activeBooking.id,
+              customerName: activeBooking.customer,
+              price: activeBooking.price,
+              date: activeBooking.scheduledDate,
+              time: activeBooking.scheduledTime,
+            } : null}
+            onConfirm={async (opts) => {
+              if (!activeBooking) return;
+              await cancelBookingMutation.mutateAsync({
+                bookingId: Number(activeBooking.id),
+                status: "CANCELLED",
+                scope: opts.scope,
+                cancellationFeeApplied: opts.applyFee,
+                cancellationFeeAmount: opts.feeAmount,
+                notifyEmail: opts.notifyEmail,
+                notifySms: opts.notifySms,
+              });
+              toast.success("Booking cancelled successfully");
+              // Refresh data
+              queryClient.invalidateQueries(trpc.getAllBookingsAdmin.queryOptions({}, { enabled: true }).queryKey as any);
+              setActiveBooking(null);
+            }}
+          />
 
-            <MoveBookingModal
-              isOpen={moveModalOpen}
-              onClose={() => setMoveModalOpen(false)}
-              booking={pendingMove ? {
-                ...pendingMove,
-                customerName: events.find(e => e.id === pendingMove.id)?.customer || "Client",
-                isRecurring: pendingMove.isRecurring
-              } : null}
-              onConfirm={async (scope) => {
-                if (pendingMove) {
-                  await moveBooking(pendingMove.id, pendingMove.date, scope);
-                }
-              }}
-            />
+          <MoveBookingModal
+            isOpen={moveModalOpen}
+            onClose={() => setMoveModalOpen(false)}
+            booking={pendingMove ? {
+              ...pendingMove,
+              customerName: events.find(e => e.id === pendingMove.id)?.customer || "Client",
+              isRecurring: pendingMove.isRecurring
+            } : null}
+            onConfirm={async (scope) => {
+              if (pendingMove) {
+                await moveBooking(pendingMove.id, pendingMove.date, scope);
+              }
+            }}
+          />
 
-            <ActionConfirmationModal
-              isOpen={actionModal.open}
-              onClose={() => setActionModal(prev => ({ ...prev, open: false }))}
-              title={actionModal.title}
-              description={actionModal.description}
-              variant={actionModal.variant}
-              onConfirm={actionModal.onConfirm}
-            />
-            <CreateBookingModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} />
-          </div>
-
-          {showLiveTracker && (
-            <div className="w-full lg:w-80 flex-shrink-0 animate-in slide-in-from-right duration-300">
-              <LiveStatusTracker />
-            </div>
-          )}
-
-          <div className="w-full lg:w-72 flex-shrink-0">
-            <UnassignedList
-              bookings={events.filter(e => e.status === "PENDING")}
-              onSelect={(b) => setActiveBooking(b)}
-            />
-          </div>
+          <ActionConfirmationModal
+            isOpen={actionModal.open}
+            onClose={() => setActionModal(prev => ({ ...prev, open: false }))}
+            title={actionModal.title}
+            description={actionModal.description}
+            variant={actionModal.variant}
+            onConfirm={actionModal.onConfirm}
+          />
+          <CreateBookingModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} />
         </div>
 
-        {/* Booking Tooltip */}
-        {hoveredEvent && tooltipTarget && (
-          <BookingEventTooltip
-            event={hoveredEvent}
-            targetElement={tooltipTarget}
-            visible={true}
-          />
+        {showLiveTracker && (
+          <div className="w-full lg:w-80 flex-shrink-0 animate-in slide-in-from-right duration-300">
+            <LiveStatusTracker />
+          </div>
         )}
+
+        <div className="w-full lg:w-72 flex-shrink-0">
+          <UnassignedList
+            bookings={events.filter(e => e.status === "PENDING")}
+            onSelect={(b) => setActiveBooking(b)}
+          />
+        </div>
+      </div>
+
+      {/* Booking Tooltip */}
+      {hoveredEvent && tooltipTarget && (
+        <BookingEventTooltip
+          event={hoveredEvent}
+          targetElement={tooltipTarget}
+          visible={true}
+        />
+      )}
     </AdminShell>
   );
 }
