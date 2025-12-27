@@ -42,12 +42,12 @@ export const updateBookingAdmin = requireAdmin
       serviceFrequency: z
         .enum(["ONE_TIME", "WEEKLY", "BIWEEKLY", "MONTHLY"])
         .optional(),
-      houseSquareFootage: z.number().int().positive().optional(),
-      basementSquareFootage: z.number().int().positive().optional(),
-      numberOfBedrooms: z.number().int().positive().optional(),
-      numberOfBathrooms: z.number().int().positive().optional(),
-      numberOfCleanersRequested: z.number().int().positive().optional(),
-      cleanerPaymentAmount: z.number().positive().optional(),
+      houseSquareFootage: z.number().int().nonnegative().optional(),
+      basementSquareFootage: z.number().int().nonnegative().optional(),
+      numberOfBedrooms: z.number().int().nonnegative().optional(),
+      numberOfBathrooms: z.number().int().nonnegative().optional(),
+      numberOfCleanersRequested: z.number().int().nonnegative().optional(),
+      cleanerPaymentAmount: z.number().nonnegative().optional(),
       paymentMethod: z
         .enum(["CREDIT_CARD", "CASH", "ZELLE", "VENMO", "OTHER"])
         .optional(),
