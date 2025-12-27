@@ -16,7 +16,7 @@ function ScheduleRequestsPage() {
   const queryClient = useQueryClient();
   const requestsQuery = useQuery(trpc.getAllTimeOffRequests.queryOptions());
 
-  const updateStatusMutation = useMutation(trpc.updateTimeOffRequestStatus.mutationOptions(), {
+  const updateStatusMutation = useMutation(trpc.updateTimeOffRequestStatus.mutationOptions({
     onSuccess: () => {
       queryClient.invalidateQueries(trpc.getAllTimeOffRequests.queryOptions().queryKey as any);
       toast.success("Request updated successfully");
@@ -24,7 +24,7 @@ function ScheduleRequestsPage() {
     onError: (err) => {
       toast.error(err.message || "Failed to update request");
     },
-  });
+  }));
 
   const requests = requestsQuery.data?.requests || [];
   const pendingRequests = requests.filter((r) => r.status === "PENDING" && !r.isCleared);
@@ -72,7 +72,9 @@ function ScheduleRequestsPage() {
                 <RequestCard
                   key={request.id}
                   request={request}
-                  onUpdate={(id, status, notes) => updateStatusMutation.mutateAsync({ requestId: id, status, adminNotes: notes })}
+                  onUpdate={async (id, status, notes) => {
+                    await updateStatusMutation.mutateAsync({ requestId: id, status, adminNotes: notes });
+                  }}
                 />
               ))
             )}
