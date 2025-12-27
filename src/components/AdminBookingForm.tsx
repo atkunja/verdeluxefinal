@@ -563,6 +563,7 @@ export function AdminBookingForm({
 
       {/* Scrollable Form Content */}
       <form
+        id="admin-booking-form"
         onSubmit={(event) => {
           console.log("Form submit triggered");
           void (handleSubmit as any)(onSubmitForm)(event);
@@ -1515,6 +1516,7 @@ export function AdminBookingForm({
             </button>
             <button
               type="submit"
+              form="admin-booking-form"
               disabled={isSubmitting || isDeleting || (isSelectedCleanerUnavailable && !overrideConflict)}
               className="px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
