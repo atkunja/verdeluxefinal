@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTRPC } from "~/trpc/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "~/stores/authStore";
 import { PortalLayout } from "~/components/PortalLayout";
 import { Calendar, LogOut, Clock, MapPin, User, Package, CheckCircle, XCircle, Loader, AlertCircle } from "lucide-react";
@@ -97,6 +97,64 @@ function ClientPortalPage() {
     }
   }, [upcomingQuery.error, allBookingsQuery.error, clearAuth, navigate]);
 
+  const cancelMutation = useMutation(trpc.cancelBookingClient.mutationOptions({
+    onSuccess: () => {
+      toast.success("Booking cancelled successfully");
+      queryClient.invalidateQueries();
+      setCancelBookingId(null);
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to cancel booking");
+    }
+  }));
+
+  const [cancelBookingId, setCancelBookingId] = useState<number | null>(null);
+
+  const handleBookAgain = (booking: any) => {
+    const draft = {
+      address: {
+        formatted: booking.address,
+        street: booking.addressLine1,
+        city: booking.city,
+        state: booking.state,
+        zip: booking.postalCode,
+        placeId: booking.placeId,
+        lat: booking.latitude,
+        lng: booking.longitude,
+      },
+      cleanType: booking.serviceType.toLowerCase(),
+      beds: booking.numberOfBedrooms || 0,
+      baths: booking.numberOfBathrooms || 0,
+      cleanliness: 3, // Default
+      kids: false,
+      pets: false,
+      extras: [],
+      schedule: {},
+      contact: {
+        fullName: `${booking.client.firstName || ''} ${booking.client.lastName || ''}`.trim(),
+        email: booking.client.email,
+        phone: booking.client.phone,
+      },
+      logistics: {
+        homeDuringAppt: false,
+        acceptedTerms: true, // They've booked before
+      },
+      pricing: {
+        base: 0,
+        extras: 0,
+        total: 0,
+        durationMinutes: 0,
+      },
+      meta: {
+        step: 0,
+        createdAt: new Date().toISOString(),
+      },
+    };
+    window.localStorage.setItem("bookingDraft_vella", JSON.stringify(draft));
+    toast.success("Preferences saved! Redirecting to booking quiz...");
+    navigate({ to: "/book-now" });
+  };
+
   const handleLogout = () => {
     clearAuth();
     toast.success("Logged out successfully");
@@ -136,13 +194,22 @@ function ClientPortalPage() {
                   {user.firstName || user.email}
                 </p>
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all duration-200 border border-white/20 shadow-lg hover:shadow-xl self-start sm:self-center"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="font-medium">Logout</span>
-              </button>
+              <div className="flex items-center gap-3 self-start sm:self-center">
+                <button
+                  onClick={() => navigate({ to: "/book-now" })}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-primary rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl font-bold"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>New Booking</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all duration-200 border border-white/20 shadow-lg hover:shadow-xl"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="font-medium">Logout</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -154,7 +221,7 @@ function ClientPortalPage() {
               <nav className="flex gap-1">
                 <button
                   onClick={() => navigate({ to: "/client-portal", search: { view: "dashboard" } })}
-                  className={`flex-1 py-3 px-6 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === "upcoming"
+                  className={`flex-1 py-3 px-6 rounded-lg font-medium text-sm transition-all duration-200 ${view === "dashboard"
                     ? "bg-primary text-white shadow-md"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     }`}
@@ -166,7 +233,7 @@ function ClientPortalPage() {
                 </button>
                 <button
                   onClick={() => navigate({ to: "/client-portal", search: { view: "bookings" } })}
-                  className={`flex-1 py-3 px-6 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === "all"
+                  className={`flex-1 py-3 px-6 rounded-lg font-medium text-sm transition-all duration-200 ${view === "bookings"
                     ? "bg-primary text-white shadow-md"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     }`}
@@ -230,17 +297,23 @@ function ClientPortalPage() {
               {currentQuery.data?.bookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden group"
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden group flex flex-col"
                 >
                   {/* Card Header */}
-                  <div className="bg-gradient-to-r from-gray-50 to-white p-4 border-b border-gray-100">
-                    <div className="text-sm font-semibold text-gray-600">
+                  <div className="bg-gradient-to-r from-gray-50 to-white p-4 border-b border-gray-100 flex justify-between items-center">
+                    <div className="text-xs font-bold text-primary uppercase tracking-wider">
                       {booking.serviceType}
+                    </div>
+                    <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${booking.status === "CANCELLED" ? "bg-red-50 text-red-600" :
+                      booking.status === "COMPLETED" ? "bg-green-50 text-green-600" :
+                        "bg-blue-50 text-blue-600"
+                      }`}>
+                      {booking.status}
                     </div>
                   </div>
 
                   {/* Card Body */}
-                  <div className="p-5">
+                  <div className="p-5 flex-1">
                     <h3 className="font-bold text-lg mb-4 text-gray-900 font-heading group-hover:text-primary transition-colors">
                       {booking.serviceType}
                     </h3>
@@ -270,12 +343,6 @@ function ClientPortalPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-gray-500 text-xs mb-0.5">Time</p>
                           <p className="text-gray-900 font-medium">{formatTime12Hour(booking.scheduledTime)}</p>
-                          {booking.durationHours !== null && (
-                            <p className="text-gray-600 text-xs mt-1">
-                              Duration: {formatDurationHours(booking.durationHours / Math.max(1, booking.numberOfCleanersRequested || 1))}
-                              {booking.numberOfCleanersRequested && booking.numberOfCleanersRequested > 1 ? ` • ${booking.numberOfCleanersRequested} cleaners` : ""}
-                            </p>
-                          )}
                         </div>
                       </div>
 
@@ -286,75 +353,66 @@ function ClientPortalPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-gray-500 text-xs mb-0.5">Location</p>
                           <p className="text-gray-900 font-medium line-clamp-2">{booking.address}</p>
-                          <p className="text-gray-500 text-xs mt-1">Payment: {getPaymentMethodDisplay(booking.paymentMethod)}</p>
                         </div>
                       </div>
-
-                      {booking.cleaner && (
-                        <div className="pt-3 border-t border-gray-100">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <User className="w-4 h-4 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-gray-500 text-xs mb-0.5">Cleaner</p>
-                              <p className="text-gray-900 font-medium">
-                                {booking.cleaner.firstName} {booking.cleaner.lastName}
-                              </p>
-                              {booking.cleaner.phone && (
-                                <a
-                                  href={`tel:${booking.cleaner.phone}`}
-                                  className="text-primary hover:text-primary-dark text-xs mt-1 inline-block"
-                                >
-                                  📞 {booking.cleaner.phone}
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {!booking.cleaner && (
-                        <div className="pt-3 border-t border-gray-100">
-                          <div className="flex items-center gap-2 text-yellow-700 bg-yellow-50 rounded-lg p-2.5">
-                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                            <span className="text-xs font-medium">Awaiting cleaner assignment</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
 
-                  {/* Card Footer */}
-                  {(booking.finalPrice || booking.specialInstructions) && (
-                    <div className="px-5 pb-5 space-y-3">
-                      {booking.finalPrice && (
-                        <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-3 border border-primary/20">
-                          <p className="text-xs text-gray-600 mb-1">Price</p>
-                          <p className="text-xl font-bold text-primary-dark">
-                            ${booking.finalPrice.toFixed(2)}
-                          </p>
-                        </div>
-                      )}
-
-                      {booking.specialInstructions && (
-                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                          <p className="text-xs text-gray-600 font-semibold mb-1.5">
-                            Special Instructions
-                          </p>
-                          <p className="text-xs text-gray-700 leading-relaxed">
-                            {booking.specialInstructions}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Card Footer with Actions */}
+                  <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-2">
+                    <button
+                      onClick={() => handleBookAgain(booking)}
+                      className="flex-1 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      Book Again
+                    </button>
+                    {booking.status === "PENDING" || booking.status === "CONFIRMED" ? (
+                      <button
+                        onClick={() => setCancelBookingId(booking.id)}
+                        className="flex-1 px-3 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors shadow-sm"
+                      >
+                        Cancel
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Cancellation Modal */}
+      {cancelBookingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Cancel Booking?</h3>
+            <p className="text-gray-600 text-sm mb-6">
+              Are you sure you want to cancel this booking? This action cannot be undone.
+              {activeTab === "upcoming" ? " Custom cancellation fees may apply if cancelled within 24 hours." : ""}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelBookingId(null)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                disabled={cancelMutation.isPending}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => cancelMutation.mutate({ bookingId: cancelBookingId })}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg disabled:opacity-50"
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PortalLayout>
   );
 }
