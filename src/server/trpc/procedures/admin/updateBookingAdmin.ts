@@ -16,7 +16,7 @@ export const updateBookingAdmin = requireAdmin
       serviceType: z.string().optional(),
       scheduledDate: z.string().datetime().optional(),
       scheduledTime: z.string().optional(),
-      durationHours: z.number().positive().optional(),
+      durationHours: z.number().nonnegative().optional(),
       address: z.string().optional(),
       addressLine1: z.string().optional(),
       addressLine2: z.string().optional(),
@@ -30,7 +30,7 @@ export const updateBookingAdmin = requireAdmin
       privateBookingNote: z.string().nullable().optional(),
       privateCustomerNote: z.string().nullable().optional(),
       providerNote: z.string().nullable().optional(),
-      finalPrice: z.number().positive().nullable().optional(),
+      finalPrice: z.number().nonnegative().nullable().optional(),
       status: z
         .enum(["PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"])
         .optional(),
