@@ -18,7 +18,7 @@ export const createBookingAdmin = requireAdmin
       serviceType: z.string().min(1, "Service type is required"),
       scheduledDate: z.string().datetime(),
       scheduledTime: z.string().min(1, "Time is required"),
-      durationHours: z.number().positive().optional(),
+      durationHours: z.number().nonnegative().optional(),
       address: z.string().min(1, "Address is required"),
       addressLine1: z.string().optional(),
       addressLine2: z.string().optional(),
@@ -32,19 +32,19 @@ export const createBookingAdmin = requireAdmin
       privateBookingNote: z.string().optional(),
       privateCustomerNote: z.string().optional(),
       providerNote: z.string().optional(),
-      finalPrice: z.number().positive().optional(),
+      finalPrice: z.number().nonnegative().optional(),
       status: z
         .enum(["PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"])
         .default("PENDING"),
       serviceFrequency: z
         .enum(["ONE_TIME", "WEEKLY", "BIWEEKLY", "MONTHLY"])
         .optional(),
-      houseSquareFootage: z.number().int().positive().optional(),
-      basementSquareFootage: z.number().int().positive().optional(),
-      numberOfBedrooms: z.number().int().positive().optional(),
-      numberOfBathrooms: z.number().int().positive().optional(),
-      numberOfCleanersRequested: z.number().int().positive().optional(),
-      cleanerPaymentAmount: z.number().positive().optional(),
+      houseSquareFootage: z.number().int().nonnegative().optional(),
+      basementSquareFootage: z.number().int().nonnegative().optional(),
+      numberOfBedrooms: z.number().int().nonnegative().optional(),
+      numberOfBathrooms: z.number().int().nonnegative().optional(),
+      numberOfCleanersRequested: z.number().int().nonnegative().optional(),
+      cleanerPaymentAmount: z.number().nonnegative().optional(),
       paymentMethod: z
         .enum(["CREDIT_CARD", "CASH", "ZELLE", "VENMO", "OTHER"])
         .optional(),

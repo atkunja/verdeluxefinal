@@ -11,9 +11,12 @@ import { formatDurationHours } from "~/utils/formatTime";
 import { AddressAutocomplete } from "~/components/bookings/AddressAutocomplete";
 import { ClientSelector, ClientOption } from "~/components/bookings/ClientSelector";
 
+const emptyToUndefined = z.preprocess((val) => (val === "" || (typeof val === "number" && isNaN(val)) ? undefined : val), z.number().nonnegative().optional());
+const emptyToUndefinedInt = z.preprocess((val) => (val === "" || (typeof val === "number" && isNaN(val)) ? undefined : val), z.number().int().nonnegative().optional());
+
 const bookingSchema = z.object({
   clientId: z.number().optional(),
-  clientEmail: z.string().email("Invalid email address").optional(),
+  clientEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
   clientFirstName: z.string().optional(),
   clientLastName: z.string().optional(),
   clientPhone: z.string().optional(),
@@ -22,7 +25,7 @@ const bookingSchema = z.object({
   serviceType: z.string().min(1, "Service type is required"),
   scheduledDate: z.string().min(1, "Date is required"),
   scheduledTime: z.string().min(1, "Time is required"),
-  durationHours: z.number().nonnegative().optional(),
+  durationHours: emptyToUndefined,
   address: z.string().min(1, "Address is required"),
   addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
@@ -37,22 +40,22 @@ const bookingSchema = z.object({
   privateBookingNote: z.string().optional(),
   privateCustomerNote: z.string().optional(),
   providerNote: z.string().optional(),
-  finalPrice: z.number().nonnegative().optional(),
-  serviceFrequency: z.enum(["ONE_TIME", "WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
-  houseSquareFootage: z.number().int().nonnegative().optional(),
-  basementSquareFootage: z.number().int().nonnegative().optional(),
-  numberOfBedrooms: z.number().int().nonnegative().optional(),
-  numberOfBathrooms: z.number().int().nonnegative().optional(),
-  numberOfCleanersRequested: z.number().int().nonnegative().optional(),
-  cleanerPaymentAmount: z.number().positive().optional(),
+  finalPrice: emptyToUndefined,
+  serviceFrequency: z.enum(["ONE_TIME", "WEEKLY", "BIWEEKLY", "MONTHLY"]).optional().or(z.literal("")),
+  houseSquareFootage: emptyToUndefinedInt,
+  basementSquareFootage: emptyToUndefinedInt,
+  numberOfBedrooms: emptyToUndefinedInt,
+  numberOfBathrooms: emptyToUndefinedInt,
+  numberOfCleanersRequested: emptyToUndefinedInt,
+  cleanerPaymentAmount: emptyToUndefined,
   paymentMethod: z
     .enum(["CREDIT_CARD", "CASH", "ZELLE", "VENMO", "OTHER"])
-    .optional(),
+    .optional().or(z.literal("")),
   paymentDetails: z.string().optional(),
   selectedExtras: z.array(z.number()).optional(), // Array of extra service rule IDs
   overrideConflict: z.boolean().optional(),
   leadId: z.number().optional(),
-}).refine((data) => data.clientId || data.clientEmail, {
+}).refine((data) => data.clientId || (data.clientEmail && data.clientEmail.length > 0), {
   message: "Either select an existing client or provide email for new client",
   path: ["clientId"],
 });
@@ -165,24 +168,24 @@ export function AdminBookingForm({
   const {
     register,
     handleSubmit,
-    formState: { errors, dirtyFields },
+    formState: { errors, dirtyFields, isSubmitting: formSubmitting },
     watch,
     setValue,
     control,
     reset,
   } = useForm<BookingFormData>({
-    resolver: zodResolver(bookingSchema),
+    resolver: zodResolver(bookingSchema) as any,
     defaultValues: booking
       ? {
         clientId: booking.clientId,
         cleanerId: booking.cleanerId,
         cleanerIds: booking.cleanerIds ?? (booking.cleanerId ? [booking.cleanerId] : []),
-        serviceType: booking.serviceType,
-        scheduledDate: new Date(booking.scheduledDate).toISOString().split("T")[0],
-        scheduledTime: booking.scheduledTime,
-        durationHours: booking.durationHours || undefined,
-        address: booking.address,
-        addressLine1: booking.addressLine1 ?? booking.address,
+        serviceType: booking.serviceType || "",
+        scheduledDate: booking.scheduledDate ? new Date(booking.scheduledDate).toISOString().split("T")[0] : "",
+        scheduledTime: booking.scheduledTime || "",
+        durationHours: booking.durationHours ?? undefined,
+        address: booking.address || "",
+        addressLine1: booking.addressLine1 ?? booking.address ?? "",
         addressLine2: booking.addressLine2 ?? "",
         city: booking.city ?? "",
         state: booking.state ?? "",
@@ -195,7 +198,7 @@ export function AdminBookingForm({
         privateBookingNote: booking.privateBookingNote || "",
         privateCustomerNote: booking.privateCustomerNote || "",
         providerNote: booking.providerNote || "",
-        finalPrice: booking.finalPrice || undefined,
+        finalPrice: booking.finalPrice ?? undefined,
         serviceFrequency:
           booking.serviceFrequency === "ONE_TIME" ||
             booking.serviceFrequency === "WEEKLY" ||
@@ -203,30 +206,30 @@ export function AdminBookingForm({
             booking.serviceFrequency === "MONTHLY"
             ? booking.serviceFrequency
             : undefined,
-        houseSquareFootage: booking.houseSquareFootage || undefined,
-        basementSquareFootage: booking.basementSquareFootage || undefined,
-        numberOfBedrooms: booking.numberOfBedrooms || undefined,
-        numberOfBathrooms: booking.numberOfBathrooms || undefined,
-        numberOfCleanersRequested: booking.numberOfCleanersRequested || undefined,
-        cleanerPaymentAmount: booking.cleanerPaymentAmount || undefined,
+        houseSquareFootage: booking.houseSquareFootage ?? undefined,
+        basementSquareFootage: booking.basementSquareFootage ?? undefined,
+        numberOfBedrooms: booking.numberOfBedrooms ?? undefined,
+        numberOfBathrooms: booking.numberOfBathrooms ?? undefined,
+        numberOfCleanersRequested: booking.numberOfCleanersRequested ?? undefined,
+        cleanerPaymentAmount: booking.cleanerPaymentAmount ?? undefined,
         paymentMethod:
           booking.paymentMethod === "CREDIT_CARD" ||
             booking.paymentMethod === "CASH" ||
             booking.paymentMethod === "ZELLE" ||
             booking.paymentMethod === "VENMO" ||
             booking.paymentMethod === "OTHER"
-            ? booking.paymentMethod
+            ? (booking.paymentMethod as any)
             : undefined,
         paymentDetails: booking.paymentDetails || "",
         selectedExtras: booking.selectedExtras ?? [],
       }
-      : initialData
+      : (initialData
         ? {
           ...initialData,
           cleanerIds: [],
           selectedExtras: [],
         }
-        : undefined,
+        : undefined) as any,
   });
 
   // Update form values when initialData loads (e.g. from lead conversion)
@@ -509,6 +512,7 @@ export function AdminBookingForm({
   );
 
   const onSubmitForm = (data: BookingFormData) => {
+    console.log("Submitting AdminBookingForm with data:", data);
     const composedAddress = data.apartment
       ? `${data.address}, Apt ${data.apartment}`
       : data.address;
@@ -527,6 +531,13 @@ export function AdminBookingForm({
       _shouldAdjustHold: booking ? data.finalPrice !== booking.finalPrice : false,
     } as any);
   };
+
+  // Log validation errors for debugging
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log("AdminBookingForm validation errors:", errors);
+    }
+  }, [errors]);
 
   return (
     <div className="bg-white flex flex-col h-full w-full overflow-hidden">
@@ -552,10 +563,29 @@ export function AdminBookingForm({
 
       {/* Scrollable Form Content */}
       <form
-        onSubmit={(event) => void handleSubmit(onSubmitForm)(event)}
+        onSubmit={(event) => {
+          console.log("Form submit triggered");
+          void (handleSubmit as any)(onSubmitForm)(event);
+        }}
         className="flex-1 overflow-y-auto scroll-pb-24"
       >
         <div className="p-6 space-y-6">
+          {Object.keys(errors).length > 0 && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-red-800 mb-1">Please fix the following issues to save:</h4>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                  {Object.entries(errors).map(([key, error]: [string, any]) => (
+                    <li key={key} className="text-xs text-red-600 flex items-center gap-1.5">
+                      <span className="w-1 h-1 bg-red-400 rounded-full" />
+                      <span className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span> {error.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
           <div className="bg-[#f7f4ed] border border-[#d7d1c4] text-xs text-[#163022] rounded-lg px-3 py-2">
             Required: client + address + service type + date/time. Payment and extras are optional.
           </div>
@@ -705,7 +735,6 @@ export function AdminBookingForm({
               </div>
               <h3 className="text-lg font-semibold text-gray-900">Service Details</h3>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">

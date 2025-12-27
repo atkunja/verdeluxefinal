@@ -6,10 +6,10 @@ export const calculateBookingPrice = requireAdmin
   .input(
     z.object({
       serviceType: z.string(),
-      houseSquareFootage: z.number().int().positive().optional(),
-      basementSquareFootage: z.number().int().positive().optional(),
-      numberOfBedrooms: z.number().int().positive().optional(),
-      numberOfBathrooms: z.number().int().positive().optional(),
+      houseSquareFootage: z.number().int().nonnegative().optional(),
+      basementSquareFootage: z.number().int().nonnegative().optional(),
+      numberOfBedrooms: z.number().int().nonnegative().optional(),
+      numberOfBathrooms: z.number().int().nonnegative().optional(),
       selectedExtras: z.array(z.number()).optional(),
     })
   )
