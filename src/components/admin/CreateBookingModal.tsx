@@ -50,7 +50,8 @@ export function CreateBookingModal({ isOpen, onClose, initialData, bookingId }: 
             queryClient.invalidateQueries(trpc.getAllBookingsAdmin.queryOptions({}, { enabled: true }).queryKey as any);
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Failed to save booking");
+            console.error("Save failed:", err);
+            toast.error(err.message || (err as any)?.data?.message || "Failed to save booking");
         }
     };
 

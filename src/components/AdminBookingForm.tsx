@@ -22,7 +22,7 @@ const bookingSchema = z.object({
   serviceType: z.string().min(1, "Service type is required"),
   scheduledDate: z.string().min(1, "Date is required"),
   scheduledTime: z.string().min(1, "Time is required"),
-  durationHours: z.number().positive().optional(),
+  durationHours: z.number().nonnegative().optional(),
   address: z.string().min(1, "Address is required"),
   addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
@@ -906,6 +906,11 @@ export function AdminBookingForm({
                   {...register("scheduledTime")}
                   className="w-full px-4 py-2.5 border border-[#d7d1c4] rounded-lg focus:ring-2 focus:ring-primary focus:border-[#163022] transition-shadow bg-[#f7f4ed] text-[#163022]"
                 />
+                {errors.scheduledTime && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <span className="text-red-500">•</span> {errors.scheduledTime.message}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -930,6 +935,11 @@ export function AdminBookingForm({
                   className="w-full px-4 py-2.5 border border-[#d7d1c4] rounded-lg focus:ring-2 focus:ring-primary focus:border-[#163022] transition-shadow bg-[#f7f4ed] text-[#163022]"
                   placeholder="e.g., 2000"
                 />
+                {errors.houseSquareFootage && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <span className="text-red-500">•</span> {errors.houseSquareFootage.message}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -942,6 +952,11 @@ export function AdminBookingForm({
                   className="w-full px-4 py-2.5 border border-[#d7d1c4] rounded-lg focus:ring-2 focus:ring-primary focus:border-[#163022] transition-shadow bg-[#f7f4ed] text-[#163022]"
                   placeholder="e.g., 500"
                 />
+                {errors.basementSquareFootage && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <span className="text-red-500">•</span> {errors.basementSquareFootage.message}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -952,8 +967,13 @@ export function AdminBookingForm({
                   type="number"
                   {...register("numberOfBedrooms", { valueAsNumber: true })}
                   className="w-full px-4 py-2.5 border border-[#d7d1c4] rounded-lg focus:ring-2 focus:ring-primary focus:border-[#163022] transition-shadow bg-[#f7f4ed] text-[#163022]"
-                  placeholder="e.g., 3"
+                  placeholder="0"
                 />
+                {errors.numberOfBedrooms && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <span className="text-red-500">•</span> {errors.numberOfBedrooms.message}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -964,8 +984,13 @@ export function AdminBookingForm({
                   type="number"
                   {...register("numberOfBathrooms", { valueAsNumber: true })}
                   className="w-full px-4 py-2.5 border border-[#d7d1c4] rounded-lg focus:ring-2 focus:ring-primary focus:border-[#163022] transition-shadow bg-[#f7f4ed] text-[#163022]"
-                  placeholder="e.g., 2"
+                  placeholder="0"
                 />
+                {errors.numberOfBathrooms && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <span className="text-red-500">•</span> {errors.numberOfBathrooms.message}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -1181,6 +1206,11 @@ export function AdminBookingForm({
                   placeholder="Auto-calculated"
                   readOnly
                 />
+                {errors.finalPrice && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <span className="text-red-500">•</span> {errors.finalPrice.message}
+                  </p>
+                )}
                 <p className="mt-1.5 text-xs text-gray-500">
                   ✓ Automatically calculated
                 </p>
