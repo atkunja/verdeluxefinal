@@ -12,6 +12,7 @@ import {
   Settings,
   Bell,
   Search,
+  XCircle,
 } from "lucide-react";
 import { useAuthStore } from "~/stores/authStore";
 
@@ -37,6 +38,35 @@ const navItems = [
 ];
 
 export function AdminShell({ title, subtitle, children, actions }: AdminShellProps) {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === "ADMIN" || user?.role === "OWNER";
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#f3f0e6] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-gray-100">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-6 font-medium">
+            You do not have permission to access the admin portal.
+            Your current role is <span className="text-red-600 font-bold uppercase tracking-wider">{user?.role || "UNKNOWN"}</span>.
+          </p>
+          <button
+            onClick={() => window.location.href = "/"}
+            className="w-full bg-[#163022] text-white rounded-xl py-3.5 font-bold shadow-lg hover:shadow-xl hover:bg-[#163022]/90 transition-all transform hover:-translate-y-0.5"
+          >
+            Go Back Home
+          </button>
+          <p className="mt-4 text-xs text-gray-400">
+            Current account: {user?.email}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f3f0e6] text-[#111827]">
       <div className="flex min-h-screen">
