@@ -20,8 +20,8 @@ const bookingSchema = z.object({
   cleanerId: z.number().nullable().optional(),
   cleanerIds: z.array(z.number()).max(2).optional(),
   serviceType: z.string().min(1, "Service type is required"),
-  scheduledDate: z.string().optional(),
-  scheduledTime: z.string().optional(),
+  scheduledDate: z.string().min(1, "Date is required"),
+  scheduledTime: z.string().min(1, "Time is required"),
   durationHours: z.number().positive().optional(),
   address: z.string().min(1, "Address is required"),
   addressLine1: z.string().optional(),
@@ -51,6 +51,7 @@ const bookingSchema = z.object({
   paymentDetails: z.string().optional(),
   selectedExtras: z.array(z.number()).optional(), // Array of extra service rule IDs
   overrideConflict: z.boolean().optional(),
+  leadId: z.number().optional(),
 }).refine((data) => data.clientId || data.clientEmail, {
   message: "Either select an existing client or provide email for new client",
   path: ["clientId"],
@@ -120,6 +121,7 @@ interface AdminBookingFormProps {
   onDelete?: (bookingId: number, clientName: string) => void;
   isSubmitting: boolean;
   isDeleting?: boolean;
+  initialData?: Partial<BookingFormData>;
 }
 
 export function AdminBookingForm({
@@ -131,6 +133,7 @@ export function AdminBookingForm({
   onDelete,
   isSubmitting,
   isDeleting,
+  initialData,
 }: AdminBookingFormProps) {
   const trpc = useTRPC();
   const { token } = useAuthStore();
@@ -151,6 +154,14 @@ export function AdminBookingForm({
     lastAddress: null,
   }));
 
+  // Auto-switch to "New Client" if initialData provides new client info (email but no ID)
+  // Update form values when initialData loads (e.g. from lead conversion)
+  useEffect(() => {
+    if (initialData?.clientEmail && !initialData.clientId) {
+      setIsNewClient(true);
+    }
+  }, [initialData]);
+
   const {
     register,
     handleSubmit,
@@ -158,6 +169,7 @@ export function AdminBookingForm({
     watch,
     setValue,
     control,
+    reset,
   } = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: booking
@@ -208,8 +220,25 @@ export function AdminBookingForm({
         paymentDetails: booking.paymentDetails || "",
         selectedExtras: booking.selectedExtras ?? [],
       }
-      : undefined,
+      : initialData
+        ? {
+          ...initialData,
+          cleanerIds: [],
+          selectedExtras: [],
+        }
+        : undefined,
   });
+
+  // Update form values when initialData loads (e.g. from lead conversion)
+  useEffect(() => {
+    if (initialData && !booking) {
+      reset({
+        ...initialData,
+        cleanerIds: [],
+        selectedExtras: [],
+      });
+    }
+  }, [initialData, booking, reset]);
 
   // Fetch pricing rules to get available extras
   const pricingRulesQuery = useQuery(
@@ -528,7 +557,7 @@ export function AdminBookingForm({
       >
         <div className="p-6 space-y-6">
           <div className="bg-[#f7f4ed] border border-[#d7d1c4] text-xs text-[#163022] rounded-lg px-3 py-2">
-            Minimum required: client + address + service type. Date/time, payment, and extras are optional here.
+            Required: client + address + service type + date/time. Payment and extras are optional.
           </div>
           {/* Client Selection Mode Toggle */}
           {!booking && (

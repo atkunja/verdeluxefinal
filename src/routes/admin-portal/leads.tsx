@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "~/components/admin/AdminShell";
 import { Lead, LeadStatus } from "~/mocks/adminPortal";
-import { ListChecks, KanbanSquare, Plus, Search, User, Phone, Mail, Calendar, MessageSquare, X } from "lucide-react";
+import { ListChecks, KanbanSquare, Plus, Search, User, Phone, Mail, Calendar, MessageSquare, X, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 
@@ -172,12 +172,7 @@ function LeadsPipelinePage() {
     },
   });
 
-  const convertMutation = useMutation({
-    ...trpc.crm.convertLeadToBooking.mutationOptions(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: trpc.crm.getLeads.queryOptions().queryKey });
-    },
-  });
+
 
   const leads = useMemo(() => leadsQuery.data || [], [leadsQuery.data]);
 
@@ -206,15 +201,24 @@ function LeadsPipelinePage() {
 
   const navigate = useNavigate();
 
-  const handleConvert = async (leadId: number) => {
-    if (!window.confirm("Convert this lead to a booking? This will create a client account.")) return;
-    try {
-      const result = await convertMutation.mutateAsync({ leadId });
-      alert("Lead converted!");
-      void navigate({ to: "/admin-portal/bookings", search: { selectedId: result.bookingId } });
-    } catch (e: any) {
-      alert("Failed to convert lead: " + e.message);
-    }
+  const handleConvert = (lead: typeof leads[0]) => {
+    if (!window.confirm(`Convert ${lead.name} to a booking?`)) return;
+    void navigate({
+      to: "/admin-portal/bookings",
+      search: { createFromLeadId: lead.id } as any // Type assertion needed until search params are strictly typed
+    });
+  };
+
+  const deleteLeadMutation = useMutation({
+    ...trpc.crm.deleteLead.mutationOptions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: trpc.crm.getLeads.queryOptions().queryKey });
+    },
+  });
+
+  const handleDelete = (lead: typeof leads[0]) => {
+    if (!window.confirm(`Are you sure you want to delete lead ${lead.name}? This action cannot be undone.`)) return;
+    deleteLeadMutation.mutate({ id: lead.id });
   };
 
   if (leadsQuery.isLoading) return <div className="p-12 text-center text-gray-400 italic">Syncing pipeline...</div>;
@@ -239,6 +243,8 @@ function LeadsPipelinePage() {
       }
     >
       <CreateLeadModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+
+
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-[#163022] p-1 shadow-sm">
@@ -342,12 +348,21 @@ function LeadsPipelinePage() {
                       </div>
                       {status !== "CONVERTED" && (
                         <button
-                          onClick={() => handleConvert(lead.id)}
+                          onClick={() => handleConvert(lead)}
                           className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-emerald-100 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           Convert
                         </button>
                       )}
+
+                      <button
+                        onClick={() => handleDelete(lead)}
+                        className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1"
+                        title="Delete Lead"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+
                     </div>
                   </article>
                 ))}
@@ -420,12 +435,20 @@ function LeadsPipelinePage() {
                       </select>
                       {lead.status !== "CONVERTED" && (
                         <button
-                          onClick={() => handleConvert(lead.id)}
+                          onClick={() => handleConvert(lead)}
                           className="rounded-lg bg-[#163022] px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#0f241a] transition-all"
                         >
                           Convert
                         </button>
                       )}
+                      <button
+                        onClick={() => handleDelete(lead)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Delete Lead"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+
                     </div>
                   </td>
                 </tr>
@@ -436,7 +459,8 @@ function LeadsPipelinePage() {
             <div className="p-12 text-center text-gray-400 italic">No leads found matching your filters.</div>
           )}
         </div>
-      )}
-    </AdminShell>
+      )
+      }
+    </AdminShell >
   );
 }

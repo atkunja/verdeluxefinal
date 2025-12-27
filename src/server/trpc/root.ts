@@ -22,6 +22,8 @@ import { deleteBookingAdmin } from "./procedures/admin/deleteBookingAdmin";
 import { getBookingStatsAdmin } from "./procedures/admin/getBookingStatsAdmin";
 import { getRevenueReport } from "./procedures/admin/getRevenueReport";
 import { getQuizSubmissions } from "./procedures/admin/getQuizSubmissions";
+import { getBookingAdmin } from "./procedures/admin/getBookingAdmin";
+import { sendAddCardLink } from "./procedures/admin/sendAddCardLink";
 import { createUserAdmin } from "./procedures/admin/createUserAdmin";
 import { updateUserAdmin } from "./procedures/admin/updateUserAdmin";
 import { deleteUserAdmin } from "./procedures/admin/deleteUserAdmin";
@@ -113,6 +115,8 @@ export const appRouter = createTRPCRouter({
   getBookingStatsAdmin,
   getRevenueReport,
   getQuizSubmissions,
+  getBookingAdmin,
+  sendAddCardLink,
   createUserAdmin,
   updateUserAdmin,
   deleteUserAdmin,

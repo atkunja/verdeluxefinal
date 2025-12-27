@@ -51,6 +51,7 @@ export const createBookingAdmin = requireAdmin
       paymentDetails: z.string().optional(),
       selectedExtras: z.array(z.number()).optional(),
       overrideConflict: z.boolean().optional(),
+      leadId: z.number().optional(),
     })
   )
   .mutation(async ({ input }) => {
@@ -257,6 +258,13 @@ export const createBookingAdmin = requireAdmin
             })),
           },
         },
+      });
+    }
+
+    if (input.leadId) {
+      await db.lead.update({
+        where: { id: input.leadId },
+        data: { status: "CONVERTED" },
       });
     }
 

@@ -10,9 +10,12 @@ import { getLeadSources } from "../procedures/crm/getLeadSources";
 import { createLeadSource } from "../procedures/crm/createLeadSource";
 import { deleteLeadSource } from "../procedures/crm/deleteLeadSource";
 
+import { getLead } from "../procedures/crm/getLead";
+
 export const crmRouter = createTRPCRouter({
   createLead,
   getLeads,
+  getLead,
   updateLead,
   deleteLead,
   analyzeCallTranscript,
@@ -21,3 +24,4 @@ export const crmRouter = createTRPCRouter({
   createLeadSource,
   deleteLeadSource,
 });
+

@@ -6,37 +6,51 @@ import { useTRPC } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { AdminBookingForm } from "~/components/AdminBookingForm";
 
+
 interface CreateBookingModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialData?: any;
+    bookingId?: number | null;
 }
 
-export function CreateBookingModal({ isOpen, onClose }: CreateBookingModalProps) {
+export function CreateBookingModal({ isOpen, onClose, initialData, bookingId }: CreateBookingModalProps) {
     const trpc = useTRPC();
     const queryClient = useQueryClient();
     const createMutation = useMutation(trpc.createBookingAdmin.mutationOptions());
+    const updateMutation = useMutation(trpc.updateBookingAdmin.mutationOptions());
 
+    const bookingQuery = useQuery(trpc.getBookingAdmin.queryOptions({ bookingId: bookingId! }, { enabled: isOpen && !!bookingId }));
     const clientsQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({ role: "CLIENT" }, { enabled: isOpen }));
     const cleanersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({ role: "CLEANER" }, { enabled: isOpen }));
 
     const handleSubmit = async (data: any) => {
         try {
-            // Transform date and time into a single ISO string for the backend if needed, 
-            // but the backend expects scheduledDate as ISO and scheduledTime as string.
-            // AdminBookingForm provides scheduledDate as YYYY-MM-DD.
-            const isoDate = data.scheduledDate ? new Date(data.scheduledDate).toISOString() : new Date().toISOString();
+            // Transform date and time into a single ISO string for the backend.
+            // AdminBookingForm ensures scheduledDate is present (YYYY-MM-DD).
+            const isoDate = new Date(data.scheduledDate!).toISOString();
 
-            await createMutation.mutateAsync({
-                ...data,
-                scheduledDate: isoDate,
-                status: "CONFIRMED",
-            });
-
-            toast.success("Booking created successfully");
+            if (bookingId) {
+                await updateMutation.mutateAsync({
+                    ...data,
+                    bookingId,
+                    scheduledDate: isoDate,
+                    // Ensure status remains unless explicitly changed, though form data might handle it.
+                });
+                toast.success("Booking updated successfully");
+            } else {
+                await createMutation.mutateAsync({
+                    ...data,
+                    scheduledDate: isoDate,
+                    status: "CONFIRMED",
+                    leadId: data.leadId ?? initialData?.leadId,
+                });
+                toast.success("Booking created successfully");
+            }
             queryClient.invalidateQueries(trpc.getAllBookingsAdmin.queryOptions({}, { enabled: true }).queryKey as any);
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Failed to create booking");
+            toast.error(err.message || "Failed to save booking");
         }
     };
 
@@ -85,7 +99,7 @@ export function CreateBookingModal({ isOpen, onClose }: CreateBookingModalProps)
                                             Close
                                         </button>
                                     </div>
-                                ) : clientsQuery.isLoading || cleanersQuery.isLoading ? (
+                                ) : clientsQuery.isLoading || cleanersQuery.isLoading || (bookingId && bookingQuery.isLoading) ? (
                                     <div className="flex-1 flex items-center justify-center p-12">
                                         <div className="flex flex-col items-center gap-4">
                                             <Loader2 className="w-12 h-12 text-primary animate-spin" />
@@ -96,9 +110,11 @@ export function CreateBookingModal({ isOpen, onClose }: CreateBookingModalProps)
                                     <AdminBookingForm
                                         clients={(clientsQuery.data?.users as any) || []}
                                         cleaners={(cleanersQuery.data?.users as any) || []}
+                                        booking={bookingQuery.data?.booking as any}
                                         onSubmit={handleSubmit}
                                         onCancel={onClose}
-                                        isSubmitting={createMutation.isPending}
+                                        isSubmitting={createMutation.isPending || updateMutation.isPending}
+                                        initialData={initialData}
                                     />
                                 )}
                             </Dialog.Panel>
