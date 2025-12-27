@@ -73,7 +73,7 @@ export const cancelBookingClient = requireAuth
         // Log the action
         await db.systemLog.create({
             data: {
-                userId: userId,
+                user: { connect: { id: userId } },
                 action: "booking.client_cancelled",
                 entity: "booking",
                 entityId: input.bookingId,

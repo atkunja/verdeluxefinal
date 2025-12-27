@@ -9,16 +9,15 @@ export const auditLogMiddleware = middleware(async ({ path, type, next, ctx }) =
   if (type === 'mutation' && result.ok) {
     const { profile: user } = ctx;
     if (user?.id) {
-        await db.systemLog.create({
-          data: {
-            userId: user.id,
-            action: path,
-            // A real implementation would require more sophisticated logic to determine the entity and its ID.
-            entity: path.split('.')[0] ?? 'unknown',
-            entityId: (result.data as any)?.id ?? undefined,
-            after: result.data as any,
-          },
-        });
+      await db.systemLog.create({
+        data: {
+          user: { connect: { id: user.id } },
+          action: path,
+          entity: path.split('.')[0] ?? 'unknown',
+          entityId: (result.data as any)?.id ?? undefined,
+          after: result.data as any,
+        },
+      });
     }
   }
 
