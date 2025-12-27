@@ -33,7 +33,6 @@ const navItems = [
   { label: "Schedule", icon: Clock3, path: "/admin-portal/schedule-requests" },
   { label: "Revenue", icon: BarChart3, path: "/admin-portal/revenue-reports" },
   { label: "Signups", icon: Users, path: "/admin-portal/signups" },
-  { label: "Pricing", icon: Banknote, path: "/admin-portal/pricing" },
 ];
 
 export function AdminShell({ title, subtitle, children, actions }: AdminShellProps) {
