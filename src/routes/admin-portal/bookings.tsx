@@ -9,7 +9,7 @@ import { ActionConfirmationModal } from "~/components/admin/ActionConfirmationMo
 import { CreateBookingModal } from "~/components/admin/CreateBookingModal";
 import { BookingEvent, ChargeRow } from "~/mocks/adminPortal";
 import { listBookings, listCharges, chargeBooking, preChargeBooking, retryCharge, refundCharge } from "~/api/adminPortal";
-import { CalendarClock, CreditCard, MapPin, User, Eye, EyeOff, UserPlus, CheckCircle } from "lucide-react";
+import { CalendarClock, CreditCard, MapPin, User, Eye, EyeOff, UserPlus, CheckCircle, Signal } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTRPC } from "~/trpc/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -322,8 +322,8 @@ function BookingsPage() {
         </div>
       }
     >
-      <div className="relative flex flex-col gap-6 lg:flex-row h-full">
-        <div className="flex-1 overflow-hidden">
+      <div className="relative flex flex-col gap-8 h-full">
+        <div className="w-full">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-700">Providers</label>
@@ -729,17 +729,27 @@ function BookingsPage() {
           <CreateBookingModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} />
         </div>
 
-        {showLiveTracker && (
-          <div className="w-full lg:w-80 flex-shrink-0 animate-in slide-in-from-right duration-300">
-            <LiveStatusTracker />
-          </div>
-        )}
-
-        <div className="w-full lg:w-72 flex-shrink-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          {/* Column 1: Marketplace (Unassigned) */}
           <UnassignedList
             bookings={events.filter(e => e.status === "PENDING")}
             onSelect={(b) => setActiveBooking(b)}
           />
+
+          {/* Column 2: Live Status Tracker */}
+          {showLiveTracker ? (
+            <LiveStatusTracker />
+          ) : (
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 flex flex-col items-center justify-center text-center opacity-60">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                <Signal className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Live Tracking Offline</h3>
+              <p className="text-sm text-gray-500 max-w-[240px] mt-1">
+                Enable live tracker from the dashboard to see cleaner locations.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1118,14 +1128,18 @@ function BookingSummaryPanel({
 function UnassignedList({ bookings, onSelect }: { bookings: BookingEvent[], onSelect: (b: BookingEvent) => void }) {
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm h-full flex flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <div className="text-lg font-bold text-[#0f172a]">Marketplace</div>
-          <div className="text-xs text-gray-500">{bookings.length} unassigned</div>
-        </div>
-        <div className="rounded-full bg-amber-100 p-2 text-amber-600">
-          <UserPlus className="h-5 w-5" />
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col h-[600px]">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-lg font-bold">Marketplace</div>
+              <div className="text-xs text-white/70">{bookings.length} unassigned jobs</div>
+            </div>
+          </div>
         </div>
       </div>
 
