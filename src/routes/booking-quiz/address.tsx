@@ -27,6 +27,55 @@ function isInServiceArea(address: string, city?: string): boolean {
   );
 }
 
+function MapPreview({ lat, lng }: { lat?: number; lng?: number }) {
+  const mapRef = React.useRef<HTMLDivElement>(null);
+  const [map, setMap] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (!mapRef.current || !window.google || !lat || !lng) return;
+
+    if (!map) {
+      const newMap = new window.google.maps.Map(mapRef.current, {
+        center: { lat, lng },
+        zoom: 15,
+        disableDefaultUI: true,
+        styles: [
+          {
+            featureType: "all",
+            elementType: "geometry",
+            stylers: [{ color: "#f5f5f5" }],
+          },
+          {
+            featureType: "all",
+            elementType: "labels.text.fill",
+            stylers: [{ color: "#616161" }],
+          },
+          {
+            featureType: "water",
+            elementType: "geometry",
+            stylers: [{ color: "#e9e9e9" }]
+          }
+        ],
+      });
+      new window.google.maps.Marker({
+        position: { lat, lng },
+        map: newMap,
+      });
+      setMap(newMap);
+    } else {
+      map.setCenter({ lat, lng });
+    }
+  }, [lat, lng, map]);
+
+  if (!lat || !lng) return null;
+
+  return (
+    <div className="mt-6 overflow-hidden rounded-xl border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div ref={mapRef} className="h-48 w-full bg-gray-50" />
+    </div>
+  );
+}
+
 function AddressStepContent() {
   const navigate = useNavigate();
   const { draft, updateDraft } = useBookingDraft();
@@ -40,7 +89,15 @@ function AddressStepContent() {
   }, []);
 
   const handleOnChange = React.useCallback((value: string) => {
-    updateDraft({ address: { ...draft.address, formatted: value, city: undefined } });
+    updateDraft({
+      address: {
+        ...draft.address,
+        formatted: value,
+        city: undefined,
+        lat: undefined,
+        lng: undefined
+      }
+    });
     setAddressSelected(false);
   }, [updateDraft, draft.address]);
 
@@ -99,7 +156,7 @@ function AddressStepContent() {
 
       {/* Service area warning */}
       {addressValue.length >= 5 && !inServiceArea && (
-        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-800">
+        <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-800">
           <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium">We don't currently service this area</p>
@@ -110,8 +167,11 @@ function AddressStepContent() {
         </div>
       )}
 
+      {/* Map Preview */}
+      <MapPreview lat={draft.address.lat} lng={draft.address.lng} />
+
       {!hasValidInput && draft.address.formatted && hasPlacesKey && showErrors && (
-        <p className="text-sm text-red-600">Please pick an address from suggestions.</p>
+        <p className="mt-2 text-sm text-red-600">Please pick an address from suggestions.</p>
       )}
 
       <button
