@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Camera, Image as ImageIcon, CheckCircle2, X, Loader2, UploadCloud } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Trash2, ImageOff } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface BookingPhotoManagerProps {
@@ -13,11 +13,21 @@ export function BookingPhotoManager({ bookingId, uploaderId }: BookingPhotoManag
     const trpc = useTRPC();
     const queryClient = useQueryClient();
     const [uploadingType, setUploadingType] = useState<"BEFORE" | "AFTER" | "DURING" | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const imagesQuery = useQuery(trpc.photos.getBookingImages.queryOptions({ bookingId }));
 
     const createSignedUpload = useMutation(trpc.photos.createSignedUpload.mutationOptions());
     const savePhotoRecord = useMutation(trpc.photos.savePhotoRecord.mutationOptions());
+    const deleteImage = useMutation(trpc.photos.deleteBookingImage.mutationOptions({
+        onSuccess: () => {
+            toast.success("Photo deleted");
+            queryClient.invalidateQueries({ queryKey: trpc.photos.getBookingImages.queryKey({ bookingId }) });
+        },
+        onError: (err: any) => {
+            toast.error(err?.message || "Failed to delete photo");
+        },
+    }));
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "BEFORE" | "AFTER" | "DURING") => {
         const files = e.target.files;
@@ -60,6 +70,15 @@ export function BookingPhotoManager({ bookingId, uploaderId }: BookingPhotoManag
         setUploadingType(null);
         e.target.value = "";
         queryClient.invalidateQueries({ queryKey: trpc.photos.getBookingImages.queryKey({ bookingId }) });
+    };
+
+    const handleDelete = (imageId: number) => {
+        if (confirm("Delete this photo?")) {
+            setDeletingId(imageId);
+            deleteImage.mutate({ id: imageId }, {
+                onSettled: () => setDeletingId(null),
+            });
+        }
     };
 
     const images = imagesQuery.data || [];
@@ -117,21 +136,27 @@ export function BookingPhotoManager({ bookingId, uploaderId }: BookingPhotoManag
 
             <div className="space-y-8">
                 {/* Before Gallery */}
-                <GallerySection title="Before" images={beforeImages} isLoading={imagesQuery.isLoading} />
+                <GallerySection title="Before" images={beforeImages} isLoading={imagesQuery.isLoading} onDelete={handleDelete} deletingId={deletingId} />
 
                 {/* After Gallery */}
-                <GallerySection title="After" images={afterImages} isLoading={imagesQuery.isLoading} />
+                <GallerySection title="After" images={afterImages} isLoading={imagesQuery.isLoading} onDelete={handleDelete} deletingId={deletingId} />
 
                 {/* During/Other Gallery */}
                 {duringImages.length > 0 && (
-                    <GallerySection title="Work in Progress" images={duringImages} isLoading={imagesQuery.isLoading} />
+                    <GallerySection title="Work in Progress" images={duringImages} isLoading={imagesQuery.isLoading} onDelete={handleDelete} deletingId={deletingId} />
                 )}
             </div>
         </div>
     );
 }
 
-function GallerySection({ title, images, isLoading }: { title: string; images: any[]; isLoading: boolean }) {
+function GallerySection({ title, images, isLoading, onDelete, deletingId }: {
+    title: string;
+    images: any[];
+    isLoading: boolean;
+    onDelete: (id: number) => void;
+    deletingId: number | null;
+}) {
     if (images.length === 0 && !isLoading) return null;
 
     return (
@@ -145,13 +170,40 @@ function GallerySection({ title, images, isLoading }: { title: string; images: a
                 ) : (
                     images.map((img) => (
                         <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
-                            <img
-                                src={img.signedUrl}
-                                alt={img.caption || title}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                            {img.signedUrl ? (
+                                <img
+                                    src={img.signedUrl}
+                                    alt={img.caption || title}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                    onError={(e) => {
+                                        // Replace broken image with placeholder
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                />
+                            ) : null}
+                            {/* Fallback for broken/missing images */}
+                            <div className={`absolute inset-0 bg-gray-100 flex flex-col items-center justify-center ${img.signedUrl ? 'hidden' : ''}`}>
+                                <ImageOff className="w-8 h-8 text-gray-400 mb-2" />
+                                <span className="text-xs text-gray-500">Image unavailable</span>
+                            </div>
+
+                            {/* Delete button overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
                                 <span className="text-[10px] text-white font-medium">{img.caption || title}</span>
+                                <button
+                                    onClick={() => onDelete(img.id)}
+                                    disabled={deletingId === img.id}
+                                    className="p-1.5 bg-red-500 hover:bg-red-600 rounded-lg text-white transition-colors disabled:opacity-50"
+                                    title="Delete photo"
+                                >
+                                    {deletingId === img.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4" />
+                                    )}
+                                </button>
                             </div>
                         </div>
                     ))
@@ -160,3 +212,4 @@ function GallerySection({ title, images, isLoading }: { title: string; images: a
         </div>
     );
 }
+
