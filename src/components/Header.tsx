@@ -179,22 +179,13 @@ export function Header() {
                   </button>
                 </>
               ) : (
-                <div className="flex items-center gap-1">
-                  <Link
-                    to="/login"
-                    className="flex items-center gap-1 px-[20px] py-[10px] text-[13px] font-semibold text-[#163022] bg-[#f3f0e6] border border-[#e3ded2] rounded-full hover:bg-[#e8e5dc] transition-all uppercase"
-                  >
-                    Client Portal
-                  </Link>
-                  <div className="w-[1px] h-4 bg-gray-300 mx-1 hidden lg:block" />
-                  <Link
-                    to="/login"
-                    className="flex items-center gap-1 px-[15px] py-[10px] text-[12px] font-semibold text-gray-500 hover:text-primary-dark transition-all uppercase"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    Team Login
-                  </Link>
-                </div>
+                <Link
+                  to="/login"
+                  className="flex items-center gap-1 px-[20px] py-[10px] text-[13px] font-semibold text-primary-dark bg-transparent border border-gray-200 rounded-full hover:border-primary-dark transition-all uppercase"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Team Login
+                </Link>
               )}
             </div>
           </div>
@@ -362,23 +353,14 @@ export function Header() {
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <Link
-                    to="/login"
-                    className="flex items-center justify-center gap-2 px-[25px] py-[12px] text-[13px] font-bold text-[#163022] bg-[#f3f0e6] border border-[#e3ded2] rounded-full uppercase"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Client Portal
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="flex items-center justify-center gap-2 px-[25px] py-[10px] text-[12px] font-semibold text-gray-500 uppercase"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Team Login
-                  </Link>
-                </div>
+                <Link
+                  to="/login"
+                  className="flex items-center justify-center gap-2 px-[25px] py-[10px] text-[13px] font-semibold text-primary-dark bg-transparent border border-gray-200 rounded-full hover:border-primary-dark transition-all uppercase"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <LogIn className="w-4 h-4" />
+                  Team Login
+                </Link>
               )}
             </div>
           </div>
