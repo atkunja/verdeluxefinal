@@ -3,10 +3,41 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { Camera, CheckCircle2, Loader2, Trash2, ImageOff } from "lucide-react";
 import toast from "react-hot-toast";
+import heic2any from "heic2any";
 
 interface BookingPhotoManagerProps {
     bookingId: number;
     uploaderId: number;
+}
+
+// Helper function to convert HEIC to JPEG
+async function convertHeicToJpeg(file: File): Promise<File> {
+    const isHeic = file.type === "image/heic" ||
+        file.type === "image/heif" ||
+        file.name.toLowerCase().endsWith(".heic") ||
+        file.name.toLowerCase().endsWith(".heif");
+
+    if (!isHeic) return file;
+
+    try {
+        const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.85,
+        });
+
+        // heic2any can return a single blob or an array
+        const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        if (!blob) {
+            throw new Error("Conversion returned empty result");
+        }
+        const newFileName = file.name.replace(/\\.(heic|heif)$/i, ".jpg");
+
+        return new File([blob], newFileName, { type: "image/jpeg" });
+    } catch (err) {
+        console.error("HEIC conversion failed:", err);
+        throw new Error("Failed to convert HEIC image. Please try a JPEG or PNG.");
+    }
 }
 
 export function BookingPhotoManager({ bookingId, uploaderId }: BookingPhotoManagerProps) {
@@ -36,8 +67,13 @@ export function BookingPhotoManager({ bookingId, uploaderId }: BookingPhotoManag
         setUploadingType(type);
         const fileList = Array.from(files);
 
-        for (const file of fileList) {
+        for (let file of fileList) {
             try {
+                // Convert HEIC to JPEG if needed
+                toast.loading("Processing image...", { id: "processing" });
+                file = await convertHeicToJpeg(file);
+                toast.dismiss("processing");
+
                 const signed = await createSignedUpload.mutateAsync({
                     bookingId,
                     fileName: file.name,
@@ -62,6 +98,7 @@ export function BookingPhotoManager({ bookingId, uploaderId }: BookingPhotoManag
 
                 toast.success(`${type.charAt(0) + type.slice(1).toLowerCase()} photo uploaded`);
             } catch (err: any) {
+                toast.dismiss("processing");
                 console.error(err);
                 toast.error(err?.message || "Upload failed");
             }

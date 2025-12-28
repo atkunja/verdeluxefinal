@@ -39,6 +39,7 @@
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
+    "heic2any": "^0.0.4",
     "json-2-csv": "^5.5.10",
     "jsonwebtoken": "^9.0.2",
     "lodash.debounce": "^4.0.8",
@@ -57,9 +58,9 @@
     "vinxi": "0.5.3",
     "vite": "^6",
     "vite-plugin-node-polyfills": "^0.23.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "zod": "^3.25.0",
-    "zustand": "^5.0.8",
-    "vite-tsconfig-paths": "^5.1.4"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",
@@ -78,7 +79,6 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "prisma": "^6.5.0",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.31.1",
     "typescript-eslint": "^8.31.1"
   },
   "private": true,
