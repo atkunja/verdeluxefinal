@@ -83,10 +83,11 @@ export const openPhone = {
     },
 
     // Helper to normalize phone numbers to E.164-like format (digits only with leading plus)
-    normalizePhone(phone: string): string {
-        if (!phone) return "";
-        const digits = phone.replace(/\D/g, "");
-        return `+${digits}`;
+    normalizePhone(raw: string): string {
+        const digits = raw.replace(/\D/g, "");
+        if (digits.length === 10) return `+1${digits}`;
+        if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+        return raw.startsWith("+") ? raw : `+${digits}`;
     },
 
     async getConversations(pageToken?: string) {
@@ -176,5 +177,137 @@ export const openPhone = {
         }
 
         return await response.json();
+    },
+
+    async verifySignature(body: string, signature: string): Promise<boolean> {
+        if (!env.OPENPHONE_WEBHOOK_SECRET || !signature) return false;
+
+        const crypto = await import("node:crypto");
+        const hmac = crypto.createHmac("sha256", env.OPENPHONE_WEBHOOK_SECRET);
+        const digest = hmac.update(body).digest("hex");
+
+        return digest === signature;
+    },
+
+    async upsertMessage(msg: any, adminIdOverride?: number) {
+        const { db } = await import("~/server/db");
+        const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
+
+        const fromPhone = this.normalizePhone(msg.from);
+        const systemPhoneNormalized = this.normalizePhone(systemPhone);
+        const toPhones = (msg.to || []) as string[];
+        const contactPhoneRaw = fromPhone === systemPhoneNormalized ? toPhones[0] : msg.from;
+        const contactPhone = this.normalizePhone(contactPhoneRaw);
+
+        if (!contactPhone) return null;
+
+        const normalizedDigits = contactPhone.replace(/\D/g, "");
+        let contactUser = await db.user.findFirst({
+            where: { phone: { contains: normalizedDigits.slice(-10) } }
+        });
+
+        if (!contactUser) {
+            contactUser = await db.user.create({
+                data: {
+                    firstName: "Guest",
+                    lastName: contactPhone,
+                    phone: contactPhone,
+                    email: `${normalizedDigits}@guest.v-luxe.com`,
+                    password: "guest-no-login-permitted",
+                    role: "CLIENT" as any
+                }
+            });
+        }
+
+        const isOutgoing = fromPhone === systemPhoneNormalized;
+        let finalAdminId = adminIdOverride;
+
+        if (!finalAdminId) {
+            const firstAdmin = await db.user.findFirst({ where: { role: 'ADMIN' } });
+            finalAdminId = firstAdmin?.id || 1; // Fallback to 1 if no admin found
+        }
+
+        const senderId = isOutgoing ? finalAdminId : contactUser.id;
+        const recipientId = isOutgoing ? contactUser.id : finalAdminId;
+
+        return await (db.message as any).upsert({
+            where: { externalId: msg.id },
+            create: {
+                externalId: msg.id,
+                sender: { connect: { id: senderId } },
+                recipient: { connect: { id: recipientId } },
+                content: msg.content || "",
+                mediaUrls: msg.media?.map((m: any) => m.url) || [],
+                createdAt: new Date(msg.createdAt),
+                isRead: true,
+            },
+            update: {
+                content: msg.content || "",
+                mediaUrls: msg.media?.map((m: any) => m.url) || [],
+            },
+        });
+    },
+
+    async upsertCall(call: any, adminIdOverride?: number) {
+        const { db } = await import("~/server/db");
+        const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
+
+        const fromPhoneNormalized = this.normalizePhone(call.from);
+        const systemPhoneNormalized = this.normalizePhone(systemPhone);
+        const contactPhoneRaw = fromPhoneNormalized === systemPhoneNormalized ? call.to : call.from;
+        const contactPhone = this.normalizePhone(contactPhoneRaw);
+
+        if (!contactPhone) return null;
+
+        const normalizedDigits = contactPhone.replace(/\D/g, "");
+        let contactUser = await db.user.findFirst({
+            where: { phone: { contains: normalizedDigits.slice(-10) } }
+        });
+
+        if (!contactUser) {
+            contactUser = await db.user.create({
+                data: {
+                    firstName: "Guest",
+                    lastName: contactPhone,
+                    phone: contactPhone,
+                    email: `${normalizedDigits}@guest-call.v-luxe.com`,
+                    password: "guest-no-login-permitted",
+                    role: "CLIENT" as any
+                }
+            });
+        }
+
+        let finalAdminId = adminIdOverride;
+        if (!finalAdminId) {
+            const firstAdmin = await db.user.findFirst({ where: { role: 'ADMIN' } });
+            finalAdminId = firstAdmin?.id || 1;
+        }
+
+        return await (db.callLog as any).upsert({
+            where: { externalId: call.id },
+            create: {
+                externalId: call.id,
+                direction: call.direction,
+                status: call.status,
+                duration: call.duration,
+                fromNumber: call.from,
+                toNumber: call.to,
+                recordingUrl: call.recording?.url,
+                startTime: new Date(call.createdAt),
+                user: { connect: { id: finalAdminId } },
+                contact: { connect: { id: contactUser.id } },
+                transcript: call.transcript,
+                summary: call.summary,
+                voicemailUrl: call.voicemail?.url,
+            },
+            update: {
+                status: call.status,
+                duration: call.duration,
+                recordingUrl: call.recording?.url,
+                transcript: call.transcript,
+                summary: call.summary,
+                voicemailUrl: call.voicemail?.url,
+            }
+        });
     }
 };

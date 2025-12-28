@@ -12,6 +12,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().optional(),
   OPENPHONE_API_KEY: z.string().optional(),
   OPENPHONE_PHONE_NUMBER: z.string().optional(),
+  OPENPHONE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   VITE_STRIPE_PUBLISHABLE_KEY: z.string().optional(), // Browser key

@@ -29,12 +29,7 @@ export const sendMessage = requireAdmin
     }
 
     // Normalize phone number to E.164 (OpenPhone requirement)
-    let formattedPhone = recipient.phone.replace(/\D/g, "");
-    if (formattedPhone.length === 10) {
-      formattedPhone = `+1${formattedPhone}`;
-    } else if (!formattedPhone.startsWith("+")) {
-      formattedPhone = `+${formattedPhone}`;
-    }
+    const formattedPhone = openPhone.normalizePhone(recipient.phone);
 
     // 2. Send via OpenPhone
     let externalId: string | null = null;

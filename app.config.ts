@@ -85,6 +85,18 @@ export default createApp({
       ],
     },
     {
+      type: "http",
+      name: "openphone-webhook",
+      base: "/api/webhooks/openphone",
+      handler: "./src/server/webhooks/openphone-handler.ts",
+      target: "server",
+      plugins: () => [
+        tsConfigPaths({
+          projects: ["./tsconfig.json"],
+        }),
+      ],
+    },
+    {
       type: "spa",
       name: "client",
       handler: "./index.html",
