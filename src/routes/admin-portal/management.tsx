@@ -26,6 +26,7 @@ interface FormState {
 }
 
 import { useAuthStore } from "~/stores/authStore";
+import { AdminUserForm } from "~/components/AdminUserForm";
 
 // ...
 
@@ -55,7 +56,7 @@ function ManagementPage() {
   const [detailUser, setDetailUser] = useState<any>(null);
 
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState<FormState>({ name: "", email: "", phone: "", role: "" });
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   // Mutations
   const deleteMutation = useMutation(trpc.deleteUserAdmin.mutationOptions({
@@ -123,16 +124,10 @@ function ManagementPage() {
   const openModal = (mode: "create" | "edit", user?: any) => {
     if (mode === "edit" && user) {
       setEditId(user.id);
-      setForm({
-        name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-        email: user.email,
-        phone: user.phone || "",
-        role: user.role,
-        permissions: (user.adminPermissions as any) || {}
-      });
+      setSelectedUser(user);
     } else {
       setEditId(null);
-      setForm({ name: "", email: "", phone: "", role: Array.isArray(roleMap[tab]) ? "ADMIN" : roleMap[tab] as string, permissions: {} });
+      setSelectedUser(undefined);
     }
     setShowModal(true);
   };
@@ -142,34 +137,30 @@ function ManagementPage() {
     setShowDetailModal(true);
   };
 
-  const handleSave = async () => {
-    if (!form.name || !form.email) {
-      toast.error("Name and Email are required");
-      return;
-    }
-    const [firstName, ...lastNameParts] = form.name.split(" ");
-    const lastName = lastNameParts.join(" ");
-
+  const handleSave = async (data: any) => {
     try {
       if (editId) {
         await updateMutation.mutateAsync({
           userId: editId,
-          firstName,
-          lastName,
-          email: form.email,
-          phone: form.phone,
-          role: form.role as any,
-          adminPermissions: form.permissions,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          role: data.role as any,
+          adminPermissions: data.adminPermissions,
+          color: data.color,
+          temporaryPassword: data.temporaryPassword,
         });
       } else {
         await createMutation.mutateAsync({
-          firstName,
-          lastName,
-          email: form.email,
-          phone: form.phone,
-          role: form.role as any,
-          adminPermissions: form.permissions,
-          password: "VerdeLuxeTemp123!", // Default temp password
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          role: data.role as any,
+          adminPermissions: data.adminPermissions,
+          password: data.password || "VerdeLuxeTemp123!", // Should be provided by form now
+          color: data.color,
         });
       }
     } catch (e: any) {
@@ -437,122 +428,14 @@ function ManagementPage() {
         </div>
       )}
 
-      {/* Edit/Create Modal (Existing) */}
+      {/* Edit/Create Modal (AdminUserForm) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-[#163022]">
-                  {editId ? "Edit" : "Create"} {activeLabel}
-                </h2>
-                <p className="text-sm text-gray-500">Enter details below</p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-full p-2 hover:bg-gray-100 transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-400" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Full Name <span className="text-red-500">*</span></label>
-                <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium focus:border-[#163022] focus:bg-white focus:outline-none transition-all"
-                  placeholder="e.g. Jane Doe"
-                />
-              </div>
-
-              {(tab === "customers" || tab === "cleaners") && (
-                <>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email <span className="text-red-500">*</span></label>
-                    <input
-                      required
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium focus:border-[#163022] focus:bg-white focus:outline-none transition-all"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Phone</label>
-                    <input
-                      value={form.phone}
-                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium focus:border-[#163022] focus:bg-white focus:outline-none transition-all"
-                      placeholder="+1 (555) 000-0000"
-                    />
-                  </div>
-                </>
-              )}
-
-              {tab === "admins" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Role <span className="text-red-500">*</span></label>
-                    <select
-                      value={form.role}
-                      onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium focus:border-[#163022] focus:outline-none"
-                    >
-                      <option value="ADMIN">Admin</option>
-                      <option value="OWNER">Owner</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Permissions</label>
-                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      {[
-                        { key: "manage_bookings", label: "Bookings" },
-                        { key: "manage_customers", label: "Customers" },
-                        { key: "manage_cleaners", label: "Cleaners" },
-                        { key: "manage_accounting", label: "Accounting" },
-                        { key: "view_reports", label: "Reports" },
-                        { key: "manage_settings", label: "Settings" },
-                      ].map((p) => (
-                        <label key={p.key} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={!!form.permissions?.[p.key]}
-                            onChange={(e) => setForm(f => ({
-                              ...f,
-                              permissions: { ...f.permissions, [p.key]: e.target.checked }
-                            }))}
-                            className="rounded border-gray-300 text-[#163022] focus:ring-[#163022]"
-                          />
-                          {p.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-xl py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="flex-1 rounded-xl bg-[#163022] py-3 text-sm font-bold text-white shadow-lg shadow-[#163022]/20 hover:bg-[#0f241a] transition-all"
-                >
-                  {editId ? 'Update' : 'Create'} User
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AdminUserForm
+          user={selectedUser}
+          onSubmit={handleSave}
+          onCancel={() => setShowModal(false)}
+          isSubmitting={updateMutation.isPending || createMutation.isPending}
+        />
       )}
     </AdminShell>
   );
