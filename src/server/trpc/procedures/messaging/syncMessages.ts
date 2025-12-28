@@ -14,15 +14,19 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
 
         // 2. Iterate through conversations to get messages
         for (const conv of conversations) {
-            // Extract participants, excluding our own number
+            // Extract participants, excluding our own number. Handle both object and string array formats.
             const participants = (conv.participants || [])
-                .map((p: any) => p.phoneNumber) // Assuming object has phoneNumber field
-                .filter((p: string) => p !== systemPhone);
+                .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
+                .filter((p: string | undefined) => {
+                    if (!p || typeof p !== 'string') return false;
+                    const normalized = p.replace(/\D/g, "");
+                    const systemDigits = systemPhone.replace(/\D/g, "");
+                    return normalized !== systemDigits && normalized.length > 5;
+                });
 
             if (participants.length === 0) continue;
 
             // Fetch messages for this specific conversation
-            // We only fetch the first page (latest messages) for sync efficiency
             const msgsData = await openPhone.getMessages(participants);
             const messages = (msgsData.data || []) as any[];
 

@@ -82,6 +82,13 @@ export const openPhone = {
         return matching.id;
     },
 
+    // Helper to normalize phone numbers to E.164-like format (digits only with leading plus)
+    normalizePhone(phone: string): string {
+        if (!phone) return "";
+        const digits = phone.replace(/\D/g, "");
+        return `+${digits}`;
+    },
+
     async getConversations(pageToken?: string) {
         const phoneNumberId = await this.getPhoneNumberId();
         const url = new URL(`${BASE_URL}/conversations`);
@@ -110,8 +117,16 @@ export const openPhone = {
         const url = new URL(`${BASE_URL}/messages`);
         url.searchParams.append("phoneNumberId", phoneNumberId);
 
-        // participants must be an array of E.164 strings
-        participants.forEach(p => url.searchParams.append("participants", p));
+        // participants must be an array of E.164 strings. Filter out invalid/empty.
+        const validParticipants = participants
+            .map(p => p?.trim())
+            .filter(p => p && p !== "undefined" && p.length > 5);
+
+        if (validParticipants.length === 0) {
+            return { data: [] }; // Don't call API with empty participants if it expects them
+        }
+
+        validParticipants.forEach(p => url.searchParams.append("participants", this.normalizePhone(p)));
 
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);
@@ -131,10 +146,19 @@ export const openPhone = {
         return await response.json();
     },
 
-    async getCalls(pageToken?: string) {
+    async getCalls(participants?: string[], pageToken?: string) {
         const phoneNumberId = await this.getPhoneNumberId();
         const url = new URL(`${BASE_URL}/calls`);
         url.searchParams.append("phoneNumberId", phoneNumberId);
+
+        // If participants specifically requested, filter by them
+        if (participants && participants.length > 0) {
+            const validParticipants = participants
+                .map(p => p?.trim())
+                .filter(p => p && p !== "undefined" && p.length > 5);
+
+            validParticipants.forEach(p => url.searchParams.append("participants", this.normalizePhone(p)));
+        }
 
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);
