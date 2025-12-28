@@ -62,17 +62,9 @@ function LoginPage() {
 
   return (
     <QuizIdentityLayout
-      title="Welcome Back"
-      subtitle="Clients, manage your bookings. Team members, access your portal."
+      title="Team Login"
+      subtitle="Access your portal to manage bookings and schedules."
     >
-      <div className="mb-8 text-center bg-[#f3f0e6] p-4 rounded-xl border border-[#e3ded2]">
-        <p className="text-sm text-[#163022] font-medium">
-          Looking to book a new service?{" "}
-          <Link to="/book-now" className="font-bold underline hover:text-[#0f241a] transition-colors">
-            Book now here
-          </Link>
-        </p>
-      </div>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-5">
           {/* Email Field */}
