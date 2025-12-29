@@ -281,9 +281,12 @@ export function AddressAutocomplete({
         </div>
       )}
       {!placesReady && open && value && suggestions.length === 0 && (
-        <div className="absolute z-50 mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-500 shadow-xl">
-          <p className="font-medium text-slate-900 mb-1">Address not found in quick list</p>
-          <p className="text-sm">Don't worry, you can continue typing manually.</p>
+        <div className="mt-3 flex items-start gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-300">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-slate-700">Address not in quick list?</p>
+            <p className="text-xs text-slate-500 mt-0.5">That's okay! Continue typing your full address manually.</p>
+          </div>
         </div>
       )}
     </div>
