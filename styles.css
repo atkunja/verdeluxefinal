@@ -16,21 +16,8 @@
     --brand-600: #2f614a;
     --brand-700: #264e3c;
     --brand-800: #163022;
-    /* Primary */
     --brand-900: #12281c;
     --brand-950: #0a1711;
-
-    /* Slate/Zinc scales for depth */
-    --slate-50: #f8fafc;
-    --slate-100: #f1f5f9;
-    --slate-200: #e2e8f0;
-    --slate-300: #cbd5e1;
-    --slate-400: #94a3b8;
-    --slate-500: #64748b;
-    --slate-600: #475569;
-    --slate-700: #334155;
-    --slate-800: #1e293b;
-    --slate-900: #0f172a;
 
     --background: #fdfdfb;
     --background-alt: #f3f0e6;
@@ -78,7 +65,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 rounded-full transition-colors hover:bg-slate-300;
+    @apply bg-slate-200 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-300;
   }
 
   /* Modern Inputs */
@@ -89,15 +80,35 @@
   input[type="number"],
   input[type="search"],
   textarea {
-    @apply rounded-xl border-slate-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-brand-800 focus:ring-4 focus:ring-brand-800/5 focus:outline-none placeholder:text-slate-400;
+    @apply rounded-xl border-slate-200 bg-white px-4 py-2.5 text-sm placeholder:text-slate-400;
+    transition: all 0.15s ease;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="tel"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  textarea:focus {
+    border-color: #163022;
+    box-shadow: 0 0 0 4px rgba(22, 48, 34, 0.05);
+    outline: none;
   }
 
   select {
-    @apply w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl bg-white text-slate-900 transition-all appearance-none focus:ring-4 focus:ring-brand-800/5 focus:border-brand-800 focus:outline-none;
+    @apply w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl bg-white text-slate-900 appearance-none;
+    transition: all 0.15s ease;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%23475569' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     background-size: 16px 16px;
+  }
+
+  select:focus {
+    border-color: #163022;
+    box-shadow: 0 0 0 4px rgba(22, 48, 34, 0.05);
+    outline: none;
   }
 }
 
@@ -107,26 +118,67 @@
   }
 
   .premium-card {
-    @apply bg-white rounded-2xl border border-slate-100 shadow-premium p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5;
+    @apply bg-white rounded-2xl border border-slate-100 p-6;
+    box-shadow: var(--shadow-premium);
+    transition: all 0.3s ease;
+  }
+
+  .premium-card:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
   }
 
   .admin-nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-500 hover:bg-white hover:text-brand-800 hover:shadow-sm group border border-transparent;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 border border-transparent;
+    transition: all 0.2s ease;
+  }
+
+  .admin-nav-item:hover {
+    @apply bg-white shadow-sm;
+    color: #163022;
   }
 
   .admin-nav-item-active {
-    @apply bg-brand-800 text-white shadow-lg shadow-brand-800/20 border-brand-700/50 hover:bg-brand-800 hover:text-white;
+    background-color: #163022;
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(22, 48, 34, 0.2);
+    border-color: rgba(38, 78, 60, 0.5);
+  }
+
+  .admin-nav-item-active:hover {
+    background-color: #163022;
+    color: white;
   }
 
   .premium-button {
-    @apply h-11 px-6 rounded-xl font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2;
+    @apply h-11 px-6 rounded-xl font-semibold flex items-center justify-center gap-2;
+    transition: all 0.15s ease;
+  }
+
+  .premium-button:active {
+    transform: scale(0.98);
+  }
+
+  .premium-button:disabled {
+    @apply opacity-50 pointer-events-none;
   }
 
   .premium-button-primary {
-    @apply premium-button bg-brand-800 text-white hover:bg-brand-700 shadow-lg shadow-brand-800/10 hover:shadow-brand-800/20;
+    background-color: #163022;
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(22, 48, 34, 0.1);
+  }
+
+  .premium-button-primary:hover {
+    background-color: #264e3c;
+    box-shadow: 0 10px 15px -3px rgba(22, 48, 34, 0.2);
   }
 
   .premium-button-secondary {
-    @apply premium-button bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300;
+    @apply bg-white border border-slate-200 text-slate-700;
+  }
+
+  .premium-button-secondary:hover {
+    @apply bg-slate-50 border-slate-300;
   }
 }
