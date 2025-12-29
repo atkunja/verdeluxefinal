@@ -27,7 +27,7 @@ function CleanTypeContent() {
         <h1 className="text-2xl font-semibold">Choose your clean.</h1>
         <p className={`${helperText} mt-2`}>Pick the experience that best fits your home.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {CLEAN_TYPES.map((item) => (
           <CleanTypeCard
             key={item.id}

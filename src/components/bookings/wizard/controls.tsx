@@ -13,40 +13,96 @@ export function CleanTypeCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  // Dynamic color theme based on clean type
+  const theme = {
+    tidy: {
+      border: "border-teal-200",
+      activeBorder: "border-teal-500",
+      bg: "bg-teal-50/50",
+      activeBg: "bg-teal-50",
+      text: "text-teal-900",
+      accent: "text-teal-600",
+      ring: "ring-teal-500/20",
+      button: "bg-teal-600 hover:bg-teal-700"
+    },
+    basic: {
+      border: "border-emerald-200",
+      activeBorder: "border-emerald-500",
+      bg: "bg-emerald-50/50",
+      activeBg: "bg-emerald-50",
+      text: "text-emerald-900",
+      accent: "text-emerald-600",
+      ring: "ring-emerald-500/20",
+      button: "bg-emerald-600 hover:bg-emerald-700"
+    },
+    deep: {
+      border: "border-violet-200",
+      activeBorder: "border-violet-500",
+      bg: "bg-violet-50/50",
+      activeBg: "bg-violet-50",
+      text: "text-violet-900",
+      accent: "text-violet-600",
+      ring: "ring-violet-500/20",
+      button: "bg-violet-600 hover:bg-violet-700"
+    },
+    moving: {
+      border: "border-amber-200",
+      activeBorder: "border-amber-500",
+      bg: "bg-amber-50/50",
+      activeBg: "bg-amber-50",
+      text: "text-amber-900",
+      accent: "text-amber-600",
+      ring: "ring-amber-500/20",
+      button: "bg-amber-600 hover:bg-amber-700"
+    },
+  }[item.id as "tidy" | "basic" | "deep" | "moving"] || {
+    // Fallback
+    border: "border-slate-200", activeBorder: "border-emerald-500", bg: "bg-white", activeBg: "bg-emerald-50", text: "text-slate-900", accent: "text-emerald-600", ring: "ring-emerald-500/20", button: "bg-emerald-600"
+  };
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-2xl border-2 px-6 py-6 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${selected
-        ? "border-emerald-600 bg-white shadow-emerald-900/10 ring-4 ring-emerald-500/10"
-        : "border-slate-100 bg-white/50 hover:border-emerald-200"
+      className={`relative w-full rounded-3xl border-2 px-8 py-8 text-left transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${selected
+          ? `${theme.activeBorder} ${theme.activeBg} shadow-lg ring-4 ${theme.ring}`
+          : `${theme.border} bg-white hover:border-gray-300`
         }`}
       aria-pressed={selected}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-lg font-bold text-slate-900">{item.title}</div>
+      <div className="flex items-center justify-between mb-6">
+        <div className={`text-2xl font-black tracking-tight ${theme.text}`}>{item.title}</div>
         {"badge" in item && item.badge && (
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800 border border-amber-200">
+          <span className="rounded-full bg-amber-400/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-amber-900 border border-amber-400/30">
             {item.badge}
           </span>
         )}
       </div>
-      <div className="text-sm text-slate-500 mb-4 space-y-1">
+
+      <div className="text-base text-slate-600 mb-8 space-y-2">
         {item.description.map((line) => (
-          <div key={line} className="flex items-start gap-2">
-            <span className="text-emerald-500 font-bold">•</span>
+          <div key={line} className="flex items-center gap-3">
+            <div className={`w-1.5 h-1.5 rounded-full ${theme.activeBorder.replace('border', 'bg')}`} />
             {line}
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between text-sm font-semibold text-slate-900 border-t border-slate-100 pt-4">
-        <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg">From ${item.priceFrom}</span>
-        <span className="text-slate-400">{Math.round(item.durationMinutes / 60)} hr</span>
+
+      <div className="flex items-center justify-between border-t border-slate-200/60 pt-6">
+        <div className="flex flex-col">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Starting at</span>
+          <span className={`text-2xl font-bold ${theme.accent}`}>${item.priceFrom}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Est. Time</span>
+          <span className="text-lg font-bold text-slate-700">{Math.round(item.durationMinutes / 60)} hrs</span>
+        </div>
       </div>
-      <span className={`mt-4 w-full block text-center rounded-xl py-2 text-sm font-bold transition-colors ${selected ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-700"
+
+      <div className={`mt-6 w-full rounded-xl py-3 text-center text-sm font-bold uppercase tracking-widest text-white transition-all transform ${selected ? `${theme.button} shadow-lg scale-100` : "bg-slate-200 text-slate-400 scale-95"
         }`}>
-        {selected ? "Selected" : "Select"}
-      </span>
+        {selected ? "Selected" : "Select Plan"}
+      </div>
     </button>
   );
 }
