@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 
 interface QuizIdentityLayoutProps {
     children: React.ReactNode;
@@ -8,47 +10,93 @@ interface QuizIdentityLayoutProps {
 
 export function QuizIdentityLayout({ children, title, subtitle }: QuizIdentityLayoutProps) {
     return (
-        <div className="min-h-screen bg-[#f5f1e8] flex flex-col items-center justify-center px-4 py-12 text-[#163022]">
-            <div className="w-full max-w-xl flex flex-col items-center">
-                {/* Circular Image with nice border/glow */}
-                <div className="relative mb-8 group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#163022]/20 to-[#4a6355]/20 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-white">
-                        <img
-                            src="/bookquiz.jpg"
-                            alt="Verde Luxe Cleaning"
-                            className="w-full h-full object-cover scale-110 group-hover:scale-125 transition-transform duration-700 ease-in-out"
-                            style={{ objectPosition: '62% 20%' }}
-                        />
+        <div className="min-h-screen bg-gradient-to-br from-[#0d1d14] via-[#163022] to-[#1a3a2a] flex">
+            {/* Left Side - Content */}
+            <div className="flex-1 flex flex-col px-8 py-10 lg:px-16 xl:px-24">
+                {/* Back to Home */}
+                <Link
+                    to="/"
+                    className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors group w-fit"
+                >
+                    <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-sm font-medium">Back to Home</span>
+                </Link>
+
+                {/* Main Content */}
+                <div className="flex-1 flex items-center justify-center py-8">
+                    <div className="w-full max-w-xl">
+                        {/* Title Section */}
+                        <div className="text-center lg:text-left mb-10">
+                            <div className="flex items-center gap-3 justify-center lg:justify-start mb-6">
+                                <div className="w-10 h-10 bg-white/10 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
+                                    <img src="/imported/images/logo.png" alt="" className="h-6 w-auto invert brightness-0" />
+                                </div>
+                                <span className="text-xl font-extrabold text-white">Verde Luxe</span>
+                            </div>
+                            <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">{title}</h1>
+                            {subtitle && (
+                                <p className="mt-3 text-base text-white/60 leading-relaxed">
+                                    {subtitle}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Content Card */}
+                        <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 md:p-10 shadow-2xl">
+                            <div className="space-y-6">
+                                {children}
+                            </div>
+                        </div>
+
+                        {/* Footer info */}
+                        <div className="mt-8 text-center lg:text-left text-xs text-white/40 flex items-center gap-2 justify-center lg:justify-start">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse"></span>
+                            Verde Luxe Premium Cleaning • Secure Session
+                        </div>
                     </div>
-                    {/* Subtle micro-animation element */}
-                    <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-3 shadow-lg border border-gray-100 animate-bounce">
-                        <div className="bg-[#163022] rounded-full p-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </div>
+
+            {/* Right Side - Image */}
+            <div className="hidden lg:block lg:w-[45%] xl:w-[50%] relative overflow-hidden">
+                {/* Background gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#163022]/80 z-10" />
+
+                {/* Decorative elements */}
+                <div className="absolute top-20 right-20 w-32 h-32 bg-emerald-400/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-40 right-40 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl" />
+
+                {/* Main Image */}
+                <div className="absolute inset-0 flex items-start justify-center pt-16 xl:pt-24">
+                    <div className="relative">
+                        {/* Glow effect */}
+                        <div className="absolute -inset-4 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-2xl" />
+
+                        {/* Image container */}
+                        <div className="relative w-72 h-72 xl:w-96 xl:h-96 rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl">
+                            <img
+                                src="/bookquiz.jpg"
+                                alt="Verde Luxe Cleaning Professional"
+                                className="w-full h-full object-cover"
+                                style={{ objectPosition: '62% 20%' }}
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Content Card */}
-                <div className="w-full bg-white rounded-3xl border border-[#e3ded2] shadow-[0_20px_50px_rgba(22,48,34,0.1)] p-8 md:p-10 transition-all duration-300 hover:shadow-[0_30px_60px_rgba(22,48,34,0.15)]">
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold tracking-tight text-[#163022] sm:text-4xl">{title}</h1>
-                        {subtitle && (
-                            <p className="mt-3 text-base text-[#5c5a55] leading-relaxed">
-                                {subtitle}
-                            </p>
-                        )}
+                {/* Feature badges */}
+                <div className="absolute bottom-20 left-8 right-8 z-20">
+                    <div className="flex flex-wrap gap-3 justify-center">
+                        <div className="px-4 py-2.5 bg-white/10 backdrop-blur-xl rounded-full text-white text-sm font-medium border border-white/20 shadow-lg">
+                            ✨ Premium Service
+                        </div>
+                        <div className="px-4 py-2.5 bg-white/10 backdrop-blur-xl rounded-full text-white text-sm font-medium border border-white/20 shadow-lg">
+                            🛡️ Insured & Bonded
+                        </div>
+                        <div className="px-4 py-2.5 bg-white/10 backdrop-blur-xl rounded-full text-white text-sm font-medium border border-white/20 shadow-lg">
+                            ⭐ 5-Star Rated
+                        </div>
                     </div>
-
-                    <div className="space-y-6">
-                        {children}
-                    </div>
-                </div>
-
-                {/* Footer info */}
-                <div className="mt-8 text-center text-xs text-[#5c5a55]/60 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#163022]/40 animate-pulse"></span>
-                    Verde Luxe Premium Cleaning • Secure Session
                 </div>
             </div>
         </div>
