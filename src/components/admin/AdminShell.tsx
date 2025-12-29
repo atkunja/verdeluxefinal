@@ -14,6 +14,7 @@ import {
   Search,
   XCircle,
   LogOut,
+  Home,
 } from "lucide-react";
 import { useAuthStore } from "~/stores/authStore";
 import { useTRPC } from "~/trpc/react";
@@ -108,6 +109,19 @@ function AdminSidebar() {
           <h2 className="text-lg font-extrabold text-slate-900 leading-none">Verde Luxe</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-brand-600 mt-1">Admin Portal</p>
         </div>
+      </div>
+
+      {/* Home Link */}
+      <div className="px-4 mb-4">
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 font-bold hover:bg-emerald-100 hover:border-emerald-200 transition-all group"
+        >
+          <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center shadow-sm">
+            <Home className="w-3.5 h-3.5 text-emerald-600" />
+          </div>
+          <span className="text-sm">Back to Home</span>
+        </Link>
       </div>
 
       {/* Navigation Group */}

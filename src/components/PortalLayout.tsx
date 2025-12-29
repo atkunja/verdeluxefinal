@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Footer } from "./Footer";
+import { Link } from "@tanstack/react-router";
 import { PortalSidebar } from "./PortalSidebar";
 import { useAuthStore } from "~/stores/authStore";
 
@@ -19,6 +20,10 @@ export function PortalLayout({ children, portalType }: PortalLayoutProps) {
           <div className="flex items-center gap-2">
             <img src="/imported/images/logo.png" alt="Verde Luxe" className="h-8 w-auto" />
             <span className="text-sm font-semibold text-[#163022]">Portal</span>
+            <div className="h-4 w-px bg-gray-300 mx-2" />
+            <Link to="/" className="text-sm font-medium text-[#5c5a55] hover:text-[#163022] hover:underline transition-all">
+              Return to Home
+            </Link>
           </div>
           {user && (
             <div className="flex items-center gap-3 text-xs text-[#5c5a55]">
