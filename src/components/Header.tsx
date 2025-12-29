@@ -146,7 +146,7 @@ export function Header() {
                 Call Us
               </a>
               <Link
-                to="/book-now"
+                to={token && user ? getPortalLink() : "/book-now"}
                 className="inline-block px-[25px] py-[10px] text-[13px] font-semibold text-white bg-primary border border-primary rounded-full hover:bg-primary-dark hover:border-primary-dark transition-all uppercase"
               >
                 Book Now

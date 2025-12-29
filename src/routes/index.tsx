@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { SEO } from "~/components/SEO";
 import { useState, useEffect, useRef } from "react";
+import { useAuthStore } from "~/stores/authStore";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -72,10 +73,15 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
 
 function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const { user } = useAuthStore();
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
+
+  const bookNowLink = user
+    ? (user.role === "CLIENT" ? "/client-portal" : "/admin-portal")
+    : "/book-now";
 
   return (
     <Layout>
@@ -126,7 +132,7 @@ function HomePage() {
                 style={{ animationDelay: "0.8s" }}
               >
                 <Link
-                  to="/book-now"
+                  to={bookNowLink}
                   className="group inline-flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white font-bold rounded-full hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 hover:-translate-y-0.5"
                 >
                   Book Your Clean
@@ -443,7 +449,7 @@ function HomePage() {
               Experience a flawless clean like never before. Book today and see the difference.
             </p>
             <Link
-              to="/book-now"
+              to={bookNowLink}
               className="group inline-flex items-center gap-3 px-10 py-5 bg-emerald-600 text-white font-bold text-lg rounded-full hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:-translate-y-1"
             >
               Get Started Today

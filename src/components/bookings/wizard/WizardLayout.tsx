@@ -37,6 +37,12 @@ export function Stepper({ step }: { step: number }) {
   );
 }
 
+import { useNavigate, Link } from "@tanstack/react-router";
+import { useAuthStore } from "~/stores/authStore";
+import { ArrowLeft, User } from "lucide-react";
+
+// ...
+
 export function WizardLayout({
   step,
   summary,
@@ -46,6 +52,14 @@ export function WizardLayout({
   summary?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { user } = useAuthStore();
+
+  const getPortalLink = () => {
+    if (!user) return "/";
+    if (user.role === "ADMIN" || user.role === "OWNER") return "/admin-portal";
+    return user.role === "CLEANER" ? "/cleaner-portal" : "/client-portal";
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-emerald-50/50 to-white px-4 py-8 text-slate-900 md:px-8">
       {/* Decorative Background Elements */}
@@ -56,6 +70,24 @@ export function WizardLayout({
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 md:flex-row">
         <div className="md:w-2/3 md:pr-4">
+
+          <div className="flex items-center justify-between mb-8">
+            <Link to="/" className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Home
+            </Link>
+
+            {user && (
+              <Link
+                to={getPortalLink()}
+                className="flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-emerald-800 transition-colors hover:bg-emerald-200"
+              >
+                <User className="w-3 h-3" />
+                Return to Portal
+              </Link>
+            )}
+          </div>
+
           {typeof step === "number" && (
             <Stepper step={step} />
           )}
