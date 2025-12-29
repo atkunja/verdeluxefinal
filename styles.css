@@ -15,7 +15,8 @@
     --brand-500: #3f7b5f;
     --brand-600: #2f614a;
     --brand-700: #264e3c;
-    --brand-800: #163022; /* Primary */
+    --brand-800: #163022;
+    /* Primary */
     --brand-900: #12281c;
     --brand-950: #0a1711;
 
@@ -33,12 +34,12 @@
 
     --background: #fdfdfb;
     --background-alt: #f3f0e6;
-    
+
     --radius-sm: 0.5rem;
     --radius-md: 0.85rem;
     --radius-lg: 1.25rem;
     --radius-xl: 2rem;
-    
+
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -47,11 +48,21 @@
   }
 
   body {
-    @apply font-sans antialiased bg-[#f3f0e6] text-[#111827] selection:bg-brand-200 selection:text-brand-900;
+    @apply font-sans antialiased bg-[#f3f0e6] text-[#111827];
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  ::selection {
+    background-color: var(--brand-200);
+    color: var(--brand-900);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Outfit', sans-serif;
     @apply font-bold tracking-tight text-slate-900;
   }
@@ -71,10 +82,10 @@
   }
 
   /* Modern Inputs */
-  input[type="text"], 
-  input[type="email"], 
-  input[type="tel"], 
-  input[type="password"], 
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
   input[type="number"],
   input[type="search"],
   textarea {
@@ -94,7 +105,7 @@
   .glass {
     @apply bg-white/70 backdrop-blur-md border border-white/20;
   }
-  
+
   .premium-card {
     @apply bg-white rounded-2xl border border-slate-100 shadow-premium p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5;
   }
