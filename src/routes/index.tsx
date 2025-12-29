@@ -291,18 +291,18 @@ function HomePage() {
       </section>
 
       {/* 3-Step Process */}
-      <section className="py-24 bg-emerald-600 text-white relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-b from-white to-emerald-50 relative overflow-hidden">
         {/* Decorative elements */}
-        <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute top-10 left-10 w-32 h-32 bg-emerald-100 rounded-full blur-3xl opacity-60" />
+        <div className="absolute bottom-10 right-10 w-40 h-40 bg-teal-100 rounded-full blur-3xl opacity-60" />
 
         <div className="container mx-auto px-4 relative z-10">
           <AnimatedSection className="text-center mb-16">
-            <span className="inline-block px-4 py-2 bg-white/10 backdrop-blur text-white text-xs font-bold uppercase tracking-widest rounded-full mb-6 border border-white/20">
+            <span className="inline-block px-4 py-2 bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-widest rounded-full mb-6">
               How It Works
             </span>
-            <h2 className="font-serif text-4xl md:text-5xl mb-6">
-              Three simple steps to a <span className="italic">spotless</span> home
+            <h2 className="font-serif text-4xl md:text-5xl mb-6 text-slate-900">
+              Three simple steps to a <span className="text-emerald-600 italic">spotless</span> home
             </h2>
           </AnimatedSection>
 
@@ -313,17 +313,17 @@ function HomePage() {
               { step: 3, icon: ClipboardCheck, title: "Enjoy", desc: "Walk into your refreshed space and enjoy the results. Satisfaction guaranteed." },
             ].map((step, i) => (
               <AnimatedSection key={step.step} delay={i * 150}>
-                <div className="text-center group">
+                <div className="text-center group p-8 rounded-3xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-100/50 transition-all duration-300">
                   <div className="relative inline-block mb-6">
-                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl">
+                    <div className="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
                       <step.icon className="w-10 h-10 text-emerald-600" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-emerald-900 font-bold text-sm shadow-lg">
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-amber-900 font-bold text-sm shadow-md border-2 border-white">
                       {step.step}
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-3">{step.title}</h3>
-                  <p className="text-emerald-100 leading-relaxed">{step.desc}</p>
+                  <h3 className="text-xl font-bold mb-3 text-slate-900">{step.title}</h3>
+                  <p className="text-slate-600 leading-relaxed">{step.desc}</p>
                 </div>
               </AnimatedSection>
             ))}
@@ -428,23 +428,23 @@ function HomePage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-br from-emerald-50 via-teal-50 to-white relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-teal-500/20 rounded-full blur-[100px]" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-200/20 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-teal-200/20 rounded-full blur-[100px]" />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
           <AnimatedSection className="text-center max-w-2xl mx-auto">
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl mb-8 leading-tight">
-              Ready for the clean of your <span className="text-emerald-400 italic">dreams</span>?
+            <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl mb-8 leading-tight text-slate-900">
+              Ready for the clean of your <span className="text-emerald-600 italic">dreams</span>?
             </h2>
-            <p className="text-xl text-slate-400 mb-10 leading-relaxed">
+            <p className="text-xl text-slate-600 mb-10 leading-relaxed">
               Experience a flawless clean like never before. Book today and see the difference.
             </p>
             <Link
               to="/book-now"
-              className="group inline-flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white font-bold text-lg rounded-full hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-400/40 hover:-translate-y-1"
+              className="group inline-flex items-center gap-3 px-10 py-5 bg-emerald-600 text-white font-bold text-lg rounded-full hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:-translate-y-1"
             >
               Get Started Today
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
