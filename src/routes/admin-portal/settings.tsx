@@ -34,24 +34,38 @@ function SettingsPage() {
   const createLeadSourceMutation = useMutation(trpc.crm.createLeadSource.mutationOptions());
   const deleteLeadSourceMutation = useMutation(trpc.crm.deleteLeadSource.mutationOptions());
 
+  const tabs = [
+    { id: "checklist" as const, label: "Checklists", icon: ClipboardList },
+    { id: "pricing" as const, label: "Pricing", icon: DollarSign },
+    { id: "website" as const, label: "Website", icon: Globe },
+    { id: "leadSources" as const, label: "Lead Sources", icon: Plus },
+    { id: "billing" as const, label: "Billing", icon: DollarSign },
+  ];
+
   return (
     <AdminShell
       title="Settings"
-      subtitle="Checklist templates, pricing, website configs."
-      actions={
-        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1 text-sm flex-wrap">
-          {(["checklist", "pricing", "website", "leadSources", "billing"] as SettingsTab[]).map((tabKey) => (
+      subtitle="Configure your business operations"
+    >
+      {/* Tab Navigation */}
+      <div className="premium-card !p-2 mb-8">
+        <div className="flex flex-wrap gap-1">
+          {tabs.map((t) => (
             <button
-              key={tabKey}
-              onClick={() => setTab(tabKey)}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${tab === tabKey ? "bg-[#163022] text-white" : "text-gray-700 hover:bg-gray-50 bg-transparent"}`}
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-all ${tab === t.id
+                  ? "bg-[#163022] text-white shadow-lg"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
             >
-              {tabKey === "leadSources" ? "Lead Sources" : (tabKey[0] ?? "").toUpperCase() + tabKey.slice(1)}
+              <t.icon className="h-4 w-4" />
+              {t.label}
             </button>
           ))}
         </div>
-      }
-    >
+      </div>
+
       {tab === "checklist" && <ChecklistTab />}
       {tab === "pricing" && <PricingTab />}
       {tab === "billing" && <BillingTab />}

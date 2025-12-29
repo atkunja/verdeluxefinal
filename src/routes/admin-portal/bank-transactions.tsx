@@ -207,32 +207,32 @@ function BankTransactionsPage() {
         <SummaryCard label="Active Accounts" value={summary.activeAccounts} format="number" icon={<Filter className="h-5 w-5 text-gray-600" />} />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-lg font-semibold text-[#0f172a]">Accounts</div>
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <div className="premium-card">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">Accounts</h3>
             <button
               onClick={() => toast("Rules engine coming soon", { icon: "🧠" })}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              className="h-8 px-3 rounded-lg bg-slate-100 text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all"
             >
               Manage Rules
             </button>
           </div>
           <div className="space-y-3">
             {accounts.map((acc) => (
-              <div key={acc.id} className="flex items-center justify-between rounded-xl border border-gray-200 bg-[#f9fafb] p-3">
+              <div key={acc.id} className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 p-4 hover:border-slate-200 transition-colors">
                 <div>
-                  <div className="text-sm font-semibold text-[#0f172a]">
+                  <div className="text-sm font-bold text-slate-900">
                     {acc.institution} • {acc.name}
                   </div>
-                  <div className="text-xs text-gray-500">•••• {acc.last4}</div>
-                  <div className="text-[11px] text-gray-500">Synced {new Date(acc.lastSynced).toLocaleString()}</div>
+                  <div className="text-xs text-slate-500">•••• {acc.last4}</div>
+                  <div className="text-[10px] text-slate-400 mt-1">Synced {new Date(acc.lastSynced).toLocaleString()}</div>
                 </div>
-                <div className="text-right text-sm">
-                  <div className="font-semibold text-[#0f172a]">
+                <div className="text-right">
+                  <div className="text-lg font-black text-[#163022]">
                     ${acc.postedBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-slate-500">
                     Available ${acc.availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -485,13 +485,13 @@ function SummaryCard({
       ? `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
       : value.toString();
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="premium-card !p-5">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm text-gray-500">{label}</div>
-          <div className="text-xl font-semibold text-[#0f172a]">{formatted}</div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+          <p className="text-2xl font-black text-slate-900 mt-1">{formatted}</p>
         </div>
-        <div className="rounded-full bg-[#f5f3ec] p-2 text-gray-700">{icon}</div>
+        <div className="h-10 w-10 rounded-xl bg-[#163022]/10 flex items-center justify-center text-[#163022]">{icon}</div>
       </div>
     </div>
   );
