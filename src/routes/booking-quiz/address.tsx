@@ -119,8 +119,10 @@ function AddressStepContent() {
     ? isInServiceArea(addressValue, cityValue)
     : true; // Hide warning while typing initial characters
 
-  // Allow proceeding if: address is selected from autocomplete OR (no Places API and address is typed)
-  const hasValidInput = addressSelected || (!hasPlacesKey && addressValue.length >= 5);
+  // Allow proceeding if: address is selected from autocomplete OR manually typed with sufficient length
+  // We don't want to block manual entry just because Google Places didn't return a match
+  const hasManualInput = addressValue.length > 5;
+  const hasValidInput = addressSelected || hasManualInput;
   const canProceed = hasValidInput && inServiceArea;
 
   return (
@@ -153,9 +155,7 @@ function AddressStepContent() {
       {/* Map Preview */}
       <MapPreview lat={draft.address.lat} lng={draft.address.lng} />
 
-      {!hasValidInput && draft.address.formatted && hasPlacesKey && showErrors && (
-        <p className="mt-2 text-sm text-red-600">Please pick an address from suggestions.</p>
-      )}
+      {/* Removed strict 'pick from suggestions' error to allow manual entry */}
 
       <button
         type="button"
