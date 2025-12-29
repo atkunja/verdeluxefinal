@@ -13,6 +13,7 @@ import {
   Bell,
   Search,
   XCircle,
+  LogOut,
 } from "lucide-react";
 import { useAuthStore } from "~/stores/authStore";
 import { useTRPC } from "~/trpc/react";
@@ -270,6 +271,17 @@ function AdminTopBar() {
             <button className="h-11 w-11 rounded-xl bg-slate-50 text-slate-500 hover:bg-brand-50 hover:text-brand-800 flex items-center justify-center transition-all border border-transparent hover:border-brand-100 relative" aria-label="Notifications">
               <Bell className="h-5 w-5" />
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-brand-600 rounded-full border-2 border-white" />
+            </button>
+            <button
+              onClick={() => {
+                useAuthStore.getState().clearAuth();
+                window.location.href = "/login";
+              }}
+              className="h-11 w-11 rounded-xl bg-slate-50 text-slate-500 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center transition-all border border-transparent hover:border-rose-100"
+              aria-label="Log out"
+              title="Log out"
+            >
+              <LogOut className="h-5 w-5" />
             </button>
             <div className="h-8 w-px bg-slate-100 mx-2" />
             <button
