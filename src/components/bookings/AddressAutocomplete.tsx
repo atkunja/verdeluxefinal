@@ -237,7 +237,7 @@ export function AddressAutocomplete({
           // Delay close to allow click on suggestions
           setTimeout(() => setOpen(false), 200);
         }}
-        className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#163022] focus:outline-none focus:ring-2 focus:ring-[#163022]"
+        className="mt-2 w-full rounded-2xl border-2 border-slate-200 bg-white px-6 py-5 text-xl font-medium shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 placeholder:text-slate-300"
         autoComplete="off"
       />
       {/* 
@@ -245,8 +245,8 @@ export function AddressAutocomplete({
           If Google is ready, it handles the dropdown natively and we shouldn't show our own.
       */}
       {!placesReady && open && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-          <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
+        <div className="absolute z-50 mt-2 w-full max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
+          <div className="px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 bg-slate-50">
             Select a service area address
           </div>
           {suggestions.map((s) => (
@@ -272,17 +272,18 @@ export function AddressAutocomplete({
                 });
                 setOpen(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
+              className="flex w-full items-center gap-4 px-5 py-4 text-left text-base transition-colors hover:bg-emerald-50 hover:text-emerald-900 group"
             >
-              <span className="text-lg text-gray-500">📍</span>
-              <span className="text-gray-800">{s}</span>
+              <span className="text-2xl text-slate-300 group-hover:text-emerald-500 transition-colors">📍</span>
+              <span className="text-slate-700 font-medium group-hover:text-emerald-900">{s}</span>
             </button>
           ))}
         </div>
       )}
       {!placesReady && open && value && suggestions.length === 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-dashed border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
-          No matching addresses. Try entering a number and street in one of our service cities.
+        <div className="absolute z-50 mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-500 shadow-xl">
+          <p className="font-medium text-slate-900 mb-1">Address not found in quick list</p>
+          <p className="text-sm">Don't worry, you can continue typing manually.</p>
         </div>
       )}
     </div>

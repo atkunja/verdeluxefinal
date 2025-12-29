@@ -125,9 +125,9 @@ function AddressStepContent() {
 
   return (
     <WizardLayout step={0} summary={<SummaryPanel draft={draft} />}>
-      <div>
-        <h1 className="text-2xl font-semibold">Welcome!</h1>
-        <p className={`${helperText} mt-2`}>Please enter your address below.</p>
+      <div className="mb-8">
+        <h1 className="text-5xl font-black text-slate-900 mb-4 tracking-tight">Welcome!</h1>
+        <p className="text-xl text-slate-500 font-medium">Please enter your address below to check availability.</p>
       </div>
       <AddressAutocomplete
         value={draft.address.formatted || ""}
