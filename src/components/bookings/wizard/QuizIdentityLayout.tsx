@@ -67,20 +67,17 @@ export function QuizIdentityLayout({ children, title, subtitle }: QuizIdentityLa
                 <div className="absolute bottom-40 right-40 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl" />
 
                 {/* Main Image */}
-                <div className="absolute inset-0 flex items-start justify-center pt-16 xl:pt-24">
+                <div className="absolute inset-0 flex items-start justify-end pr-8 pt-8 xl:pt-12">
                     <div className="relative">
                         {/* Glow effect */}
-                        <div className="absolute -inset-4 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-2xl" />
+                        <div className="absolute -inset-8 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-3xl" />
 
-                        {/* Image container */}
-                        <div className="relative w-72 h-72 xl:w-96 xl:h-96 rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl">
-                            <img
-                                src="/bookquiz.jpg"
-                                alt="Verde Luxe Cleaning Professional"
-                                className="w-full h-full object-cover"
-                                style={{ objectPosition: '62% 20%' }}
-                            />
-                        </div>
+                        {/* Image - no container, just the image */}
+                        <img
+                            src="/bookquiz.png"
+                            alt="Verde Luxe Cleaning Professional"
+                            className="relative w-[400px] xl:w-[500px] 2xl:w-[600px] h-auto object-contain drop-shadow-2xl"
+                        />
                     </div>
                 </div>
 
