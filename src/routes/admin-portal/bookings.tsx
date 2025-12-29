@@ -143,10 +143,10 @@ function BookingsPage() {
           type: "hold",
           serviceDate: h.created ? new Date(h.created).toISOString().slice(0, 10) : "",
           serviceTime: "",
-          customer: { name: "", email: "", phone: "" },
-          bookingId: h.bookingId || "",
+          customer: h.customer || { name: "Unknown", email: "", phone: "" },
+          bookingId: h.bookingId?.toString() || "",
           cleaner: "",
-          location: "",
+          location: h.location || "",
           amount: h.amount,
           paymentMethod: h.paymentMethod || "",
           status: h.status,
@@ -156,13 +156,13 @@ function BookingsPage() {
       (chargesQuery.data as any ?? []).forEach((c: any) =>
         normalized.push({
           id: c.id,
-          type: "paid",
+          type: c.status === "succeeded" ? "paid" : "pending",
           serviceDate: c.created ? new Date(c.created).toISOString().slice(0, 10) : "",
           serviceTime: "",
-          customer: { name: "", email: "", phone: "" },
-          bookingId: c.bookingId || "",
+          customer: c.customer || { name: "Unknown", email: "", phone: "" },
+          bookingId: c.bookingId?.toString() || "",
           cleaner: "",
-          location: "",
+          location: c.location || "",
           amount: c.amount,
           paymentMethod: c.paymentMethod || "",
           status: c.status,
@@ -286,10 +286,14 @@ function BookingsPage() {
       description: messages[action],
       onConfirm: async () => {
         try {
-          if (action === "charge") await chargeBooking(row.id);
-          if (action === "precharge") await preChargeBooking(row.id);
-          if (action === "retry") await retryCharge(row.id);
-          if (action === "refund") await refundCharge(row.id);
+          if (action === "charge" || action === "precharge" || action === "retry") {
+            if (!row.paymentIntentId) throw new Error("Missing Payment Intent ID");
+            await capturePaymentMutation.mutateAsync({ paymentIntentId: row.paymentIntentId });
+          }
+          if (action === "refund") {
+            if (!row.paymentIntentId) throw new Error("Missing Payment Intent ID");
+            await refundPaymentMutation.mutateAsync({ paymentIntentId: row.paymentIntentId });
+          }
           toast.success("Action processed");
           queryClient.invalidateQueries({ queryKey: trpc.payments.listCharges.queryKey() });
           queryClient.invalidateQueries({ queryKey: trpc.payments.listHolds.queryKey() });

@@ -1,28 +1,56 @@
 import { requireAdmin } from "~/server/trpc/main";
 import { stripe } from "~/server/stripe/client";
+import { db } from "~/server/db";
+import type Stripe from "stripe";
 
 export const listCharges = requireAdmin.query(async () => {
   const intents = await stripe.paymentIntents.list({
     limit: 50,
   });
 
-  const charges = intents.data.filter((i) => i.status === "succeeded" || i.status === "processing");
-  return charges.map((c) => ({
-    id: c.id,
-    amount: (c.amount_received || c.amount) / 100,
-    currency: c.currency,
-    status: c.status,
-    description: c.description,
-    bookingId: c.metadata?.bookingId,
-    created: c.created ? new Date(c.created * 1000) : null,
-    paymentMethod: formatPaymentMethod(c),
-    paymentIntentId: c.id,
-  }));
+  const chargesRaw = intents.data.filter((i) => i.status === "succeeded" || i.status === "processing");
+
+  // Extract booking IDs from metadata
+  const bookingIds = chargesRaw
+    .map(i => i.metadata?.bookingId)
+    .filter(Boolean)
+    .map(id => Number(id));
+
+  // Fetch bookings and clients in one go
+  const bookings = await db.booking.findMany({
+    where: { id: { in: bookingIds } },
+    include: { client: true }
+  });
+
+  const bookingMap = new Map(bookings.map(b => [b.id, b]));
+
+  return chargesRaw.map((c) => {
+    const bId = c.metadata?.bookingId ? Number(c.metadata.bookingId) : null;
+    const booking = bId ? bookingMap.get(bId) : null;
+
+    return {
+      id: c.id,
+      amount: (c.amount_received || c.amount) / 100,
+      currency: c.currency,
+      status: c.status,
+      description: c.description,
+      bookingId: bId,
+      created: c.created ? new Date(c.created * 1000) : null,
+      paymentMethod: formatPaymentMethod(c),
+      paymentIntentId: c.id,
+      customer: {
+        name: booking?.client ? `${booking.client.firstName} ${booking.client.lastName}`.trim() : "Unknown",
+        email: booking?.client?.email || "",
+        phone: booking?.client?.phone || "",
+      },
+      location: booking?.address || "",
+    };
+  });
 });
 
 function formatPaymentMethod(intent: Stripe.PaymentIntent) {
   const pm = intent.payment_method;
-  const charges = intent.charges?.data || [];
+  const charges = (intent as any).charges?.data || [];
   const details = charges[0]?.payment_method_details;
   if (details?.card) {
     return `Card • ${details.card.last4 ?? pm ?? ""}`;
