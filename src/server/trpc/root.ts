@@ -83,12 +83,14 @@ import { getAdminTasks } from "./procedures/admin/getAdminTasks";
 import { updateProfile } from "./procedures/admin/updateProfile";
 import { getActiveTimeEntries } from "./procedures/admin/getActiveTimeEntries";
 import { assignCleaners } from "./procedures/admin/assignCleaners";
+import { globalSearch } from "./procedures/admin/globalSearch";
 
 
 import { register } from "./procedures/auth/register";
 
 export const appRouter = createTRPCRouter({
   booking: bookingRouter,
+  globalSearch,
   // Auth procedures
   register,
   login,

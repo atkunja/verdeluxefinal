@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -29,10 +29,13 @@ model User {
   bookingCleaners              BookingCleaner[]           @relation("UserBookingCleaners")
   uploadedImages               BookingImage[]
   bookingInquiries             BookingInquiry[]
+  contactCallLogs              CallLog[]                  @relation("ContactCallLogs")
+  userCallLogs                 CallLog[]                  @relation("UserCallLogs")
   cleanerAvailability          CleanerAvailability[]
   cleanerTrainingProgress      CleanerTrainingProgress[]
   documents                    Document[]
   emailLogs                    EmailLog[]
+  assignedTasks                ManualTask[]
   receivedMessages             Message[]                  @relation("ReceivedMessages")
   sentMessages                 Message[]                  @relation("SentMessages")
   payments                     Payment[]
@@ -41,9 +44,6 @@ model User {
   timeEntries                  TimeEntry[]
   timeOffRequests              TimeOffRequest[]           @relation("CleanerTimeOffRequests")
   reviewedTimeOffRequests      TimeOffRequest[]           @relation("AdminReviewedRequests")
-  assignedTasks                ManualTask[]
-  contactCallLogs              CallLog[]                  @relation("ContactCallLogs")
-  userCallLogs                 CallLog[]                  @relation("UserCallLogs")
 }
 
 model Booking {
@@ -171,10 +171,9 @@ model BookingChecklistItem {
 model CallLog {
   id            Int            @id @default(autoincrement())
   createdAt     DateTime       @default(now())
-  externalId    String?        @unique // OpenPhone ID
-  callSid       String?        @unique // Twilio/Other SID
-  userId        Int? // The Admin/System user
-  contactId     Int? // The Client/Cleaner user
+  userId        Int?
+  contactId     Int?
+  callSid       String?        @unique
   fromNumber    String
   toNumber      String
   status        String
@@ -183,12 +182,13 @@ model CallLog {
   startTime     DateTime?
   endTime       DateTime?
   recordingUrl  String?
+  externalId    String?        @unique
+  summary       String?
+  transcript    String?
   voicemailUrl  String?
-  transcript    String?        @db.Text
-  summary       String?        @db.Text
   aiTranscripts AITranscript[]
-  contact       User?          @relation("ContactCallLogs", fields: [contactId], references: [id], onDelete: SetNull)
-  user          User?          @relation("UserCallLogs", fields: [userId], references: [id], onDelete: SetNull)
+  contact       User?          @relation("ContactCallLogs", fields: [contactId], references: [id])
+  user          User?          @relation("UserCallLogs", fields: [userId], references: [id])
 }
 
 model PricingRule {
@@ -249,28 +249,26 @@ model Message {
   senderId    Int
   recipientId Int
   content     String
-  mediaUrls   String[]  @default([])
-  externalId  String?   @unique
-  openPhoneId String?
   isRead      Boolean   @default(false)
   readAt      DateTime?
+  externalId  String?   @unique
+  openPhoneId String?
+  mediaUrls   String[]  @default([])
   recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
   sender      User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 }
 
-
-
 model ManualTask {
-  id             Int       @id @default(autoincrement())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  title          String
-  description    String?
-  date           DateTime
-  status         TaskStatus @default(PENDING)
-  priority       TaskPriority @default(MEDIUM)
-  assignedToId   Int?
-  assignedTo     User?     @relation(fields: [assignedToId], references: [id])
+  id           Int          @id @default(autoincrement())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  title        String
+  description  String?
+  date         DateTime
+  status       TaskStatus   @default(PENDING)
+  priority     TaskPriority @default(MEDIUM)
+  assignedToId Int?
+  assignedTo   User?        @relation(fields: [assignedToId], references: [id])
 }
 
 model SystemLog {
@@ -356,17 +354,17 @@ model Document {
 }
 
 model AccountingEntry {
-  id               Int                @id @default(autoincrement())
-  createdAt        DateTime           @default(now())
-  date             DateTime
-  description      String
-  amount           Float
-  category         AccountingCategory
-  relatedBookingId Int?
-  relatedBooking   Booking?           @relation(fields: [relatedBookingId], references: [id])
-  expense          Expense?           @relation("AccountingEntryExpense")
-  mercuryTransactionId Int?           @unique
+  id                   Int                 @id @default(autoincrement())
+  createdAt            DateTime            @default(now())
+  date                 DateTime
+  description          String
+  amount               Float
+  category             AccountingCategory
+  relatedBookingId     Int?
+  mercuryTransactionId Int?                @unique
   mercuryTransaction   MercuryTransaction? @relation("AccountingEntryMercury", fields: [mercuryTransactionId], references: [id])
+  relatedBooking       Booking?            @relation(fields: [relatedBookingId], references: [id])
+  expense              Expense?            @relation("AccountingEntryExpense")
 }
 
 model Expense {
@@ -415,17 +413,17 @@ model MercuryAccount {
 }
 
 model MercuryTransaction {
-  id            Int             @id @default(autoincrement())
-  externalId    String          @unique
-  createdAt     DateTime        @default(now())
-  transactionAt DateTime?
-  description   String?
-  category      String?
-  amount        Float?
-  status        String?
-  accountId     Int?
-  account       MercuryAccount? @relation(fields: [accountId], references: [id])
+  id              Int              @id @default(autoincrement())
+  externalId      String           @unique
+  createdAt       DateTime         @default(now())
+  transactionAt   DateTime?
+  description     String?
+  category        String?
+  amount          Float?
+  status          String?
+  accountId       Int?
   accountingEntry AccountingEntry? @relation("AccountingEntryMercury")
+  account         MercuryAccount?  @relation(fields: [accountId], references: [id])
 }
 
 model Lead {

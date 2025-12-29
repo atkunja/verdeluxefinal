@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -15,6 +15,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { useAuthStore } from "~/stores/authStore";
+import { useTRPC } from "~/trpc/react";
+import { useQuery } from "@tanstack/react-query";
 
 interface AdminShellProps {
   title?: string;
@@ -152,9 +154,13 @@ import { ProfileEditModal } from "./ProfileEditModal";
 
 function AdminTopBar() {
   const { user } = useAuthStore();
+  const trpc = useTRPC();
   const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const userInitials = useMemo(() => {
     if (user?.firstName || user?.lastName) {
@@ -163,28 +169,89 @@ function AdminTopBar() {
     return user?.email?.[0]?.toUpperCase() || "A";
   }, [user]);
 
+  // Use useEffect for debouncing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const searchQueryOptions = trpc.globalSearch.queryOptions(
+    { query: debouncedQuery },
+    { enabled: debouncedQuery.length > 1 }
+  );
+  const searchResults = useQuery(searchQueryOptions);
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex-1 flex items-center gap-3">
+          <div className="flex-1 flex items-center gap-3 relative">
             <button
               onClick={() => {
                 setShowSearch((prev) => !prev);
-                setTimeout(() => searchRef.current?.focus(), 10);
+                if (!showSearch) {
+                  setTimeout(() => searchRef.current?.focus(), 10);
+                } else {
+                  setSearchQuery("");
+                }
               }}
-              className="h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center"
+              className="h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors"
               aria-label="Toggle search"
             >
               <Search className="h-5 w-5" />
             </button>
             {showSearch && (
-              <input
-                ref={searchRef}
-                type="search"
-                placeholder="Search bookings, leads, customers..."
-                className="w-full max-w-md rounded-xl border border-gray-200 bg-[#f9fafb] px-3 py-2 text-sm focus:border-[#163022] focus:outline-none"
-              />
+              <div className="w-full max-w-md relative">
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search bookings, leads, customers..."
+                  className="w-full rounded-xl border border-gray-200 bg-[#f9fafb] px-3 py-2 text-sm focus:border-[#163022] focus:outline-none transition-all"
+                />
+
+                {/* Search Results Dropdown */}
+                {showSearch && searchQuery.length > 1 && (
+                  <div
+                    ref={dropdownRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                  >
+                    {searchResults.isLoading ? (
+                      <div className="p-4 text-center text-sm text-gray-500">Searching...</div>
+                    ) : (searchResults.data as any)?.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">No results found for "{searchQuery}"</div>
+                    ) : (
+                      <div className="max-h-[70vh] overflow-y-auto py-2">
+                        {(searchResults.data as any)?.map((res: any) => (
+                          <Link
+                            key={res.id}
+                            to={res.link}
+                            onClick={() => {
+                              setShowSearch(false);
+                              setSearchQuery("");
+                            }}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group"
+                          >
+                            <div className="h-10 w-10 rounded-xl bg-[#f0fdf4] text-[#166534] flex items-center justify-center text-xs font-bold shrink-0">
+                              {(res.type as string)[0]}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-gray-900 truncate">{res.title}</p>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:text-[#163022] transition-colors">{res.type}</span>
+                              </div>
+                              <p className="text-xs text-gray-500 truncate">{res.subtitle}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-3">

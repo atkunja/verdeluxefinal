@@ -8,7 +8,7 @@ CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COM
 CREATE TYPE "ServiceFrequency" AS ENUM ('ONE_TIME', 'WEEKLY', 'BIWEEKLY', 'MONTHLY');
 
 -- CreateEnum
-CREATE TYPE "PaymentMethod" AS ENUM ('CREDIT_CARD', 'CASH');
+CREATE TYPE "PaymentMethod" AS ENUM ('CREDIT_CARD', 'CASH', 'ZELLE', 'VENMO', 'OTHER');
 
 -- CreateEnum
 CREATE TYPE "PricingRuleType" AS ENUM ('BASE_PRICE', 'SQFT_RATE', 'BEDROOM_RATE', 'BATHROOM_RATE', 'EXTRA_SERVICE', 'TIME_ESTIMATE');
@@ -20,10 +20,16 @@ CREATE TYPE "RequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 CREATE TYPE "BookingImageType" AS ENUM ('BEFORE', 'AFTER', 'DURING');
 
 -- CreateEnum
-CREATE TYPE "LeadSource" AS ENUM ('GOOGLE_LSA', 'THUMBTACK', 'FACEBOOK_AD', 'REDDIT', 'NEXTDOOR', 'WEBSITE', 'REFERRAL');
+CREATE TYPE "AccountingCategory" AS ENUM ('INCOME', 'EXPENSE', 'ASSET', 'LIABILITY', 'EQUITY');
 
 -- CreateEnum
-CREATE TYPE "AccountingCategory" AS ENUM ('INCOME', 'EXPENSE', 'ASSET', 'LIABILITY', 'EQUITY');
+CREATE TYPE "DiscountType" AS ENUM ('PERCENT', 'FIXED_AMOUNT');
+
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('PENDING', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -36,6 +42,8 @@ CREATE TABLE "User" (
     "lastName" TEXT,
     "phone" TEXT,
     "color" TEXT,
+    "stripeCustomerId" TEXT,
+    "stripeDefaultPaymentMethodId" TEXT,
     "temporaryPassword" TEXT,
     "hasResetPassword" BOOLEAN NOT NULL DEFAULT false,
     "adminPermissions" JSONB,
@@ -54,10 +62,24 @@ CREATE TABLE "Booking" (
     "scheduledTime" TEXT NOT NULL,
     "durationHours" DOUBLE PRECISION,
     "address" TEXT NOT NULL,
+    "addressLine1" TEXT,
+    "addressLine2" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "postalCode" TEXT,
+    "placeId" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
     "specialInstructions" TEXT,
+    "privateBookingNote" TEXT,
+    "privateCustomerNote" TEXT,
+    "providerNote" TEXT,
     "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
     "finalPrice" DOUBLE PRECISION,
     "selectedExtras" JSONB,
+    "recurrenceId" TEXT,
+    "occurrenceNumber" INTEGER,
+    "cancellationFeeApplied" BOOLEAN DEFAULT false,
     "serviceFrequency" "ServiceFrequency",
     "houseSquareFootage" INTEGER,
     "basementSquareFootage" INTEGER,
@@ -69,6 +91,14 @@ CREATE TABLE "Booking" (
     "paymentDetails" TEXT,
 
     CONSTRAINT "Booking_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BookingCleaner" (
+    "bookingId" INTEGER NOT NULL,
+    "cleanerId" INTEGER NOT NULL,
+
+    CONSTRAINT "BookingCleaner_pkey" PRIMARY KEY ("bookingId","cleanerId")
 );
 
 -- CreateTable
@@ -147,8 +177,9 @@ CREATE TABLE "BookingChecklistItem" (
 CREATE TABLE "CallLog" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "userId" INTEGER NOT NULL,
-    "callSid" TEXT NOT NULL,
+    "userId" INTEGER,
+    "contactId" INTEGER,
+    "callSid" TEXT,
     "fromNumber" TEXT NOT NULL,
     "toNumber" TEXT NOT NULL,
     "status" TEXT NOT NULL,
@@ -157,6 +188,10 @@ CREATE TABLE "CallLog" (
     "startTime" TIMESTAMP(3),
     "endTime" TIMESTAMP(3),
     "recordingUrl" TEXT,
+    "externalId" TEXT,
+    "summary" TEXT,
+    "transcript" TEXT,
+    "voicemailUrl" TEXT,
 
     CONSTRAINT "CallLog_pkey" PRIMARY KEY ("id")
 );
@@ -208,6 +243,9 @@ CREATE TABLE "TimeEntry" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" INTEGER NOT NULL,
     "bookingId" INTEGER,
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
+    "locationNote" TEXT,
     "startTime" TIMESTAMP(3) NOT NULL,
     "endTime" TIMESTAMP(3),
     "notes" TEXT,
@@ -224,8 +262,26 @@ CREATE TABLE "Message" (
     "content" TEXT NOT NULL,
     "isRead" BOOLEAN NOT NULL DEFAULT false,
     "readAt" TIMESTAMP(3),
+    "externalId" TEXT,
+    "openPhoneId" TEXT,
+    "mediaUrls" TEXT[] DEFAULT ARRAY[]::TEXT[],
 
     CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ManualTask" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "date" TIMESTAMP(3) NOT NULL,
+    "status" "TaskStatus" NOT NULL DEFAULT 'PENDING',
+    "priority" "TaskPriority" NOT NULL DEFAULT 'MEDIUM',
+    "assignedToId" INTEGER,
+
+    CONSTRAINT "ManualTask_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -292,6 +348,7 @@ CREATE TABLE "EmailTemplate" (
     "name" TEXT NOT NULL,
     "subject" TEXT NOT NULL,
     "body" TEXT NOT NULL,
+    "type" TEXT,
 
     CONSTRAINT "EmailTemplate_pkey" PRIMARY KEY ("id")
 );
@@ -322,18 +379,6 @@ CREATE TABLE "Document" (
 );
 
 -- CreateTable
-CREATE TABLE "StripePayment" (
-    "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "bookingId" INTEGER NOT NULL,
-    "stripeIntentId" TEXT NOT NULL,
-    "amount" DOUBLE PRECISION NOT NULL,
-    "status" TEXT NOT NULL,
-
-    CONSTRAINT "StripePayment_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "AccountingEntry" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -342,8 +387,78 @@ CREATE TABLE "AccountingEntry" (
     "amount" DOUBLE PRECISION NOT NULL,
     "category" "AccountingCategory" NOT NULL,
     "relatedBookingId" INTEGER,
+    "mercuryTransactionId" INTEGER,
 
     CONSTRAINT "AccountingEntry_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Expense" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "date" TIMESTAMP(3) NOT NULL,
+    "description" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "category" "AccountingCategory" NOT NULL,
+    "vendor" TEXT,
+    "receiptUrl" TEXT,
+    "reference" TEXT,
+    "accountingEntryId" INTEGER,
+
+    CONSTRAINT "Expense_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BillingConfig" (
+    "id" INTEGER NOT NULL DEFAULT 1,
+    "holdDelayHours" INTEGER,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BillingConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "StripePayment" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "bookingId" INTEGER,
+    "stripeIntentId" TEXT NOT NULL,
+    "paymentMethod" TEXT,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'usd',
+    "status" TEXT NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "StripePayment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MercuryAccount" (
+    "id" SERIAL NOT NULL,
+    "externalId" TEXT NOT NULL,
+    "name" TEXT,
+    "status" TEXT,
+    "balance" DOUBLE PRECISION DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MercuryAccount_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MercuryTransaction" (
+    "id" SERIAL NOT NULL,
+    "externalId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "transactionAt" TIMESTAMP(3),
+    "description" TEXT,
+    "category" TEXT,
+    "amount" DOUBLE PRECISION,
+    "status" TEXT,
+    "accountId" INTEGER,
+
+    CONSTRAINT "MercuryTransaction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -353,7 +468,7 @@ CREATE TABLE "Lead" (
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
-    "source" "LeadSource" NOT NULL,
+    "source" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "status" TEXT NOT NULL,
 
@@ -382,6 +497,80 @@ CREATE TABLE "SocialMediaPost" (
     "status" TEXT NOT NULL,
 
     CONSTRAINT "SocialMediaPost_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DiscountConfig" (
+    "id" INTEGER NOT NULL DEFAULT 1,
+    "active" BOOLEAN NOT NULL DEFAULT false,
+    "type" "DiscountType" NOT NULL DEFAULT 'PERCENT',
+    "value" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "label" TEXT NOT NULL DEFAULT 'Get Discount',
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DiscountConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OtpVerification" (
+    "id" SERIAL NOT NULL,
+    "phone" TEXT NOT NULL,
+    "otpHash" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "resendCount" INTEGER NOT NULL DEFAULT 0,
+    "lockedUntil" TIMESTAMP(3),
+    "verifiedAt" TIMESTAMP(3),
+    "supersededAt" TIMESTAMP(3),
+
+    CONSTRAINT "OtpVerification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CleanQuizSubmission" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "phoneVerified" BOOLEAN NOT NULL DEFAULT false,
+    "cleanType" TEXT,
+    "bedrooms" INTEGER,
+    "bathrooms" INTEGER,
+    "messiness" INTEGER,
+    "kids" BOOLEAN,
+    "pets" BOOLEAN,
+    "addressLine1" TEXT,
+    "addressLine2" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "postalCode" TEXT,
+    "country" TEXT,
+    "placeId" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
+    "extras" JSONB,
+    "recommendedCleanType" TEXT,
+    "recommendedDurationHours" DOUBLE PRECISION,
+    "originalTotalCents" INTEGER,
+    "discountCents" INTEGER,
+    "finalTotalCents" INTEGER,
+    "stripeCustomerId" TEXT,
+    "stripeSetupIntentId" TEXT,
+    "stripePaymentMethodId" TEXT,
+    "stripePaymentIntentId" TEXT,
+    "appointmentDateTime" TIMESTAMP(3),
+    "willBeHome" BOOLEAN,
+    "homeType" TEXT,
+    "parkingNotes" TEXT,
+    "entryInstructions" TEXT,
+    "cleaningInstructions" TEXT,
+    "termsAccepted" BOOLEAN NOT NULL DEFAULT false,
+    "status" TEXT NOT NULL DEFAULT 'draft',
+
+    CONSTRAINT "CleanQuizSubmission_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -441,6 +630,28 @@ CREATE TABLE "Transaction" (
     CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "LeadSourceCategory" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "name" TEXT NOT NULL,
+
+    CONSTRAINT "LeadSourceCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Review" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "bookingId" INTEGER NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "isPublic" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -451,19 +662,49 @@ CREATE UNIQUE INDEX "BookingChecklist_bookingId_key" ON "BookingChecklist"("book
 CREATE UNIQUE INDEX "CallLog_callSid_key" ON "CallLog"("callSid");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "CallLog_externalId_key" ON "CallLog"("externalId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Message_externalId_key" ON "Message"("externalId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EmailTemplate_name_key" ON "EmailTemplate"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AccountingEntry_mercuryTransactionId_key" ON "AccountingEntry"("mercuryTransactionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Expense_accountingEntryId_key" ON "Expense"("accountingEntryId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "StripePayment_stripeIntentId_key" ON "StripePayment"("stripeIntentId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "MercuryAccount_externalId_key" ON "MercuryAccount"("externalId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MercuryTransaction_externalId_key" ON "MercuryTransaction"("externalId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "SEOMetadata_path_key" ON "SEOMetadata"("path");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LeadSourceCategory_name_key" ON "LeadSourceCategory"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Review_bookingId_key" ON "Review"("bookingId");
+
+-- AddForeignKey
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_cleanerId_fkey" FOREIGN KEY ("cleanerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Booking" ADD CONSTRAINT "Booking_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Booking" ADD CONSTRAINT "Booking_cleanerId_fkey" FOREIGN KEY ("cleanerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "BookingCleaner" ADD CONSTRAINT "BookingCleaner_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingCleaner" ADD CONSTRAINT "BookingCleaner_cleanerId_fkey" FOREIGN KEY ("cleanerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -487,7 +728,10 @@ ALTER TABLE "BookingChecklist" ADD CONSTRAINT "BookingChecklist_templateId_fkey"
 ALTER TABLE "BookingChecklistItem" ADD CONSTRAINT "BookingChecklistItem_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "BookingChecklist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CallLog" ADD CONSTRAINT "CallLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CallLog" ADD CONSTRAINT "CallLog_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CallLog" ADD CONSTRAINT "CallLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TimeOffRequest" ADD CONSTRAINT "TimeOffRequest_cleanerId_fkey" FOREIGN KEY ("cleanerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -496,16 +740,19 @@ ALTER TABLE "TimeOffRequest" ADD CONSTRAINT "TimeOffRequest_cleanerId_fkey" FORE
 ALTER TABLE "TimeOffRequest" ADD CONSTRAINT "TimeOffRequest_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TimeEntry" ADD CONSTRAINT "TimeEntry_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TimeEntry" ADD CONSTRAINT "TimeEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TimeEntry" ADD CONSTRAINT "TimeEntry_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_recipientId_fkey" FOREIGN KEY ("recipientId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Message" ADD CONSTRAINT "Message_recipientId_fkey" FOREIGN KEY ("recipientId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ManualTask" ADD CONSTRAINT "ManualTask_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SystemLog" ADD CONSTRAINT "SystemLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -532,10 +779,19 @@ ALTER TABLE "EmailLog" ADD CONSTRAINT "EmailLog_templateId_fkey" FOREIGN KEY ("t
 ALTER TABLE "Document" ADD CONSTRAINT "Document_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "StripePayment" ADD CONSTRAINT "StripePayment_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "AccountingEntry" ADD CONSTRAINT "AccountingEntry_mercuryTransactionId_fkey" FOREIGN KEY ("mercuryTransactionId") REFERENCES "MercuryTransaction"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AccountingEntry" ADD CONSTRAINT "AccountingEntry_relatedBookingId_fkey" FOREIGN KEY ("relatedBookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Expense" ADD CONSTRAINT "Expense_accountingEntryId_fkey" FOREIGN KEY ("accountingEntryId") REFERENCES "AccountingEntry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StripePayment" ADD CONSTRAINT "StripePayment_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MercuryTransaction" ADD CONSTRAINT "MercuryTransaction_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "MercuryAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AITranscript" ADD CONSTRAINT "AITranscript_callId_fkey" FOREIGN KEY ("callId") REFERENCES "CallLog"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -545,3 +801,7 @@ ALTER TABLE "CleanerTrainingProgress" ADD CONSTRAINT "CleanerTrainingProgress_cl
 
 -- AddForeignKey
 ALTER TABLE "CleanerTrainingProgress" ADD CONSTRAINT "CleanerTrainingProgress_videoId_fkey" FOREIGN KEY ("videoId") REFERENCES "TrainingVideo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

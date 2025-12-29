@@ -11,10 +11,10 @@ export const getRevenueMetrics = requireAdmin
         const start = input.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const end = input.endDate || new Date();
 
-        // 1. Get Completed Bookings and their revenue
-        const completedBookings = await db.booking.findMany({
+        // 1. Get Completed and Confirmed Bookings for revenue
+        const revenueBookings = await db.booking.findMany({
             where: {
-                status: 'COMPLETED',
+                status: { in: ['COMPLETED', 'CONFIRMED'] },
                 scheduledDate: {
                     gte: start,
                     lte: end,
@@ -36,7 +36,7 @@ export const getRevenueMetrics = requireAdmin
         const metrics = [
             {
                 key: "billedRevenue",
-                value: completedBookings.reduce((sum, b) => sum + (b.finalPrice || 0), 0)
+                value: revenueBookings.reduce((sum, b) => sum + (b.finalPrice || 0), 0)
             },
             {
                 key: "pendingPayments",
@@ -44,19 +44,44 @@ export const getRevenueMetrics = requireAdmin
             },
             {
                 key: "recurringRevenue",
-                value: completedBookings.filter(b => b.serviceFrequency !== 'ONE_TIME').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
+                value: revenueBookings.filter(b => b.serviceFrequency && b.serviceFrequency !== 'ONE_TIME').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
             },
             {
                 key: "monthlyRevenue",
-                value: completedBookings.filter(b => b.serviceFrequency === 'MONTHLY').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
+                value: revenueBookings.filter(b => b.serviceFrequency === 'MONTHLY').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
             },
             {
                 key: "everyOtherWeekRevenue",
-                value: completedBookings.filter(b => b.serviceFrequency === 'BIWEEKLY').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
+                value: revenueBookings.filter(b => b.serviceFrequency === 'BIWEEKLY').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
             },
             {
                 key: "weeklyRevenue",
-                value: completedBookings.filter(b => b.serviceFrequency === 'WEEKLY').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
+                value: revenueBookings.filter(b => b.serviceFrequency === 'WEEKLY').reduce((sum, b) => sum + (b.finalPrice || 0), 0)
+            },
+            // Counts
+            {
+                key: "countTotal",
+                value: revenueBookings.length + pendingBookings.length
+            },
+            {
+                key: "countRecurring",
+                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency && b.serviceFrequency !== 'ONE_TIME').length
+            },
+            {
+                key: "countMonthly",
+                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency === 'MONTHLY').length
+            },
+            {
+                key: "countWeekly",
+                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency === 'WEEKLY').length
+            },
+            {
+                key: "countBiweekly",
+                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency === 'BIWEEKLY').length
+            },
+            {
+                key: "countOneTime",
+                value: [...revenueBookings, ...pendingBookings].filter(b => !b.serviceFrequency || b.serviceFrequency === 'ONE_TIME').length
             }
         ];
 

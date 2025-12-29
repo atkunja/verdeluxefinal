@@ -57,12 +57,12 @@ function RevenueReportsPage() {
           </div>
           <RevenueTable
             rows={[
-              { label: "Billed total revenue", value: metrics.find((m: any) => m.key === "billedRevenue")?.value || 0 },
-              { label: "Pending payments", value: metrics.find((m: any) => m.key === "pendingPayments")?.value || 0 },
-              { label: "Recurring", value: metrics.find((m: any) => m.key === "recurringRevenue")?.value || 0 },
-              { label: "Monthly", value: metrics.find((m: any) => m.key === "monthlyRevenue")?.value || 0 },
-              { label: "Every other week", value: metrics.find((m: any) => m.key === "everyOtherWeekRevenue")?.value || 0 },
-              { label: "Weekly", value: metrics.find((m: any) => m.key === "weeklyRevenue")?.value || 0 },
+              { label: "Billed total revenue", value: metrics.find((m: any) => m.key === "billedRevenue")?.value || 0, isCurrency: true },
+              { label: "Pending payments", value: metrics.find((m: any) => m.key === "pendingPayments")?.value || 0, isCurrency: true },
+              { label: "Recurring", value: metrics.find((m: any) => m.key === "recurringRevenue")?.value || 0, isCurrency: true },
+              { label: "Monthly", value: metrics.find((m: any) => m.key === "monthlyRevenue")?.value || 0, isCurrency: true },
+              { label: "Every other week", value: metrics.find((m: any) => m.key === "everyOtherWeekRevenue")?.value || 0, isCurrency: true },
+              { label: "Weekly", value: metrics.find((m: any) => m.key === "weeklyRevenue")?.value || 0, isCurrency: true },
             ]}
           />
         </div>
@@ -73,24 +73,21 @@ function RevenueReportsPage() {
           </div>
           <RevenueTable
             rows={[
-              { label: "Total", value: metrics.find((m: any) => m.key === "monthlyRevenue")?.value || 0 },
-              { label: "Recurring", value: metrics.find((m: any) => m.key === "recurringRevenue")?.value || 0 },
-              { label: "Monthly", value: metrics.find((m: any) => m.key === "monthlyRevenue")?.value || 0 },
-              { label: "Weekly", value: metrics.find((m: any) => m.key === "weeklyRevenue")?.value || 0 },
-              { label: "Every other week", value: metrics.find((m: any) => m.key === "everyOtherWeekRevenue")?.value || 0 },
-              { label: "One time", value: 0 },
+              { label: "Total", value: metrics.find((m: any) => m.key === "countTotal")?.value || 0, isCurrency: false },
+              { label: "Recurring", value: metrics.find((m: any) => m.key === "countRecurring")?.value || 0, isCurrency: false },
+              { label: "Monthly", value: metrics.find((m: any) => m.key === "countMonthly")?.value || 0, isCurrency: false },
+              { label: "Weekly", value: metrics.find((m: any) => m.key === "countWeekly")?.value || 0, isCurrency: false },
+              { label: "Every other week", value: metrics.find((m: any) => m.key === "countBiweekly")?.value || 0, isCurrency: false },
+              { label: "One time", value: metrics.find((m: any) => m.key === "countOneTime")?.value || 0, isCurrency: false },
             ]}
           />
         </div>
-      </div>
-      <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-[#f9fafb] p-4 text-sm text-gray-600">
-        Date filters are mocked; plug real data from bank transactions + manual expenses for Figure 11 parity.
       </div>
     </AdminShell>
   );
 }
 
-function RevenueTable({ rows }: { rows: { label: string; value: number }[] }) {
+function RevenueTable({ rows }: { rows: { label: string; value: number; isCurrency?: boolean }[] }) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-100">
       <table className="min-w-full text-sm">
@@ -99,7 +96,8 @@ function RevenueTable({ rows }: { rows: { label: string; value: number }[] }) {
             <tr key={row.label} className="even:bg-[#f9fafb]">
               <td className="px-3 py-2 text-gray-700">{row.label}</td>
               <td className="px-3 py-2 text-right font-semibold text-[#0f172a]">
-                ${row.value.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                {row.isCurrency && "$"}
+                {row.value.toLocaleString(undefined, { minimumFractionDigits: row.isCurrency ? 2 : 0 })}
               </td>
             </tr>
           ))}
