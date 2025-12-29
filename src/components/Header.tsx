@@ -133,15 +133,7 @@ export function Header() {
                 </Link>
               </li>
 
-              <li className="relative px-[5px]">
-                <Link
-                  to="/booking-quiz"
-                  className={`block py-[6px] px-5 text-[15px] font-medium transition-colors ${isActive("/booking-quiz") ? "text-primary-dark" : "text-black hover:text-primary-dark"
-                    }`}
-                >
-                  Booking Quiz
-                </Link>
-              </li>
+
 
             </ul>
 
@@ -305,15 +297,7 @@ export function Header() {
                 </Link>
               </li>
 
-              <li>
-                <Link
-                  to="/booking-quiz"
-                  className="block text-[15px] font-medium text-black hover:text-primary-dark"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Booking Quiz
-                </Link>
-              </li>
+
             </ul>
 
             <div className="flex flex-row space-x-1 pt-0 mb-[15px]">

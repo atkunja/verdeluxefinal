@@ -3,7 +3,7 @@ import { CLEAN_TYPES, CLEANLINESS_LABELS, EXTRAS, BookingDraft } from "./booking
 import { useBookingDraft } from "./BookingWizardProvider";
 import { useNavigate } from "@tanstack/react-router";
 
-const cardBase = "rounded-2xl border border-[#e3ded2] bg-white shadow-[0_14px_30px_rgba(22,48,34,0.08)]";
+const cardBase = "rounded-3xl border border-white/50 bg-white/80 backdrop-blur-xl shadow-[0_20px_50px_-12px_rgba(22,48,34,0.1)]";
 
 function formatDuration(minutes: number) {
   const hrs = Math.floor(minutes / 60);

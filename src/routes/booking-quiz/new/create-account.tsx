@@ -96,11 +96,11 @@ function CreateAccountContent() {
     >
       <div className="flex flex-col items-center justify-center py-8">
         <div className="relative w-20 h-20">
-          <div className="absolute inset-0 border-4 border-[#163022]/10 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-[#163022] rounded-full border-t-transparent animate-spin"></div>
+          <div className="absolute inset-0 border-4 border-emerald-100 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-emerald-600 rounded-full border-t-transparent animate-spin"></div>
         </div>
-        <h2 className="text-xl font-bold mt-8 text-[#163022]">{status}</h2>
-        <p className="mt-2 text-sm text-[#5c5a55]">Initializing your Verde Luxe experience...</p>
+        <h2 className="text-xl font-bold mt-8 text-emerald-900">{status}</h2>
+        <p className="mt-2 text-sm text-slate-500">Initializing your Verde Luxe experience...</p>
       </div>
     </QuizIdentityLayout>
   );
