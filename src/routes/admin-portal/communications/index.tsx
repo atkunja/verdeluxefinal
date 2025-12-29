@@ -87,6 +87,18 @@ function CommunicationsPage() {
         })
     );
 
+    const makeCallMutation = useMutation(
+        trpc.makeCall.mutationOptions({
+            onSuccess: (data) => {
+                toast.success(data.note || "Call initiated");
+                callsQuery.refetch();
+            },
+            onError: (err: any) => {
+                toast.error(`Call failed: ${err.message}`);
+            }
+        })
+    );
+
     const handleSyncAll = async () => {
         await Promise.all([
             syncMessagesMutation.mutateAsync(),
@@ -390,13 +402,28 @@ function CommunicationsPage() {
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
-                                    <a
-                                        href={`tel:${selectedConversation.user.phone}`}
-                                        className="p-3 bg-white border border-gray-100 text-gray-500 rounded-2xl hover:bg-[#163022] hover:text-white hover:border-[#163022] transition-all shadow-sm active:scale-95"
-                                        title="Call Contact"
+                                    <button
+                                        onClick={() => {
+                                            const { token } = useAuthStore.getState();
+                                            if (!token) {
+                                                toast.error("Not authenticated");
+                                                return;
+                                            }
+                                            makeCallMutation.mutate({
+                                                authToken: token,
+                                                toNumber: selectedConversation.user.phone || ""
+                                            });
+                                        }}
+                                        disabled={makeCallMutation.isPending}
+                                        className="p-3 bg-white border border-gray-100 text-emerald-600 rounded-2xl hover:bg-emerald-50 hover:border-emerald-100 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                                        title="Call via OpenPhone"
                                     >
-                                        <Phone className="w-5 h-5" />
-                                    </a>
+                                        {makeCallMutation.isPending ? (
+                                            <RefreshCw className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Phone className="w-5 h-5" />
+                                        )}
+                                    </button>
                                 </div>
                             </div>
 

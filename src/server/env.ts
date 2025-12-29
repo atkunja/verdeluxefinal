@@ -22,6 +22,8 @@ const envSchema = z.object({
   VITE_BASE_URL: z.string().optional(),
   BASE_URL: z.string().optional(),
   BASE_URL_OTHER_PORT: z.string().optional(),
+  MERCURY_API_KEY: z.string().optional(),
+  MERCURY_API_BASE: z.string().optional(),
 });
 
 // Parse the environment, allowing for missing variables during build/early stages

@@ -9,26 +9,37 @@ export default defineEventHandler(async (event) => {
 
         const body = await readBody(event);
         const signature = getHeader(event, "x-openphone-signature");
+        const bodyString = typeof body === "string" ? body : JSON.stringify(body);
+
+        console.log("[Webhook] Received Request:", {
+            hasSignature: !!signature,
+            bodyLength: bodyString.length,
+            preview: bodyString.slice(0, 100)
+        });
 
         // Verify signature if secret is configured
         if (signature) {
-            const rawBody = typeof body === "string" ? body : JSON.stringify(body);
-            const isValid = await openPhone.verifySignature(rawBody, signature);
+            const isValid = await openPhone.verifySignature(bodyString, signature);
+            console.log("[Webhook] Signature verification:", isValid ? "PASS" : "FAIL");
             if (!isValid) {
-                console.warn("[Webhook] Invalid OpenPhone signature");
                 return new Response("Invalid signature", { status: 401 });
             }
+        } else {
+            console.warn("[Webhook] Missing x-openphone-signature header");
         }
 
-        const { type, data } = body;
-        console.log(`[Webhook] Received OpenPhone event: ${type}`);
+        const payload = typeof body === "string" ? JSON.parse(body) : body;
+        const { type, data } = payload;
+        console.log(`[Webhook] Event: ${type}, Object ID: ${data?.object?.id}`);
 
         if (type.startsWith("message.")) {
             const message = data.object;
-            await openPhone.upsertMessage(message);
+            const result = await openPhone.upsertMessage(message);
+            console.log("[Webhook] Message upsert result:", result ? "SUCCESS" : "SKIPPED (no contact phone)");
         } else if (type.startsWith("call.")) {
             const call = data.object;
-            await openPhone.upsertCall(call);
+            const result = await openPhone.upsertCall(call);
+            console.log("[Webhook] Call upsert result:", result ? "SUCCESS" : "SKIPPED (no contact phone)");
         }
 
         return new Response("OK", { status: 200 });

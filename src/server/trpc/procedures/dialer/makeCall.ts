@@ -40,10 +40,14 @@ export const makeCall = baseProcedure
     }
 
     // Try to find a contact user with this phone number
+    const { openPhone } = await import("~/server/services/openphone");
+    const normalizedToPhone = openPhone.normalizePhone(input.toNumber);
+    const normalizedDigits = normalizedToPhone.replace(/\D/g, "");
+
     const contactUser = await db.user.findFirst({
       where: {
         phone: {
-          contains: input.toNumber.replace(/\D/g, ""), // Simple match
+          contains: normalizedDigits.slice(-10), // Match last 10 digits
         },
       },
     });
@@ -53,13 +57,13 @@ export const makeCall = baseProcedure
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: env.OPENPHONE_API_KEY,
+          Authorization: `${env.OPENPHONE_API_KEY}`, // Using Bearer if needed, but openphone.ts uses direct key. 
+          // Wait, openphone.ts uses: headers: { Authorization: `${env.OPENPHONE_API_KEY}` }
+          // Let's keep it consistent with our working service.
         },
         body: JSON.stringify({
-          to: input.toNumber,
-          from: env.OPENPHONE_PHONE_NUMBER,
-          // Ideally, you'd associate the call with a user for better tracking.
-          // You might need to adjust based on OpenPhone's API capabilities.
+          to: normalizedToPhone,
+          from: openPhone.normalizePhone(env.OPENPHONE_PHONE_NUMBER || ""),
         }),
       });
 
