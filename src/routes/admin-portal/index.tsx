@@ -2,9 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
+import { CalendarDays, CreditCard, TrendingDown, TrendingUp, CheckCircle, UserPlus, Mail, AlertCircle, ArrowRight, DollarSign, CalendarRange } from "lucide-react";
 import { AdminShell } from "~/components/admin/AdminShell";
 import { useAuthStore } from "~/stores/authStore";
-import { CalendarDays, CreditCard, TrendingDown, TrendingUp, CheckCircle, UserPlus, Mail, AlertCircle, ArrowRight, DollarSign } from "lucide-react";
 
 export const Route = createFileRoute("/admin-portal/")({
   component: AdminDashboardPage,
@@ -16,7 +16,7 @@ function StatCard({
   previous,
   changePct,
   icon: Icon,
-  colorClass = "text-primary",
+  colorClass = "text-brand-800",
 }: {
   label: string;
   value: number;
@@ -27,24 +27,28 @@ function StatCard({
 }) {
   const positive = changePct >= 0;
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-white/40 bg-white/60 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-      <div className="relative flex items-start justify-between">
+    <div className="premium-card group">
+      <div className="flex items-start justify-between">
         <div>
-          <div className="text-sm font-medium text-gray-500 uppercase tracking-wider">{label}</div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <div className="text-3xl font-bold text-[#0f172a]">${value.toLocaleString()}</div>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+          <div className="mt-3 flex items-baseline gap-2">
+            <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              ${value.toLocaleString()}
+            </h3>
           </div>
           <div className="mt-4 flex items-center gap-2">
             <div
-              className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${positive ? "text-emerald-700" : "text-rose-700"}`}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold ${positive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                }`}
             >
               {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {Math.abs(changePct)}% vs last month
+              {Math.abs(changePct)}%
             </div>
+            <span className="text-[10px] font-semibold text-slate-400">vs last month</span>
           </div>
         </div>
-        <div className={`rounded-2xl p-3 shadow-sm border border-gray-100 ${colorClass} bg-white`}>
-          <Icon className="h-6 w-6" />
+        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-brand-800 group-hover:text-white transition-all duration-300 shadow-sm`}>
+          <Icon className="h-6 w-6" strokeWidth={1.5} />
         </div>
       </div>
     </div>
@@ -55,15 +59,15 @@ function StockChart({ points, labels, height = 120 }: { points: number[]; labels
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (points.length < 2) {
-    return <div className={`h-[${height}px] flex items-center justify-center text-gray-400 text-sm italic`}>Insufficient data for trend</div>;
+    return <div className={`h-[${height}px] flex items-center justify-center text-slate-400 text-sm italic`}>Insufficient data for trend</div>;
   }
 
   const max = Math.max(...points, 1);
   const min = Math.min(...points, 0);
   const range = max - min || 1;
-  const width = 500; // SVG viewBox width (arbitrary relative units)
-  const paddingX = 10;
-  const paddingY = 15;
+  const width = 800;
+  const paddingX = 40;
+  const paddingY = 30;
   const chartWidth = width - paddingX * 2;
   const chartHeight = height - paddingY * 2;
   const step = chartWidth / (points.length - 1);
@@ -78,19 +82,15 @@ function StockChart({ points, labels, height = 120 }: { points: number[]; labels
 
     if (pts.length < 2) return "";
 
-    let path = `M ${pts[0].x} ${pts[0].y}`;
+    let path = `M ${pts[0]?.x ?? 0} ${pts[0]?.y ?? 0}`;
 
     for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] ?? pts[i];
       const p1 = pts[i]!;
       const p2 = pts[i + 1]!;
-      const p3 = pts[i + 2] ?? p2;
-
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
-
+      const cp1x = p1.x + (p2.x - p1.x) / 2;
+      const cp1y = p1.y;
+      const cp2x = p1.x + (p2.x - p1.x) / 2;
+      const cp2y = p2.y;
       path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
     }
 
@@ -100,44 +100,41 @@ function StockChart({ points, labels, height = 120 }: { points: number[]; labels
   const linePath = createSmoothPath();
   const areaPath = linePath + ` L ${paddingX + (points.length - 1) * step} ${height - paddingY} L ${paddingX} ${height - paddingY} Z`;
 
-  const isPositive = points[points.length - 1] >= points[0];
+  const isPositive = (points[points.length - 1] ?? 0) >= (points[0] ?? 0);
 
   return (
     <div className="relative w-full">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: height }} preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible" style={{ maxHeight: height }} preserveAspectRatio="none">
         <defs>
           <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#1f2937" stopOpacity="0.4" />
-            <stop offset="50%" stopColor="#1f2937" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#1f2937" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#374151" />
-            <stop offset="50%" stopColor="#1f2937" />
-            <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} />
+            <stop offset="0%" stopColor="#163022" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#163022" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {[0, 1, 2, 3].map(i => (
+
+        {/* Horizontal background lines */}
+        {[0, 1, 2].map(i => (
           <line
             key={i}
             x1={paddingX}
-            y1={paddingY + (chartHeight / 3) * i}
+            y1={paddingY + (chartHeight / 2) * i}
             x2={width - paddingX}
-            y2={paddingY + (chartHeight / 3) * i}
-            stroke="#e5e7eb"
+            y2={paddingY + (chartHeight / 2) * i}
+            stroke="#f1f5f9"
             strokeWidth="1"
-            strokeDasharray="4 4"
           />
         ))}
+
         <path d={areaPath} fill="url(#chartGradient)" />
         <path
           d={linePath}
           fill="none"
-          stroke="url(#lineGradient)"
+          stroke="#163022"
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+
         {normalized.map((y, idx) => (
           <g
             key={idx}
@@ -148,47 +145,51 @@ function StockChart({ points, labels, height = 120 }: { points: number[]; labels
             <circle
               cx={paddingX + idx * step}
               cy={height - paddingY - y}
-              r="12"
+              r="20"
               fill="transparent"
             />
-            <circle
-              cx={paddingX + idx * step}
-              cy={height - paddingY - y}
-              r={hoveredIdx === idx ? 6 : 4}
-              fill={hoveredIdx === idx ? (isPositive ? "#10b981" : "#ef4444") : "#1f2937"}
-              stroke="white"
-              strokeWidth="2"
-              className="transition-all duration-200"
-            />
+            {hoveredIdx === idx && (
+              <circle
+                cx={paddingX + idx * step}
+                cy={height - paddingY - y}
+                r="6"
+                fill="#163022"
+                stroke="white"
+                strokeWidth="2"
+                className="animate-in fade-in zoom-in duration-200"
+              />
+            )}
           </g>
         ))}
-        {hoveredIdx !== null && (
-          <g>
+
+        {hoveredIdx !== null && points[hoveredIdx] !== undefined && (
+          <g className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <rect
-              x={paddingX + hoveredIdx * step - 40}
-              y={height - paddingY - normalized[hoveredIdx] - 40}
-              width="80"
-              height="28"
-              rx="6"
-              fill="#1f2937"
-              className="drop-shadow-lg"
+              x={paddingX + hoveredIdx * step - 50}
+              y={height - paddingY - (normalized[hoveredIdx] ?? 0) - 45}
+              width="100"
+              height="32"
+              rx="12"
+              fill="#0f172a"
+              className="shadow-xl"
             />
             <text
               x={paddingX + hoveredIdx * step}
-              y={height - paddingY - normalized[hoveredIdx] - 21}
+              y={height - paddingY - (normalized[hoveredIdx] ?? 0) - 25}
               textAnchor="middle"
               fill="white"
-              fontSize="11"
-              fontWeight="bold"
+              fontSize="12"
+              fontWeight="800"
+              fontFamily="Outfit"
             >
-              ${points[hoveredIdx].toLocaleString()}
+              ${points[hoveredIdx]?.toLocaleString()}
             </text>
           </g>
         )}
       </svg>
-      <div className="flex justify-between px-2 text-[10px] font-medium uppercase tracking-wider text-gray-400 mt-2">
+      <div className="flex justify-between px-10 text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-6 border-t border-slate-50 pt-4">
         {labels.map((l, i) => (
-          <span key={i} className={hoveredIdx === i ? "text-gray-700 font-bold" : ""}>{l}</span>
+          <span key={i} className={hoveredIdx === i ? "text-brand-800 font-extrabold" : ""}>{l}</span>
         ))}
       </div>
     </div>
@@ -213,7 +214,6 @@ function AdminDashboardPage() {
 
   const todaysDate = useMemo(() => new Date(), []);
   const [selectedDate, setSelectedDate] = useState<Date>(todaysDate);
-  const navigate = useNavigate();
 
   const handleCharge = async (bookingId: string, customerId: number, customerName: string, amount: number) => {
     const ok = window.confirm(`Charge $${amount.toFixed(2)} to ${customerName}'s card?`);
@@ -248,220 +248,192 @@ function AdminDashboardPage() {
   return (
     <AdminShell
       title={`Hello, ${firstName}!`}
-      subtitle="Manage your cleaning business overview."
+      subtitle="Welcome back to your business command center."
     >
-      {/* Stats Row */}
-      <div className="grid gap-6 md:grid-cols-2 mb-8">
-        <StatCard
-          label="Monthly Revenue"
-          value={statsQuery.data?.currentMonthRevenue ?? 0}
-          previous={statsQuery.data?.previousMonthRevenue ?? 0}
-          changePct={revenueChangePct}
-          icon={DollarSign}
-          colorClass="text-emerald-600"
-        />
-        <StatCard
-          label="Monthly Bookings"
-          value={statsQuery.data?.monthBookings ?? 0}
-          previous={statsQuery.data?.previousMonthBookings ?? 0}
-          changePct={bookingsChangePct}
-          icon={CalendarDays}
-          colorClass="text-indigo-600"
-        />
-      </div>
-
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Left Column Group (Revenue + Pending Charges) - Spans 2 columns */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Revenue Overview - Taller */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg">Revenue Overview</h3>
-                <span className="text-xs text-gray-500 uppercase tracking-wider block mt-1">Last 6 months</span>
-              </div>
-              <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="flex-1 flex items-end w-full">
-              <StockChart
-                points={statsQuery.data?.revenueTrends.map((t) => t.revenue) ?? []}
-                labels={statsQuery.data?.revenueTrends.map((t) => t.month) ?? []}
-                height={280}
-              />
-            </div>
-          </div>
-
-          {/* Pending Charges */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="font-bold text-gray-900">Pending Charges</h3>
-                <p className="text-xs text-gray-500 mt-1">{pendingChargesQuery.data?.length ?? 0} jobs ready to charge</p>
-              </div>
-              <div className="bg-yellow-50 text-yellow-600 p-2 rounded-xl">
-                <DollarSign className="h-4 w-4" />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {pendingChargesQuery.data?.map((charge) => (
-                <div key={charge.id} className="flex items-center justify-between pb-4 border-b border-gray-50 last:border-0 last:pb-0">
-                  <div className="flex items-start gap-4">
-                    <div className="mt-1 h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center">
-                      <UserPlus className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-gray-900">{charge.customer.name}</div>
-                      <div className="text-xs text-gray-500">{charge.serviceType || 'Standard Cleaning'}</div>
-                      <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                        <CalendarDays className="h-3 w-3" />
-                        {charge.serviceDate}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-emerald-600 mb-2">${charge.amount.toFixed(2)}</div>
-                    <button
-                      onClick={() => handleCharge(charge.id, charge.customer.id, charge.customer.name, charge.amount)}
-                      disabled={chargeMutation.isPending}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-50 shadow-sm hover:shadow-md"
-                    >
-                      {chargeMutation.isPending ? "..." : "Charge Card"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {(!pendingChargesQuery.data || pendingChargesQuery.data.length === 0) && (
-                <div className="text-center py-12">
-                  <div className="text-sm font-medium text-gray-400 italic mb-2">No pending charges</div>
-                  <p className="text-xs text-gray-300">Great job staying on top of payments!</p>
-                </div>
-              )}
-              {(pendingChargesQuery.data?.length ?? 0) > 5 && (
-                <div className="text-center pt-2">
-                  <span className="text-xs text-gray-400 font-medium">+{(pendingChargesQuery.data?.length ?? 0) - 5} more pending charges</span>
-                </div>
-              )}
-            </div>
-          </div>
+      <div className="space-y-8">
+        {/* Stats Row */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <StatCard
+            label="Monthly Revenue"
+            value={statsQuery.data?.currentMonthRevenue ?? 0}
+            previous={statsQuery.data?.previousMonthRevenue ?? 0}
+            changePct={revenueChangePct}
+            icon={DollarSign}
+          />
+          <StatCard
+            label="Total Bookings"
+            value={statsQuery.data?.monthBookings ?? 0}
+            previous={statsQuery.data?.previousMonthBookings ?? 0}
+            changePct={bookingsChangePct}
+            icon={CalendarDays}
+          />
         </div>
 
-        {/* Right Column - Calendar (Unchanged mostly, just ensure it spans 1 col) */}
-        <div className="space-y-6">
-          {/* Calendar Card */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-full">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="font-bold text-gray-900">My Calendar</h3>
-                <p className="text-xs text-gray-500 mt-1">Personal tasks & reminders</p>
+        {/* Main Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column (2/3) */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Revenue Evolution */}
+            <div className="premium-card !p-0 overflow-hidden">
+              <div className="p-8 pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-900 leading-none">Financial Performance</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Revenue trend • Last 6 months</p>
+                </div>
+                <div className="h-10 px-4 rounded-xl bg-brand-50 text-brand-800 flex items-center gap-2 text-xs font-bold ring-1 ring-brand-100">
+                  <TrendingUp className="h-4 w-4" />
+                  <span>+{revenueChangePct}% Growth</span>
+                </div>
               </div>
-              <div className="bg-purple-50 text-purple-600 p-2 rounded-xl">
-                <CalendarDays className="h-4 w-4" />
+              <div className="p-8 pt-6">
+                <StockChart
+                  points={statsQuery.data?.revenueTrends.map((t) => t.revenue) ?? []}
+                  labels={statsQuery.data?.revenueTrends.map((t) => t.month) ?? []}
+                  height={320}
+                />
               </div>
             </div>
 
-            {/* Big Date Card */}
-            <div className="bg-[#163022] rounded-2xl p-6 text-white mb-8 shadow-lg shadow-[#163022]/20">
-              <div className="text-xs opacity-70 uppercase tracking-widest font-bold">{new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(selectedDate)}</div>
-              <div className="text-6xl font-bold mt-2 tracking-tight">{selectedDate.getDate()}</div>
-              <div className="text-sm opacity-90 mt-2 font-medium">{new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(selectedDate)}</div>
-            </div>
-
-            {/* Week Row */}
-            <div className="grid grid-cols-7 gap-1 text-center mb-8">
-              {Array.from({ length: 7 }).map((_, idx) => {
-                const day = new Date(todaysDate);
-                day.setDate(todaysDate.getDate() + idx);
-                const isSelected = selectedDate.toDateString() === day.toDateString();
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedDate(new Date(day))}
-                    className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl transition-all ${isSelected ? 'bg-[#163022] text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-50'}`}
-                  >
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
-                    <span className={`text-sm font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{day.getDate()}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Today's Tasks */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle className="h-4 w-4 text-gray-400" />
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Today's Tasks</span>
+            {/* Pending Actions */}
+            <div className="premium-card">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-900 leading-none">Pending Actions</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Immediate attention required</p>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
+                  <AlertCircle className="h-4 w-4" />
+                </div>
               </div>
-              <div className="space-y-3">
-                {/* Integrate Action Center tasks here effectively */}
-                {tasksQuery.data?.slice(0, 3).map(task => {
-                  const parts = task.color.split(' ');
-                  const bgColor = parts[0] || 'bg-gray-100';
-                  const textColor = parts[1] || 'text-gray-700';
 
-                  return (
-                    <div key={task.id} className="p-4 rounded-2xl border border-gray-50 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
-                      <div className="flex justify-between items-start mb-1">
-                        <div className="text-xs font-bold text-gray-900 line-clamp-1">{task.title}</div>
-                        <div className="text-[10px] font-bold text-gray-400">{task.time}</div>
+              <div className="space-y-1">
+                {pendingChargesQuery.data?.map((charge) => (
+                  <div key={charge.id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black group-hover:scale-110 transition-transform">
+                        {charge.customer.name[0]}
                       </div>
-                      <div className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">{task.description}</div>
+                      <div>
+                        <p className="text font-bold text-slate-900">{charge.customer.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs font-bold text-slate-400 uppercase">{charge.serviceType || 'Standard Cleaning'}</span>
+                          <span className="w-1 h-1 rounded-full bg-slate-200" />
+                          <span className="text-xs font-medium text-slate-500">{charge.serviceDate}</span>
+                        </div>
+                      </div>
                     </div>
-                  )
-                })}
-                {(!tasksQuery.data || tasksQuery.data.length === 0) && (
-                  <div className="text-xs text-gray-400 italic text-center py-4">No tasks for today</div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-lg font-black text-brand-800">${charge.amount.toFixed(2)}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Post-service charge</p>
+                      </div>
+                      <button
+                        onClick={() => handleCharge(charge.id, charge.customer.id, charge.customer.name, charge.amount)}
+                        disabled={chargeMutation.isPending}
+                        className="h-10 px-6 rounded-xl bg-brand-800 text-white text-xs font-bold shadow-lg shadow-brand-800/20 hover:bg-brand-700 hover:-translate-y-0.5 transition-all disabled:opacity-50"
+                      >
+                        Process
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {(!pendingChargesQuery.data || pendingChargesQuery.data.length === 0) && (
+                  <div className="py-20 text-center">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                      <CheckCircle className="h-10 w-10 text-slate-200" />
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-900">All caught up!</h4>
+                    <p className="text-slate-400 font-medium mt-1">No pending charges at the moment.</p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Right Column (1/3) */}
+          <div className="space-y-8">
+            {/* Visual Calendar */}
+            <div className="premium-card bg-[#163022] !border-brand-700 text-white shadow-brand-800/10 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-10">
+                <div>
+                  <h3 className="text-lg font-extrabold text-white leading-none">Schedule</h3>
+                  <p className="text-[10px] font-bold text-brand-300 uppercase tracking-widest mt-2">{new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(selectedDate)}</p>
+                </div>
+                <CalendarDays className="h-5 w-5 text-brand-400 opacity-50" />
+              </div>
+
+              <div className="flex-1">
+                <div className="flex flex-col items-center mb-10">
+                  <span className="text-sm font-bold text-brand-300 uppercase tracking-[0.3em]">{new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(selectedDate)}</span>
+                  <span className="text-[8rem] font-black leading-none tracking-tight">{selectedDate.getDate()}</span>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2 mb-10">
+                  {Array.from({ length: 7 }).map((_, idx) => {
+                    const day = new Date(todaysDate);
+                    day.setDate(todaysDate.getDate() + idx);
+                    const isSelected = selectedDate.toDateString() === day.toDateString();
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedDate(new Date(day))}
+                        className={`flex flex-col items-center justify-center py-4 rounded-2xl transition-all ${isSelected ? 'bg-white text-brand-800 shadow-xl scale-110' : 'text-brand-300 hover:bg-white/5 hover:text-white'}`}
+                      >
+                        <span className="text-[9px] font-black uppercase tracking-widest">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
+                        <span className={`text-sm font-black mt-1`}>{day.getDate()}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-8 border-t border-white/5 space-y-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-400">Scheduled Overview</p>
+                <div className="space-y-3">
+                  {tasksQuery.data?.slice(0, 3).map(task => (
+                    <div key={task.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-xs font-black text-white group-hover:text-brand-200 transition-colors">{task.title}</p>
+                        <span className="text-[9px] font-bold text-brand-400">{task.time}</span>
+                      </div>
+                      <p className="text-[11px] font-medium text-brand-300 leading-relaxed line-clamp-2">{task.description}</p>
+                    </div>
+                  ))}
+                  {(!tasksQuery.data || tasksQuery.data.length === 0) && (
+                    <p className="text-xs text-brand-500 italic text-center py-4">No events scheduled.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Bottom Section - Upcoming Jobs in full width? User didn't specify, but often good to keep upcoming jobs accessible. 
-            The user said "with pending charges below it". 
-            I'll put upcoming jobs at the very bottom or integrated into the right column if desired, but sticking to the 2/3 + 1/3 split for now. 
-            I will essentially remove the separate "Upcoming Jobs" widget from the bottom and rely on the calendar or add it back if space permits.
-            Actually, let's keep it simply as:
-            [ Revenue (Tall) ] [ Calendar ]
-            [ Pending Charges] [          ]
-            
-            Wait, user said "revenue overview take all that space, with pending charges below it".
-            Reference Image shows:
-            [ Revenue Overview ] [ Calendar ]
-            [ Pending Charges  ] [          ]
-            
-            Effectively:
-            Col 1 (2/3 width): [ Revenue ]
-                               [ Pending ]
-            Col 2 (1/3 width): [ Calendar ]
-         */}
-      </div>
-
-      {/* Upcoming Jobs - Optional, putting at bottom full width or hidden. 
-           I'll add it as a full width section at the bottom to ensure no data loss.
-       */}
-      <div className="mt-8">
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-900">Upcoming Jobs</h3>
-            <Link to="/admin-portal/bookings" className="text-xs font-bold text-[#163022] hover:underline">View All</Link>
+        {/* Global Footer Jobs */}
+        <div className="premium-card">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-extrabold text-slate-900 leading-none">Upcoming Confirmations</h3>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Next 24-48 hours</p>
+            </div>
+            <Link
+              to="/admin-portal/bookings"
+              search={{ createFromLeadId: undefined } as any}
+              className="h-10 px-5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+            >
+              Management Hub <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {statsQuery.data?.upcomingAppointments.slice(0, 4).map((job) => (
-              <div key={job.id} className="p-4 rounded-2xl border border-gray-50 bg-gray-50/30 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shrink-0">
-                  <CalendarDays className="h-5 w-5 text-gray-400" />
+              <div key={job.id} className="flex p-5 rounded-2xl bg-slate-50 border border-slate-100 items-start gap-4 hover:shadow-md transition-all group">
+                <div className="h-12 w-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:bg-brand-800 group-hover:text-white transition-all">
+                  <CalendarRange className="h-6 w-6" strokeWidth={1.5} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-gray-900 truncate">{job.client.firstName} {job.client.lastName}</div>
-                  <div className="text-[10px] text-gray-500">{new Date(job.scheduledDate).toLocaleDateString()}</div>
+                  <p className="text-sm font-bold text-slate-900 truncate">{job.client.firstName} {job.client.lastName}</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1">{new Date(job.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  <div className="mt-3 inline-flex px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">Confirmed</div>
                 </div>
               </div>
             ))}

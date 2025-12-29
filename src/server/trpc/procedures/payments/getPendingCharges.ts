@@ -29,6 +29,7 @@ export const getPendingCharges = requireAdmin.query(async () => {
                 email: booking.client.email,
             },
             amount: (booking.finalPrice || 0) - totalPaid,
+            serviceType: booking.serviceType,
             serviceDate: new Date(booking.scheduledDate).toLocaleDateString(),
             serviceTime: booking.scheduledTime,
             location: booking.address,

@@ -1,121 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Brand Colors - Verde Luxe Premium */
+    --brand-50: #f1f8f5;
+    --brand-100: #daede4;
+    --brand-200: #b8dacb;
+    --brand-300: #8bbca5;
+    --brand-400: #5f9a7d;
+    --brand-500: #3f7b5f;
+    --brand-600: #2f614a;
+    --brand-700: #264e3c;
+    --brand-800: #163022; /* Primary */
+    --brand-900: #12281c;
+    --brand-950: #0a1711;
+
+    /* Slate/Zinc scales for depth */
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+
+    --background: #fdfdfb;
+    --background-alt: #f3f0e6;
+    
+    --radius-sm: 0.5rem;
+    --radius-md: 0.85rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 2rem;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-premium: 0 20px 50px -12px rgba(22, 48, 34, 0.12);
+  }
+
   body {
-    font-family: "Roboto", sans-serif;
-    font-weight: 400;
-    font-size: 15px;
-    line-height: 1.6;
-    color: #7d8393;
-    background: #fff;
+    @apply font-sans antialiased bg-[#f3f0e6] text-[#111827] selection:bg-brand-200 selection:text-brand-900;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: "Roboto Slab", serif;
-    color: #000;
-    font-weight: 600;
-    line-height: 1.4;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply font-bold tracking-tight text-slate-900;
   }
 
-  a {
-    text-decoration: none;
-    outline: 0;
-    transition: all 0.5s ease;
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
 
-  /* Global select styling to unify dropdown appearance */
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full transition-colors hover:bg-slate-300;
+  }
+
+  /* Modern Inputs */
+  input[type="text"], 
+  input[type="email"], 
+  input[type="tel"], 
+  input[type="password"], 
+  input[type="number"],
+  input[type="search"],
+  textarea {
+    @apply rounded-xl border-slate-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-brand-800 focus:ring-4 focus:ring-brand-800/5 focus:outline-none placeholder:text-slate-400;
+  }
+
   select {
-    @apply w-full px-4 py-2.5 pr-10 border border-[#d7d1c4] rounded-lg shadow-sm bg-[#f7f4ed] text-[#163022] transition-shadow appearance-none focus:ring-2 focus:ring-primary focus:border-[#163022];
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%235c5a55' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    @apply w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl bg-white text-slate-900 transition-all appearance-none focus:ring-4 focus:ring-brand-800/5 focus:border-brand-800 focus:outline-none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%23475569' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     background-size: 16px 16px;
   }
-
-  select:focus {
-    outline: none;
-  }
-
-  select::-ms-expand {
-    display: none;
-  }
 }
 
 @layer components {
-  /* Bootstrap Icons in contact info boxes */
-  .cn-list i[class*="bi-"] {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+  
+  .premium-card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-premium p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5;
   }
 
-  .cn-list i[class*="bi-"]::before {
-    display: inline-block;
+  .admin-nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-500 hover:bg-white hover:text-brand-800 hover:shadow-sm group border border-transparent;
   }
 
-  .cn-social i[class*="bi-"]::before {
-    display: inline-block;
+  .admin-nav-item-active {
+    @apply bg-brand-800 text-white shadow-lg shadow-brand-800/20 border-brand-700/50 hover:bg-brand-800 hover:text-white;
   }
 
-  .animate-slide-in-right {
-    animation: slideInRight 0.3s ease-out;
+  .premium-button {
+    @apply h-11 px-6 rounded-xl font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2;
   }
 
-  /* Number input spinner controls - hide by default to prevent overlap */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+  .premium-button-primary {
+    @apply premium-button bg-brand-800 text-white hover:bg-brand-700 shadow-lg shadow-brand-800/10 hover:shadow-brand-800/20;
   }
 
-  /* Show spinners on hover and focus for better usability */
-  input[type="number"]:hover::-webkit-inner-spin-button,
-  input[type="number"]:hover::-webkit-outer-spin-button,
-  input[type="number"]:focus::-webkit-inner-spin-button,
-  input[type="number"]:focus::-webkit-outer-spin-button {
-    -webkit-appearance: auto;
-    opacity: 1;
-  }
-
-  /* Firefox - hide default spinner */
-  input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-
-  /* Firefox - restore spinner on hover and focus */
-  input[type="number"]:hover,
-  input[type="number"]:focus {
-    -moz-appearance: number-input;
-    appearance: auto;
-  }
-}
-
-@keyframes upDown {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
+  .premium-button-secondary {
+    @apply premium-button bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300;
   }
 }
