@@ -12,16 +12,15 @@ export default defineEventHandler((event) => {
   }
 
   // CORS Configuration
-  const validOrigins = [
-    process.env.BASE_URL ? process.env.BASE_URL.replace(/\/$/, "") : null, // Remove trailing slash if present
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "https://verdeluxefinal.vercel.app", // Fallback hardcoded if needed
-  ].filter(Boolean);
-
+  // CORS Configuration
   const origin = request.headers.get("origin");
-  const isAllowedOrigin = origin && validOrigins.includes(origin);
+
+  let isAllowedOrigin = false;
+  if (origin) {
+    if (origin.startsWith("http://localhost:")) isAllowedOrigin = true;
+    else if (origin.endsWith(".vercel.app")) isAllowedOrigin = true;
+    else if (process.env.BASE_URL && origin === process.env.BASE_URL.replace(/\/$/, "")) isAllowedOrigin = true;
+  }
 
   // Helper to set CORS headers
   const setCorsHeaders = () => {

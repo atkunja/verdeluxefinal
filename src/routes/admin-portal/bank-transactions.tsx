@@ -137,7 +137,7 @@ function BankTransactionsPage() {
   return (
     <AdminShell
       title="Bank Transactions"
-      subtitle="Mercury mock integration."
+      subtitle="Mercury integration."
       actions={
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1 text-sm">
