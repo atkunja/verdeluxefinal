@@ -53,7 +53,9 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
               transformer: SuperJSON,
               url,
               headers() {
-                return token ? { Authorization: `Bearer ${token}` } : {};
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                console.log(`[tRPC] Sending headers:`, { hasToken: !!token, tokenLength: token?.length, url });
+                return headers;
               },
             }),
             true: httpSubscriptionLink({
