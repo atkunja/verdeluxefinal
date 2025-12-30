@@ -21,7 +21,13 @@ const { TRPCProvider, useTRPC, useTRPCClient } = createTRPCContext<AppRouter>();
 export { useTRPC, useTRPCClient };
 
 function getBaseUrl() {
-  if (typeof window !== "undefined") return ""; // use relative url in the browser
+  if (typeof window !== "undefined") {
+    // If VITE_API_URL is set, use it (split environment)
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    // Otherwise use relative path (same origin)
+    return "";
+  }
+  // Server-side
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return `http://localhost:3000`;
 }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { defineEventHandler, toWebRequest } from "@tanstack/react-start/server";
+import { defineEventHandler, toWebRequest, setResponseHeader } from "@tanstack/react-start/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./root";
 import { supabaseServer } from "../supabase";
@@ -10,6 +10,37 @@ export default defineEventHandler((event) => {
   if (!request) {
     return new Response("No request", { status: 400 });
   }
+
+  // CORS Configuration
+  const validOrigins = [
+    process.env.BASE_URL ? process.env.BASE_URL.replace(/\/$/, "") : null, // Remove trailing slash if present
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "https://verdeluxefinal.vercel.app", // Fallback hardcoded if needed
+  ].filter(Boolean);
+
+  const origin = request.headers.get("origin");
+  const isAllowedOrigin = origin && validOrigins.includes(origin);
+
+  // Helper to set CORS headers
+  const setCorsHeaders = () => {
+    if (isAllowedOrigin && origin) {
+      setResponseHeader(event, "Access-Control-Allow-Origin", origin);
+      setResponseHeader(event, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      setResponseHeader(event, "Access-Control-Allow-Headers", "authorization, content-type");
+      setResponseHeader(event, "Access-Control-Allow-Credentials", "true");
+    }
+  };
+
+  // Handle Preflight OPTIONS request
+  if (request.method === "OPTIONS") {
+    setCorsHeaders();
+    return new Response(null, { status: 204 });
+  }
+
+  // Handle actual request
+  setCorsHeaders();
 
   return fetchRequestHandler({
     endpoint: "/trpc",
