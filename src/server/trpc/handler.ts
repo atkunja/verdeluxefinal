@@ -1,51 +1,53 @@
 // @ts-nocheck
-import { defineEventHandler, toWebRequest, setResponseHeader } from "@tanstack/react-start/server";
+import { defineEventHandler, toWebRequest } from "@tanstack/react-start/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./root";
 import { supabaseServer } from "../supabase";
 import { db } from "../db";
 
-export default defineEventHandler((event) => {
+// CORS helper
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  if (!origin) return {};
+
+  let isAllowed = false;
+  // Allow localhost on any port
+  if (origin.startsWith("http://localhost:")) isAllowed = true;
+  // Allow any Vercel deployment
+  else if (origin.endsWith(".vercel.app")) isAllowed = true;
+  // Allow any Railway deployment
+  else if (origin.endsWith(".railway.app")) isAllowed = true;
+  // Allow BASE_URL origin
+  else if (process.env.BASE_URL && origin === process.env.BASE_URL.replace(/\/$/, "")) isAllowed = true;
+
+  if (!isAllowed) return {};
+
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+export default defineEventHandler(async (event) => {
   const request = toWebRequest(event);
   if (!request) {
     return new Response("No request", { status: 400 });
   }
 
-  // CORS Configuration
   const origin = request.headers.get("origin");
-
-  let isAllowedOrigin = false;
-  if (origin) {
-    // Allow localhost on any port
-    if (origin.startsWith("http://localhost:")) isAllowedOrigin = true;
-    // Allow any Vercel deployment
-    else if (origin.endsWith(".vercel.app")) isAllowedOrigin = true;
-    // Allow any Railway deployment
-    else if (origin.endsWith(".railway.app")) isAllowedOrigin = true;
-    // Allow BASE_URL origin
-    else if (process.env.BASE_URL && origin === process.env.BASE_URL.replace(/\/$/, "")) isAllowedOrigin = true;
-  }
-
-  // Helper to set CORS headers
-  const setCorsHeaders = () => {
-    if (isAllowedOrigin && origin) {
-      setResponseHeader(event, "Access-Control-Allow-Origin", origin);
-      setResponseHeader(event, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-      setResponseHeader(event, "Access-Control-Allow-Headers", "authorization, content-type");
-      setResponseHeader(event, "Access-Control-Allow-Credentials", "true");
-    }
-  };
+  const corsHeaders = getCorsHeaders(origin);
 
   // Handle Preflight OPTIONS request
   if (request.method === "OPTIONS") {
-    setCorsHeaders();
-    return new Response(null, { status: 204 });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
-  // Handle actual request
-  setCorsHeaders();
-
-  return fetchRequestHandler({
+  // Handle actual TRPC request
+  const response = await fetchRequestHandler({
     endpoint: "/trpc",
     req: request,
     router: appRouter,
@@ -142,5 +144,17 @@ export default defineEventHandler((event) => {
     onError({ error, path }) {
       console.error(`tRPC error on '${path}':`, error);
     },
+  });
+
+  // Add CORS headers to the response
+  const newHeaders = new Headers(response.headers);
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    newHeaders.set(key, value);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
   });
 });
