@@ -23,7 +23,10 @@ export { useTRPC, useTRPCClient };
 function getBaseUrl() {
   if (typeof window !== "undefined") {
     // If VITE_API_URL is set, use it (split environment)
-    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    // Remove trailing slash to avoid double slashes when appending /trpc
+    if (import.meta.env.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+    }
     // Otherwise use relative path (same origin)
     return "";
   }
