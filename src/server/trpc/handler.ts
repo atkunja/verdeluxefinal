@@ -12,13 +12,17 @@ export default defineEventHandler((event) => {
   }
 
   // CORS Configuration
-  // CORS Configuration
   const origin = request.headers.get("origin");
 
   let isAllowedOrigin = false;
   if (origin) {
+    // Allow localhost on any port
     if (origin.startsWith("http://localhost:")) isAllowedOrigin = true;
+    // Allow any Vercel deployment
     else if (origin.endsWith(".vercel.app")) isAllowedOrigin = true;
+    // Allow any Railway deployment
+    else if (origin.endsWith(".railway.app")) isAllowedOrigin = true;
+    // Allow BASE_URL origin
     else if (process.env.BASE_URL && origin === process.env.BASE_URL.replace(/\/$/, "")) isAllowedOrigin = true;
   }
 
