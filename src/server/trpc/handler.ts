@@ -36,7 +36,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const origin = request.headers.get("origin");
-  const corsHeaders = getCorsHeaders(origin);
+  console.log(`[CORS] Request method: ${request.method}, Origin: ${origin}`);
+
+  // Get CORS headers (or use permissive headers for debugging)
+  let corsHeaders = getCorsHeaders(origin);
+
+  // If no CORS headers were set (origin not allowed or missing), 
+  // use permissive CORS for debugging cross-origin issues
+  if (Object.keys(corsHeaders).length === 0) {
+    console.log(`[CORS] No CORS headers from getCorsHeaders. Using permissive CORS.`);
+    corsHeaders = {
+      "Access-Control-Allow-Origin": origin || "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "authorization, content-type",
+      "Access-Control-Allow-Credentials": "true",
+    };
+  }
+
+  console.log(`[CORS] Returning headers:`, JSON.stringify(corsHeaders));
 
   // Handle Preflight OPTIONS request
   if (request.method === "OPTIONS") {
