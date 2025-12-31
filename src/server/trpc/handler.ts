@@ -25,7 +25,6 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, content-type",
-    "Access-Control-Allow-Credentials": "true",
   };
 }
 
@@ -42,25 +41,19 @@ export default defineEventHandler(async (event) => {
   let corsHeaders = getCorsHeaders(origin);
 
   // If no CORS headers were set (origin not allowed or missing), 
-  // use permissive CORS for debugging cross-origin issues.
-  // CRITICAL: Cannot use "*" with "Access-Control-Allow-Credentials: true".
+  // use permissive CORS. Since we switched to credentials: 'omit' in the frontend,
+  // we can safely use wildcard "*" if no specific origin is found.
   if (Object.keys(corsHeaders).length === 0) {
-    if (origin) {
-      console.log(`[CORS] Setting permissive origin for: ${origin}`);
-      corsHeaders = {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "authorization, content-type",
-        "Access-Control-Allow-Credentials": "true",
-      };
-    } else {
-      console.log(`[CORS] No origin found. Using wildcard without credentials.`);
-      corsHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "authorization, content-type",
-      };
-    }
+    console.log(`[CORS] Using permissive CORS (Origin: ${origin || "null"})`);
+    corsHeaders = {
+      "Access-Control-Allow-Origin": origin || "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "authorization, content-type",
+    };
+  } else {
+    // Even if origin is allowed, ensure credentials is NOT true if it might conflict
+    // with wildcard logic. For now, since we use 'omit', we don't need credentials: true.
+    delete corsHeaders["Access-Control-Allow-Credentials"];
   }
 
   console.log(`[CORS] Returning headers:`, JSON.stringify(corsHeaders));
