@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Phone, RefreshCw, User, Image, Download, MessageSquare, Send, Search, Edit2, Trash2, X, Check } from "lucide-react";
+import { Trash2, Phone, MessageSquare, Send, Search, RefreshCw, Edit2, Check, X, Download, Plus, Image as ImageIcon, X as CloseIcon } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
-import { ActionConfirmationModal } from "~/components/admin/ActionConfirmationModal";
 import { useAuthStore } from "~/stores/authStore";
+import { ActionConfirmationModal } from "~/components/admin/ActionConfirmationModal";
+import { openPhone } from "~/server/services/openphone";
+import { uploadMedia } from "~/utils/uploadMedia";
 
 export const Route = createFileRoute("/admin-portal/communications/")({
     component: CommunicationsPage,
@@ -17,6 +19,9 @@ function CommunicationsPage() {
     const trpc = useTRPC();
     const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
     const [messageText, setMessageText] = useState("");
+    const [selectedMediaUrls, setSelectedMediaUrls] = useState<string[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [isEditingName, setIsEditingName] = useState(false);
     const [editFirstName, setEditFirstName] = useState("");
@@ -172,14 +177,44 @@ function CommunicationsPage() {
     const allConversations = [...segmentedConversations.clients, ...segmentedConversations.employees];
     const selectedConversation = allConversations.find(c => c.user.id === selectedContactId);
 
-    const handleSend = (e: React.FormEvent) => {
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedContactId || !messageText.trim()) return;
+        if ((!messageText.trim() && selectedMediaUrls.length === 0) || sendMessageMutation.isPending || isUploading) return;
 
         sendMessageMutation.mutate({
-            recipientId: selectedContactId,
-            content: messageText
+            recipientId: selectedContactId!,
+            content: messageText,
+            mediaUrls: selectedMediaUrls,
+        }, {
+            onSuccess: () => {
+                setMessageText("");
+                setSelectedMediaUrls([]);
+            }
         });
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setIsUploading(true);
+        const uploadToast = toast.loading("Uploading images...");
+
+        try {
+            const urls = await Promise.all(files.map(file => uploadMedia(file)));
+            setSelectedMediaUrls(prev => [...prev, ...urls]);
+            toast.success("Images uploaded", { id: uploadToast });
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error("Failed to upload images", { id: uploadToast });
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const removeMedia = (index: number) => {
+        setSelectedMediaUrls(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleStartEdit = () => {
@@ -523,17 +558,60 @@ function CommunicationsPage() {
                             </div>
 
                             <form onSubmit={handleSend} className="relative group">
+                                {selectedMediaUrls.length > 0 && (
+                                    <div className="flex flex-wrap gap-3 mb-3 px-2">
+                                        {selectedMediaUrls.map((url, idx) => (
+                                            <div key={idx} className="relative group/item aspect-square w-20">
+                                                <img
+                                                    src={url}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-cover rounded-2xl border-2 border-emerald-100 shadow-sm"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeMedia(idx)}
+                                                    className="absolute -top-2 -right-2 p-1 bg-white border border-gray-100 text-rose-500 rounded-full shadow-md hover:bg-rose-50 transition-all opacity-0 group-hover/item:opacity-100"
+                                                >
+                                                    <CloseIcon className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <div className="absolute inset-0 bg-emerald-500/5 blur-xl group-focus-within:bg-emerald-500/10 transition-all rounded-[32px] -m-2" />
                                 <div className="relative flex items-center gap-3 bg-white border border-gray-100 rounded-[24px] p-2 shadow-sm focus-within:shadow-md transition-all">
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                        className="p-3 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all disabled:opacity-30"
+                                        title="Attach Images"
+                                    >
+                                        {isUploading ? (
+                                            <RefreshCw className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Plus className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleFileChange}
+                                    />
                                     <input
                                         value={messageText}
                                         onChange={(e) => setMessageText(e.target.value)}
-                                        placeholder="Write a message..."
-                                        className="flex-1 bg-transparent border-none py-3 pl-4 text-sm focus:ring-0 placeholder:text-gray-300 font-medium"
+                                        placeholder={isUploading ? "Uploading..." : "Write a message..."}
+                                        disabled={isUploading}
+                                        className="flex-1 bg-transparent border-none py-3 text-sm focus:ring-0 placeholder:text-gray-300 font-medium disabled:opacity-50"
                                     />
                                     <button
                                         type="submit"
-                                        disabled={!messageText.trim() || sendMessageMutation.isPending}
+                                        disabled={(!messageText.trim() && selectedMediaUrls.length === 0) || sendMessageMutation.isPending || isUploading}
                                         className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-[#163022] to-[#0d1d14] text-white rounded-2xl hover:shadow-[0_10px_20px_rgba(22,48,34,0.3)] disabled:opacity-30 disabled:shadow-none transition-all active:scale-95 group"
                                     >
                                         <Send className="w-5 h-5 group-hover:rotate-12 transition-transform" />
