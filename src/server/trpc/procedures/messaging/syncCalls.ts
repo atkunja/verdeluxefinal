@@ -7,52 +7,39 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
     try {
         let count = 0;
         const adminId = ctx.profile.id;
-        const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
         let nextPageToken: string | undefined = undefined;
-        let convPage = 1;
+        let pPage = 1;
 
-        console.log(`[Sync] Starting full pagination call sync...`);
+        // 1. Get the most recent call timestamp to enable incremental sync
+        const lastCall = await db.callLog.findFirst({
+            orderBy: { startTime: 'desc' },
+            select: { startTime: true }
+        });
+        const sinceDate = lastCall?.startTime;
 
-        // 1. Paginate through ALL conversations
+        console.log(`[Sync] Starting ${sinceDate ? 'incremental' : 'full'} pagination call sync...`);
+
+        // 2. Paginate through ALL calls (OpenPhone /calls endpoint lists all calls by default)
         do {
-            console.log(`[Sync] Fetching conversation page ${convPage}...`);
-            const convData = await openPhone.getConversations(nextPageToken);
-            const conversations = (convData.data || []) as any[];
-            nextPageToken = convData.nextPageToken;
+            console.log(`[Sync] Fetching call page ${pPage}...`);
+            const callData = await openPhone.getCalls(undefined, nextPageToken);
+            const calls = (callData.data || []) as any[];
+            nextPageToken = callData.nextPageToken;
 
-            for (const conv of conversations) {
-                // Extract participants 
-                const participants = (conv.participants || [])
-                    .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
-                    .filter((p: string | undefined) => {
-                        if (!p || typeof p !== 'string') return false;
-                        const normalized = p.replace(/\D/g, "");
-                        const systemDigits = systemPhone.replace(/\D/g, "");
-                        return normalized !== systemDigits && normalized.length > 5;
-                    });
-
-                if (participants.length === 0) continue;
-
-                // Sync first 2 pages of calls for each conversation
-                let callPageToken: string | undefined = undefined;
-                for (let pCount = 0; pCount < 2; pCount++) {
-                    const callsData = await openPhone.getCalls(participants, callPageToken);
-                    const calls = (callsData.data || []) as any[];
-                    callPageToken = callsData.nextPageToken;
-
-                    for (const call of calls) {
-                        await openPhone.upsertCall(call, adminId);
-                        count++;
-                    }
-
-                    if (!callPageToken) break;
-                    await openPhone.sleep(100);
+            let hasReachedOldCalls = false;
+            for (const callItem of calls) {
+                // If we hit calls older than our last sync, we can stop after this batch
+                if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
+                    hasReachedOldCalls = true;
+                    // continue to process batch to ensure 100% coverage
                 }
-
-                // Throttling: Wait 500ms before next conversation
-                await openPhone.sleep(500);
+                await openPhone.upsertCall(callItem, adminId);
+                count++;
             }
-            convPage++;
+
+            if (!nextPageToken || hasReachedOldCalls) break;
+            pPage++;
+            await openPhone.sleep(200);
         } while (nextPageToken);
 
         return { success: true, count };

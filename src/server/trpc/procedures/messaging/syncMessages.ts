@@ -12,9 +12,17 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
         let nextPageToken: string | undefined = undefined;
         let convPage = 1;
 
-        console.log(`[Sync] Starting full pagination message sync...`);
+        // 1. Get the most recent message timestamp to enable incremental sync
+        const lastMessage = await db.message.findFirst({
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true }
+        });
+        const sinceDate = lastMessage?.createdAt;
 
-        // 1. Paginate through ALL conversations
+        console.log(`[Sync] Starting ${sinceDate ? 'incremental' : 'full'} pagination message sync...`);
+        if (sinceDate) console.log(`[Sync] Fetching messages since: ${sinceDate.toISOString()}`);
+
+        // 2. Paginate through ALL conversations
         do {
             console.log(`[Sync] Fetching conversation page ${convPage}...`);
             const convData = await openPhone.getConversations(nextPageToken);
@@ -22,6 +30,11 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
             nextPageToken = convData.nextPageToken;
 
             for (const conv of conversations) {
+                // Skip if the conversation hasn't been updated since our last sync
+                if (sinceDate && conv.updatedAt && new Date(conv.updatedAt) <= sinceDate) {
+                    continue;
+                }
+
                 // Extract participants 
                 const participants = (conv.participants || [])
                     .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
@@ -33,30 +46,33 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
                     });
 
                 if (participants.length === 0) {
-                    console.log(`[Sync] Skipping conversation ${conv.id}: No external participants found (participants: ${JSON.stringify(conv.participants)})`);
                     continue;
                 }
 
-                console.log(`[Sync] Fetching messages for conversation ${conv.id} with participants: ${JSON.stringify(participants)}`);
-
-                // Sync first 2 pages of messages for each conversation (latest ~100)
+                // Sync messages for each conversation
                 let msgPageToken: string | undefined = undefined;
-                for (let pCount = 0; pCount < 2; pCount++) {
+                // For incremental, we only need the latest page usually, but we'll check token
+                for (let pCount = 0; pCount < 3; pCount++) {
                     const msgsData = await openPhone.getMessages(participants, msgPageToken);
                     const messages = (msgsData.data || []) as any[];
                     msgPageToken = msgsData.nextPageToken;
 
+                    let hasReachedOldMessages = false;
                     for (const msg of messages) {
+                        // Optimization: if we hit a message older than our last sync, we can potentially stop this conversation
+                        if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
+                            hasReachedOldMessages = true;
+                            // continue to process this batch just in case of overlaps, but set flag
+                        }
                         await openPhone.upsertMessage(msg, adminId);
                         count++;
                     }
 
-                    if (!msgPageToken) break;
-                    await openPhone.sleep(100); // Small delay between message pages
+                    if (!msgPageToken || hasReachedOldMessages) break;
+                    await openPhone.sleep(100);
                 }
 
-                // Throttling: Wait 500ms before next conversation
-                await openPhone.sleep(500);
+                await openPhone.sleep(200);
             }
             convPage++;
         } while (nextPageToken);

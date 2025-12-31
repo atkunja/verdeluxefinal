@@ -8,84 +8,99 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const monthRange = normalizeDetroitRange(startOfMonth, endOfMonth);
 
-  const totalBookings = await db.booking.count();
-  const completedBookings = await db.booking.count({
-    where: { status: "COMPLETED" },
-  });
-  const cancelledBookings = await db.booking.count({
-    where: { status: "CANCELLED" },
-  });
-
-  const monthBookings = await db.booking.count({
-    where: {
-      scheduledDate: { gte: monthRange.start ?? startOfMonth, lte: monthRange.end ?? endOfMonth },
-      status: { not: "CANCELLED" },
-    },
-  });
-
-  const revenueTotalAgg = await db.booking.aggregate({
-    _sum: { finalPrice: true },
-    where: { status: { not: "CANCELLED" } },
-  });
-  const revenuePendingAgg = await db.booking.aggregate({
-    _sum: { finalPrice: true },
-    where: { status: { in: ["PENDING", "CONFIRMED", "IN_PROGRESS"] } },
-  });
-  const revenue = {
-    total: revenueTotalAgg._sum.finalPrice ?? 0,
-    pending: revenuePendingAgg._sum.finalPrice ?? 0,
-  };
-
-  // Previous Month Stats
+  // Previous Month Stats setup
   const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
   const prevMonthRange = normalizeDetroitRange(startOfPrevMonth, endOfPrevMonth);
 
-  const previousMonthBookings = await db.booking.count({
-    where: {
-      scheduledDate: { gte: prevMonthRange.start ?? startOfPrevMonth, lte: prevMonthRange.end ?? endOfPrevMonth },
-      status: { not: "CANCELLED" },
-    },
-  });
+  const [
+    totalBookings,
+    completedBookings,
+    cancelledBookings,
+    monthBookings,
+    revenueTotalAgg,
+    revenuePendingAgg,
+    previousMonthBookings,
+    previousMonthRevenueAgg,
+    currentMonthRevenueAgg
+  ] = await Promise.all([
+    db.booking.count(),
+    db.booking.count({ where: { status: "COMPLETED" } }),
+    db.booking.count({ where: { status: "CANCELLED" } }),
+    db.booking.count({
+      where: {
+        scheduledDate: { gte: monthRange.start ?? startOfMonth, lte: monthRange.end ?? endOfMonth },
+        status: { not: "CANCELLED" },
+      },
+    }),
+    db.booking.aggregate({
+      _sum: { finalPrice: true },
+      where: { status: { not: "CANCELLED" } },
+    }),
+    db.booking.aggregate({
+      _sum: { finalPrice: true },
+      where: { status: { in: ["PENDING", "CONFIRMED", "IN_PROGRESS"] } },
+    }),
+    db.booking.count({
+      where: {
+        scheduledDate: { gte: prevMonthRange.start ?? startOfPrevMonth, lte: prevMonthRange.end ?? endOfPrevMonth },
+        status: { not: "CANCELLED" },
+      },
+    }),
+    db.booking.aggregate({
+      _sum: { finalPrice: true },
+      where: {
+        scheduledDate: { gte: prevMonthRange.start ?? startOfPrevMonth, lte: prevMonthRange.end ?? endOfPrevMonth },
+        status: { not: "CANCELLED" },
+      },
+    }),
+    db.booking.aggregate({
+      _sum: { finalPrice: true },
+      where: {
+        scheduledDate: { gte: monthRange.start ?? startOfMonth, lte: monthRange.end ?? endOfMonth },
+        status: { not: "CANCELLED" },
+      },
+    }),
+  ]);
 
-  const previousMonthRevenueAgg = await db.booking.aggregate({
-    _sum: { finalPrice: true },
-    where: {
-      scheduledDate: { gte: prevMonthRange.start ?? startOfPrevMonth, lte: prevMonthRange.end ?? endOfPrevMonth },
-      status: { not: "CANCELLED" },
-    },
-  });
+  const revenue = {
+    total: revenueTotalAgg._sum.finalPrice ?? 0,
+    pending: revenuePendingAgg._sum.finalPrice ?? 0,
+  };
   const previousMonthRevenue = previousMonthRevenueAgg._sum.finalPrice ?? 0;
-
-  // Current Month Revenue (for explicit "Monthly Revenue" card)
-  const currentMonthRevenueAgg = await db.booking.aggregate({
-    _sum: { finalPrice: true },
-    where: {
-      scheduledDate: { gte: monthRange.start ?? startOfMonth, lte: monthRange.end ?? endOfMonth },
-      status: { not: "CANCELLED" },
-    },
-  });
   const currentMonthRevenue = currentMonthRevenueAgg._sum.finalPrice ?? 0;
 
-  // Last 6 months revenue trend (net from bookings)
+  // Last 6 months revenue trend (Optimized: Single query)
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const sixMonthsBookings = await db.booking.findMany({
+    where: {
+      scheduledDate: { gte: sixMonthsAgo },
+      status: { not: "CANCELLED" },
+    },
+    select: {
+      finalPrice: true,
+      scheduledDate: true,
+    },
+  });
+
   const revenueTrends: { month: string; monthKey: string; revenue: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const start = new Date(d.getFullYear(), d.getMonth(), 1);
-    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const normalized = normalizeDetroitRange(start, end);
-    const agg = await db.booking.aggregate({
-      _sum: { finalPrice: true },
-      where: {
-        scheduledDate: { gte: normalized.start ?? start, lte: normalized.end ?? end },
-        status: { not: "CANCELLED" },
-      },
-    });
-    const label = start.toLocaleDateString("en-US", { month: "short" });
+    const monthKey = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    const label = d.toLocaleDateString("en-US", { month: "short" });
+
+    // Filter bookings for this specific month
+    const monthRevenue = sixMonthsBookings
+      .filter(b => {
+        const bDate = new Date(b.scheduledDate);
+        return bDate.getFullYear() === d.getFullYear() && bDate.getMonth() === d.getMonth();
+      })
+      .reduce((sum, b) => sum + (b.finalPrice || 0), 0);
+
     revenueTrends.push({
       month: label,
-      monthKey: `${start.getFullYear()}-${start.getMonth() + 1}`,
-      revenue: agg._sum.finalPrice ?? 0,
+      monthKey,
+      revenue: monthRevenue,
     });
   }
 
@@ -111,14 +126,12 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
     };
   });
 
-  const unassignedBookings = await db.booking.count({
-    where: { status: { not: "CANCELLED" }, cleanerId: null },
-  });
-
-  const activeCleaners = await db.user.count({
-    where: { role: "CLEANER", hasResetPassword: true },
-  });
-  const totalCleaners = await db.user.count({ where: { role: "CLEANER" } });
+  // Consolidate cleaner counts into one query if possible, but these are simple counts
+  const [unassignedBookings, activeCleaners, totalCleaners] = await Promise.all([
+    db.booking.count({ where: { status: { not: "CANCELLED" }, cleanerId: null } }),
+    db.user.count({ where: { role: "CLEANER", hasResetPassword: true } }),
+    db.user.count({ where: { role: "CLEANER" } }),
+  ]);
 
   return {
     totalBookings,

@@ -11,10 +11,9 @@ export const getRevenueMetrics = requireAdmin
         const start = input.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const end = input.endDate || new Date();
 
-        // 1. Get Completed and Confirmed Bookings for revenue
-        const revenueBookings = await db.booking.findMany({
+        // 1. Get All Bookings for range in one query
+        const allBookings = await db.booking.findMany({
             where: {
-                status: { in: ['COMPLETED', 'CONFIRMED'] },
                 scheduledDate: {
                     gte: start,
                     lte: end,
@@ -22,16 +21,8 @@ export const getRevenueMetrics = requireAdmin
             }
         });
 
-        // 2. Get Pending Bookings
-        const pendingBookings = await db.booking.findMany({
-            where: {
-                status: 'PENDING',
-                scheduledDate: {
-                    gte: start,
-                    lte: end,
-                }
-            }
-        });
+        const revenueBookings = allBookings.filter(b => ['COMPLETED', 'CONFIRMED'].includes(b.status));
+        const pendingBookings = allBookings.filter(b => b.status === 'PENDING');
 
         const metrics = [
             {
@@ -65,23 +56,23 @@ export const getRevenueMetrics = requireAdmin
             },
             {
                 key: "countRecurring",
-                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency && b.serviceFrequency !== 'ONE_TIME').length
+                value: allBookings.filter(b => b.serviceFrequency && b.serviceFrequency !== 'ONE_TIME').length
             },
             {
                 key: "countMonthly",
-                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency === 'MONTHLY').length
+                value: allBookings.filter(b => b.serviceFrequency === 'MONTHLY').length
             },
             {
                 key: "countWeekly",
-                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency === 'WEEKLY').length
+                value: allBookings.filter(b => b.serviceFrequency === 'WEEKLY').length
             },
             {
                 key: "countBiweekly",
-                value: [...revenueBookings, ...pendingBookings].filter(b => b.serviceFrequency === 'BIWEEKLY').length
+                value: allBookings.filter(b => b.serviceFrequency === 'BIWEEKLY').length
             },
             {
                 key: "countOneTime",
-                value: [...revenueBookings, ...pendingBookings].filter(b => !b.serviceFrequency || b.serviceFrequency === 'ONE_TIME').length
+                value: allBookings.filter(b => !b.serviceFrequency || b.serviceFrequency === 'ONE_TIME').length
             }
         ];
 

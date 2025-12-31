@@ -93,6 +93,10 @@ model Booking {
   review                    Review?
   stripePayments            StripePayment[]
   timeEntries               TimeEntry[]
+
+  @@index([scheduledDate, status])
+  @@index([clientId])
+  @@index([cleanerId])
 }
 
 model BookingCleaner {
@@ -256,6 +260,9 @@ model Message {
   mediaUrls   String[]  @default([])
   recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
   sender      User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([senderId, recipientId])
 }
 
 model ManualTask {
