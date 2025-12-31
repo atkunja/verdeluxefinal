@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   loggerLink,
   splitLink,
-  httpBatchStreamLink,
+  httpBatchLink,
   httpSubscriptionLink,
   createTRPCClient,
 } from "@trpc/client";
@@ -59,7 +59,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
           }),
           splitLink({
             condition: (op) => op.type === "subscription",
-            false: httpBatchStreamLink({
+            false: httpBatchLink({
               transformer: SuperJSON,
               url,
               headers() {
@@ -68,10 +68,14 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
                 return headers;
               },
               fetch(url, options) {
+                console.log(`[tRPC] Fetching ${url}`);
                 return fetch(url, {
                   ...options,
                   credentials: 'omit',
-                } as RequestInit);
+                } as RequestInit).catch((err) => {
+                  console.error(`[tRPC] Fetch error for ${url}:`, err);
+                  throw err;
+                });
               },
             }),
             true: httpSubscriptionLink({

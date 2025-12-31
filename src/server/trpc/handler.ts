@@ -23,8 +23,9 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With, Accept",
+    "Access-Control-Max-Age": "86400",
   };
 }
 
@@ -47,8 +48,9 @@ export default defineEventHandler(async (event) => {
     console.log(`[CORS] Using permissive CORS (Origin: ${origin || "null"})`);
     corsHeaders = {
       "Access-Control-Allow-Origin": origin || "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "authorization, content-type",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With, Accept",
+      "Access-Control-Max-Age": "86400",
     };
   } else {
     // Even if origin is allowed, ensure credentials is NOT true if it might conflict
