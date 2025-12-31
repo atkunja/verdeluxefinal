@@ -298,7 +298,11 @@ export const openPhone = {
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
         if (!call.from && !call.to) {
-            console.log("[OpenPhone] Skip upsertCall: No from/to");
+            console.log("[OpenPhone] Skip upsertCall: No from/to. Full item:", JSON.stringify({
+                id: call.id,
+                keys: Object.keys(call),
+                full: call
+            }, null, 2));
             return null;
         }
 

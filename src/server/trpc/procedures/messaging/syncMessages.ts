@@ -38,8 +38,8 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
                 count++;
             }
 
-            // Throttling: Wait 300ms before next conversation
-            await openPhone.sleep(300);
+            // Throttling: Wait 500ms before next conversation
+            await openPhone.sleep(500);
         }
 
         return { success: true, count };
