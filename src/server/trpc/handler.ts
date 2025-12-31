@@ -5,11 +5,17 @@ import { appRouter } from "./root";
 import { supabaseServer } from "../supabase";
 import { db } from "../db";
 
+export default defineEventHandler(async (event) => {
+  const request = toWebRequest(event);
+  if (!request) {
+    return new Response("No request", { status: 400 });
+  }
+
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With, Accept",
-    "Access-control-max-age": "86400",
+    "Access-Control-Max-Age": "86400",
   };
 
   // Handle Preflight OPTIONS request
@@ -33,7 +39,7 @@ import { db } from "../db";
 
       console.log(`[tRPC] Request to endpoint from handler. Token present: ${!!token}`);
       if (!token) {
-        console.log(`[tRPC] No token found in authorization header: "${authHeader}"`);
+        console.log(`[tRPC] No token found in authorization header: \"${authHeader}\"`);
       }
 
       let authUser: { id: string; email: string | null } | null = null;
@@ -81,7 +87,7 @@ import { db } from "../db";
         const id = candidateId ?? "";
 
         if (email) {
-          console.log(`[tRPC] Looking up dbUser for email: "${email}" (case-insensitive)`);
+          console.log(`[tRPC] Looking up dbUser for email: \"${email}\" (case-insensitive)`);
           authUser = { id, email };
           // Use findFirst with insensitive mode for casing resilience
           const dbUser = await db.user.findFirst({
@@ -104,7 +110,7 @@ import { db } from "../db";
             console.log(`[tRPC] dbUser found. ID: ${dbUser.id}, Role: ${dbUser.role}`);
             profile = dbUser as typeof profile;
           } else {
-            console.log(`[tRPC] No dbUser found for email: "${email}"`);
+            console.log(`[tRPC] No dbUser found for email: \"${email}\"`);
           }
         } else {
           console.log("[tRPC] No email found in token/decoded.");
