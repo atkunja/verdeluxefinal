@@ -7,7 +7,6 @@ import { Trash2, Phone, MessageSquare, Send, Search, RefreshCw, Edit2, Check, X,
 import { useTRPC } from "~/trpc/react";
 import { useAuthStore } from "~/stores/authStore";
 import { ActionConfirmationModal } from "~/components/admin/ActionConfirmationModal";
-import { openPhone } from "~/server/services/openphone";
 import { uploadMedia } from "~/utils/uploadMedia";
 
 export const Route = createFileRoute("/admin-portal/communications/")({
