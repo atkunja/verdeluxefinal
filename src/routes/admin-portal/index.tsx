@@ -201,9 +201,9 @@ function AdminDashboardPage() {
   const trpc = useTRPC();
   const firstName = user?.firstName || "Admin";
 
-  const statsQuery = useQuery(trpc.getBookingStatsAdmin.queryOptions(undefined, { staleTime: 60000 })); // 1 min cache
-  const tasksQuery = useQuery(trpc.getAdminTasks.queryOptions(undefined, { staleTime: 60000 }));
-  const pendingChargesQuery = useQuery(trpc.payments.getPendingCharges.queryOptions(undefined, { staleTime: 30000 })); // 30s cache
+  const statsQuery = useQuery(trpc.getBookingStatsAdmin.queryOptions(undefined, { staleTime: 5000 }));
+  const tasksQuery = useQuery(trpc.getAdminTasks.queryOptions(undefined, { staleTime: 5000 }));
+  const pendingChargesQuery = useQuery(trpc.payments.getPendingCharges.queryOptions(undefined, { staleTime: 5000 }));
 
   const chargeMutation = useMutation(trpc.stripe.createChargeWithSavedMethod.mutationOptions({
     onSuccess: () => {
@@ -378,10 +378,10 @@ function AdminDashboardPage() {
                       <button
                         key={idx}
                         onClick={() => setSelectedDate(new Date(day))}
-                        className={`flex flex-col items-center justify-center py-4 rounded-2xl transition-all ${isSelected ? 'bg-white text-brand-800 shadow-xl scale-110' : 'text-brand-300 hover:bg-white/5 hover:text-white'}`}
+                        className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all border ${isSelected ? 'bg-white border-white text-[#163022] shadow-lg' : 'border-transparent text-brand-300 hover:bg-white/5 hover:text-white'}`}
                       >
-                        <span className="text-[9px] font-black uppercase tracking-widest">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
-                        <span className={`text-sm font-black mt-1`}>{day.getDate()}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{new Intl.DateTimeFormat("en-US", { weekday: "narrow" }).format(day)}</span>
+                        <span className={`text-base font-black mt-0.5`}>{day.getDate()}</span>
                       </button>
                     )
                   })}
