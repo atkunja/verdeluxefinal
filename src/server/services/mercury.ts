@@ -38,6 +38,7 @@ export const mercury = {
         }
 
         const data = await response.json();
+        console.log("[Mercury] getAccounts raw data:", JSON.stringify(data, null, 2));
         return data.accounts || [];
     },
 
@@ -57,6 +58,7 @@ export const mercury = {
         }
 
         const data = await response.json();
+        console.log("[Mercury] getTransactions raw data:", JSON.stringify(data, null, 2));
         return data.transactions || [];
     }
 };
