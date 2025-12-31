@@ -83,8 +83,10 @@ export const openPhone = {
     },
 
     // Helper to normalize phone numbers to E.164-like format (digits only with leading plus)
-    normalizePhone(raw: string): string {
+    normalizePhone(raw: string | undefined | null): string {
+        if (!raw) return "";
         const digits = raw.replace(/\D/g, "");
+        if (digits.length === 0) return "";
         if (digits.length === 10) return `+1${digits}`;
         if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
         return raw.startsWith("+") ? raw : `+${digits}`;
@@ -127,7 +129,10 @@ export const openPhone = {
             return { data: [] }; // Don't call API with empty participants if it expects them
         }
 
-        validParticipants.forEach(p => url.searchParams.append("participants", this.normalizePhone(p)));
+        validParticipants.forEach(p => {
+            const norm = this.normalizePhone(p);
+            if (norm) url.searchParams.append("participants", norm);
+        });
 
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);
@@ -158,7 +163,10 @@ export const openPhone = {
                 .map(p => p?.trim())
                 .filter(p => p && p !== "undefined" && p.length > 5);
 
-            validParticipants.forEach(p => url.searchParams.append("participants", this.normalizePhone(p)));
+            validParticipants.forEach(p => {
+                const norm = this.normalizePhone(p);
+                if (norm) url.searchParams.append("participants", norm);
+            });
         }
 
         if (pageToken) {
@@ -194,6 +202,8 @@ export const openPhone = {
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
         const fromPhone = this.normalizePhone(msg.from);
+        if (!fromPhone) return null;
+
         const systemPhoneNormalized = this.normalizePhone(systemPhone);
         const toPhones = (msg.to || []) as string[];
         const contactPhoneRaw = fromPhone === systemPhoneNormalized ? toPhones[0] : msg.from;
@@ -251,6 +261,8 @@ export const openPhone = {
     async upsertCall(call: any, adminIdOverride?: number) {
         const { db } = await import("~/server/db");
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
+
+        if (!call.from && !call.to) return null;
 
         const fromPhoneNormalized = this.normalizePhone(call.from);
         const systemPhoneNormalized = this.normalizePhone(systemPhone);
