@@ -5,6 +5,7 @@ export const getAdminTasks = requireAdmin.query(async () => {
     const unassignedBookings = await db.booking.findMany({
         where: {
             cleanerId: null,
+            cleaners: { none: {} },
             status: { not: "CANCELLED" },
         },
         include: { client: true },
