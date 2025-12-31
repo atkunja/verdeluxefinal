@@ -153,7 +153,21 @@ export const openPhone = {
             throw new Error(`OpenPhone API Error (getMessages): ${response.status} ${text}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+
+        // Diagnostic: Log first 5 messages to see raw structure for incoming vs outgoing
+        if (data.data && data.data.length > 0) {
+            console.log(`[OpenPhone] Raw getMessages sample for participants [${participants.join(", ")}]:`,
+                JSON.stringify(data.data.slice(0, 5), (key, value) => {
+                    if (key === 'text' || key === 'content' || key === 'body') {
+                        return (value as string).substring(0, 30) + "...";
+                    }
+                    return value;
+                }, 2)
+            );
+        }
+
+        return data;
     },
 
     async getCalls(participants?: string[], pageToken?: string) {

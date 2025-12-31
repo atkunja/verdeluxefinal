@@ -32,7 +32,12 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
                         return normalized !== systemDigits && normalized.length > 5;
                     });
 
-                if (participants.length === 0) continue;
+                if (participants.length === 0) {
+                    console.log(`[Sync] Skipping conversation ${conv.id}: No external participants found (participants: ${JSON.stringify(conv.participants)})`);
+                    continue;
+                }
+
+                console.log(`[Sync] Fetching messages for conversation ${conv.id} with participants: ${JSON.stringify(participants)}`);
 
                 // Sync first 2 pages of messages for each conversation (latest ~100)
                 let msgPageToken: string | undefined = undefined;
