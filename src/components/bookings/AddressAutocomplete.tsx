@@ -218,7 +218,7 @@ export function AddressAutocomplete({
         type="text"
         ref={inputRef}
         value={value}
-        placeholder={enablePlaces && !placesReady ? "Loading Google Maps..." : placeholder}
+        placeholder={enablePlaces && googleApiKey && !placesReady ? "Loading Google Maps..." : placeholder}
         onChange={(e) => {
           const val = e.target.value;
           onChange(val);

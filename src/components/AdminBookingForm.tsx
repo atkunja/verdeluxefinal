@@ -1386,15 +1386,12 @@ export function AdminBookingForm({
                     if (payload.state) setValue("state", payload.state || "");
                     if (payload.postalCode) setValue("postalCode", payload.postalCode || "");
                   }}
-                  enablePlaces={Boolean(googlePlacesKey)}
+                  enablePlaces={true}
                 />
                 {errors.address && (
                   <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
                     <span className="text-red-500">•</span> {errors.address.message}
                   </p>
-                )}
-                {!googlePlacesKey && (
-                  <p className="mt-1 text-xs text-gray-500">Add VITE_GOOGLE_PLACES_KEY for live autocomplete.</p>
                 )}
               </div>
 

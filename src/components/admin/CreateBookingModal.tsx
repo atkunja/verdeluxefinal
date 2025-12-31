@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X, Loader2, AlertTriangle } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import { AdminBookingForm } from "~/components/AdminBookingForm";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const getStripe = (key: string) => loadStripe(key);
 
 
 interface CreateBookingModalProps {
@@ -23,6 +23,19 @@ export function CreateBookingModal({ isOpen, onClose, initialData, bookingId }: 
     const queryClient = useQueryClient();
     const createMutation = useMutation(trpc.createBookingAdmin.mutationOptions());
     const updateMutation = useMutation(trpc.updateBookingAdmin.mutationOptions());
+
+    const getPublicConfig = useQuery(trpc.system.getPublicConfig.queryOptions(undefined, {
+        staleTime: Infinity,
+    }));
+
+    // Determine the key from backend config OR environment variable
+    const stripeKey = getPublicConfig.data?.stripePublishableKey || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+
+    // Memoize the promise so we don't recreate it on every render unless key changes
+    const stripePromise = useMemo(() => {
+        if (!stripeKey) return null;
+        return loadStripe(stripeKey);
+    }, [stripeKey]);
 
     const bookingQuery = useQuery(trpc.getBookingAdmin.queryOptions({ bookingId: bookingId! }, { enabled: isOpen && !!bookingId }));
     const clientsQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({ role: "CLIENT" }, { enabled: isOpen }));
@@ -104,7 +117,7 @@ export function CreateBookingModal({ isOpen, onClose, initialData, bookingId }: 
                                             Close
                                         </button>
                                     </div>
-                                ) : clientsQuery.isLoading || cleanersQuery.isLoading || (bookingId && bookingQuery.isLoading) ? (
+                                ) : clientsQuery.isLoading || cleanersQuery.isLoading || (bookingId && bookingQuery.isLoading) || getPublicConfig.isLoading ? (
                                     <div className="flex-1 flex items-center justify-center p-12">
                                         <div className="flex flex-col items-center gap-4">
                                             <Loader2 className="w-12 h-12 text-primary animate-spin" />
