@@ -217,8 +217,11 @@ export const openPhone = {
             from: fromPhone,
             system: systemPhoneNormalized,
             isOutgoing: fromPhone === systemPhoneNormalized,
-            contactPhone: contactPhone
+            contactPhone: contactPhone,
+            hasContent: !!msg.content,
+            keys: Object.keys(msg)
         });
+        console.log("[OpenPhone] Raw Message Content:", msg.content);
 
         if (!contactPhone) {
             console.log("[OpenPhone] Skip upsertMessage: No contactPhone determined");
