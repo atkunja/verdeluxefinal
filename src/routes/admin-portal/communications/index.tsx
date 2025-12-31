@@ -215,7 +215,7 @@ function CommunicationsPage() {
             <div className="flex h-[calc(100vh-220px)] gap-6 rounded-[32px] border border-white/40 bg-white/40 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.05)] backdrop-blur-xl">
 
                 {/* Contact List */}
-                <div className="flex w-85 flex-col border-r border-gray-100 pr-4">
+                <div className="flex w-80 flex-col border-r border-gray-100 pr-4">
                     <div className="mb-4 flex items-center justify-between px-2">
                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Messages</h3>
                         <button

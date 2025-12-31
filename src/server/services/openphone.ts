@@ -207,21 +207,23 @@ export const openPhone = {
             return null;
         }
 
-        const systemPhoneNormalized = this.normalizePhone(systemPhone);
+        const isOutgoing = fromPhone === systemPhoneNormalized;
         const toPhones = (msg.to || []) as string[];
-        const contactPhoneRaw = fromPhone === systemPhoneNormalized ? toPhones[0] : msg.from;
+        const contactPhoneRaw = isOutgoing ? toPhones[0] : msg.from;
         const contactPhone = this.normalizePhone(contactPhoneRaw);
 
-        console.log("[OpenPhone] Upserting Message:", {
+        // Unified deep log to prevent interleaving
+        console.log("[OpenPhone] Upsert Debug Info:", JSON.stringify({
             id: msg.id,
             from: fromPhone,
             system: systemPhoneNormalized,
-            isOutgoing: fromPhone === systemPhoneNormalized,
-            contactPhone: contactPhone,
-            hasContent: !!msg.content,
+            isOutgoing,
+            contactPhone,
+            rawText: msg.text,
+            rawContent: msg.content,
+            rawBody: msg.body,
             keys: Object.keys(msg)
-        });
-        console.log("[OpenPhone] Raw Message Content:", msg.content);
+        }, null, 2));
 
         if (!contactPhone) {
             console.log("[OpenPhone] Skip upsertMessage: No contactPhone determined");
@@ -247,12 +249,25 @@ export const openPhone = {
             });
         }
 
-        const isOutgoing = fromPhone === systemPhoneNormalized;
         let finalAdminId = adminIdOverride;
-
         if (!finalAdminId) {
-            const firstAdmin = await db.user.findFirst({ where: { role: 'ADMIN' } });
-            finalAdminId = firstAdmin?.id || 1; // Fallback to 1 if no admin found
+            // Prefer the owner or first admin
+            const admin = await db.user.findFirst({
+                where: { OR: [{ role: 'OWNER' }, { role: 'ADMIN' }] },
+                orderBy: { id: 'asc' }
+            });
+            finalAdminId = admin?.id || 1;
+        }
+
+        const senderId = isOutgoing ? finalAdminId : contactUser.id;
+        const recipientId = isOutgoing ? contactUser.id : finalAdminId;
+
+        // OpenPhone API v1 uses 'text', but some webhooks or older versions might use 'content' or 'body'
+        let content = msg.text || msg.body || msg.content || "";
+
+        // If content is empty but there's media, show a placeholder
+        if (!content && msg.media && msg.media.length > 0) {
+            content = "[Media Attachment]";
         }
 
         const senderId = isOutgoing ? finalAdminId : contactUser.id;
