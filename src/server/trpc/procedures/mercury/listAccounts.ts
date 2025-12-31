@@ -3,7 +3,7 @@ import { mercuryFetch } from "~/server/mercury/client";
 
 export const listAccounts = requireAdmin.query(async () => {
   try {
-    const data = await mercuryFetch<any>("/v1/accounts");
+    const data = await mercuryFetch<any>("/api/v1/accounts");
     return data;
   } catch (err: any) {
     console.error(`[tRPC] Mercury listAccounts Failed: ${err?.message}`);
