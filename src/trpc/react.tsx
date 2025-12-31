@@ -27,6 +27,13 @@ function getBaseUrl() {
     if (import.meta.env.VITE_API_URL) {
       return import.meta.env.VITE_API_URL.replace(/\/$/, '');
     }
+
+    // Fallback for production to ensure we hit the Railway backend
+    // if the environment variable was not correctly injected by Vercel.
+    if (window.location.hostname.endsWith(".vercel.app")) {
+      return "https://verdeluxefinal-production.up.railway.app";
+    }
+
     // Otherwise use relative path (same origin)
     return "";
   }
