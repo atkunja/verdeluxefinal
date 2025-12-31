@@ -207,6 +207,7 @@ export const openPhone = {
             return null;
         }
 
+        const systemPhoneNormalized = this.normalizePhone(systemPhone);
         const isOutgoing = fromPhone === systemPhoneNormalized;
         const toPhones = (msg.to || []) as string[];
         const contactPhoneRaw = isOutgoing ? toPhones[0] : msg.from;
@@ -269,11 +270,6 @@ export const openPhone = {
         if (!content && msg.media && msg.media.length > 0) {
             content = "[Media Attachment]";
         }
-
-        const senderId = isOutgoing ? finalAdminId : contactUser.id;
-        const recipientId = isOutgoing ? contactUser.id : finalAdminId;
-
-        const content = msg.text || msg.content || "";
 
         return await (db.message as any).upsert({
             where: { externalId: msg.id },
