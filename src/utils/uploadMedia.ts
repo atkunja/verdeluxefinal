@@ -9,6 +9,10 @@ export async function uploadMedia(file: File, bucket = "booking-photos"): Promis
     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
     const filePath = `chat-media/${fileName}`;
 
+    if (!supabaseBrowser) {
+        throw new Error("Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment.");
+    }
+
     const { error: uploadError, data } = await supabaseBrowser.storage
         .from(bucket)
         .upload(filePath, file);
