@@ -77,10 +77,10 @@ export const cancelBookingClient = requireAuth
                 action: "booking.client_cancelled",
                 entity: "booking",
                 entityId: input.bookingId,
-                metadata: {
+                after: {
                     reason: "Cancelled by client via portal"
-                } as any,
-            } as any,
+                },
+            },
         });
 
         return { success: true, booking: updatedBooking };

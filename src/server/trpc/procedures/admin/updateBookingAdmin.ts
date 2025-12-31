@@ -290,14 +290,17 @@ export const updateBookingAdmin = requireAdmin
           action: "booking.override_conflict",
           entity: "booking",
           entityId: booking?.id ?? input.bookingId,
-          after: booking as any,
+          after: {
+            current: booking,
+            previous: existingBooking,
+            override: {
+              cleanerIds: cleanerIdsToCheck,
+              scheduledDate: updateData.scheduledDate ?? existingBooking.scheduledDate,
+              scheduledTime: updateData.scheduledTime ?? existingBooking.scheduledTime,
+            }
+          },
           before: existingBooking as any,
-          metadata: {
-            cleanerIds: cleanerIdsToCheck,
-            scheduledDate: updateData.scheduledDate ?? existingBooking.scheduledDate,
-            scheduledTime: updateData.scheduledTime ?? existingBooking.scheduledTime,
-          } as any,
-        } as any,
+        },
       });
     }
 
