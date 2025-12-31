@@ -5,60 +5,12 @@ import { appRouter } from "./root";
 import { supabaseServer } from "../supabase";
 import { db } from "../db";
 
-// CORS helper
-function getCorsHeaders(origin: string | null): Record<string, string> {
-  if (!origin) return {};
-
-  let isAllowed = false;
-  // Allow localhost on any port
-  if (origin.startsWith("http://localhost:")) isAllowed = true;
-  // Allow any Vercel deployment
-  else if (origin.endsWith(".vercel.app")) isAllowed = true;
-  // Allow any Railway deployment
-  else if (origin.endsWith(".railway.app")) isAllowed = true;
-  // Allow BASE_URL origin
-  else if (process.env.BASE_URL && origin === process.env.BASE_URL.replace(/\/$/, "")) isAllowed = true;
-
-  if (!isAllowed) return {};
-
-  return {
-    "Access-Control-Allow-Origin": origin,
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With, Accept",
-    "Access-Control-Max-Age": "86400",
+    "Access-control-max-age": "86400",
   };
-}
-
-export default defineEventHandler(async (event) => {
-  const request = toWebRequest(event);
-  if (!request) {
-    return new Response("No request", { status: 400 });
-  }
-
-  const origin = request.headers.get("origin");
-  console.log(`[CORS] Request method: ${request.method}, Origin: ${origin}`);
-
-  // Get CORS headers (or use permissive headers for debugging)
-  let corsHeaders = getCorsHeaders(origin);
-
-  // If no CORS headers were set (origin not allowed or missing), 
-  // use permissive CORS. Since we switched to credentials: 'omit' in the frontend,
-  // we can safely use wildcard "*" if no specific origin is found.
-  if (Object.keys(corsHeaders).length === 0) {
-    console.log(`[CORS] Using permissive CORS (Origin: ${origin || "null"})`);
-    corsHeaders = {
-      "Access-Control-Allow-Origin": origin || "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With, Accept",
-      "Access-Control-Max-Age": "86400",
-    };
-  } else {
-    // Even if origin is allowed, ensure credentials is NOT true if it might conflict
-    // with wildcard logic. For now, since we use 'omit', we don't need credentials: true.
-    delete corsHeaders["Access-Control-Allow-Credentials"];
-  }
-
-  console.log(`[CORS] Returning headers:`, JSON.stringify(corsHeaders));
 
   // Handle Preflight OPTIONS request
   if (request.method === "OPTIONS") {
