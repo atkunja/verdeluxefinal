@@ -5,6 +5,10 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { AdminBookingForm } from "~/components/AdminBookingForm";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 
 interface CreateBookingModalProps {
@@ -108,15 +112,17 @@ export function CreateBookingModal({ isOpen, onClose, initialData, bookingId }: 
                                         </div>
                                     </div>
                                 ) : (
-                                    <AdminBookingForm
-                                        clients={(clientsQuery.data?.users as any) || []}
-                                        cleaners={(cleanersQuery.data?.users as any) || []}
-                                        booking={bookingQuery.data?.booking as any}
-                                        onSubmit={handleSubmit}
-                                        onCancel={onClose}
-                                        isSubmitting={createMutation.isPending || updateMutation.isPending}
-                                        initialData={initialData}
-                                    />
+                                    <Elements stripe={stripePromise}>
+                                        <AdminBookingForm
+                                            clients={(clientsQuery.data?.users as any) || []}
+                                            cleaners={(cleanersQuery.data?.users as any) || []}
+                                            booking={bookingQuery.data?.booking as any}
+                                            onSubmit={handleSubmit}
+                                            onCancel={onClose}
+                                            isSubmitting={createMutation.isPending || updateMutation.isPending}
+                                            initialData={initialData}
+                                        />
+                                    </Elements>
                                 )}
                             </Dialog.Panel>
                         </Transition.Child>

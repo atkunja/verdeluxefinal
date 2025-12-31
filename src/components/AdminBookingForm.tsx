@@ -10,6 +10,8 @@ import { BookingCalendarPicker } from "~/components/BookingCalendarPicker";
 import { formatDurationHours } from "~/utils/formatTime";
 import { AddressAutocomplete } from "~/components/bookings/AddressAutocomplete";
 import { ClientSelector, ClientOption } from "~/components/bookings/ClientSelector";
+import { ManualPaymentElement } from "~/components/admin/ManualPaymentElement";
+import { toast } from "react-hot-toast";
 
 const emptyToUndefined = z.preprocess((val) => (val === "" || (typeof val === "number" && isNaN(val)) ? undefined : val), z.number().nonnegative().optional());
 const emptyToUndefinedInt = z.preprocess((val) => (val === "" || (typeof val === "number" && isNaN(val)) ? undefined : val), z.number().int().nonnegative().optional());
@@ -49,7 +51,7 @@ const bookingSchema = z.object({
   numberOfCleanersRequested: emptyToUndefinedInt,
   cleanerPaymentAmount: emptyToUndefined,
   paymentMethod: z
-    .enum(["CREDIT_CARD", "CASH", "ZELLE", "VENMO", "OTHER"])
+    .enum(["CREDIT_CARD", "CASH", "ZELLE", "VENMO", "OTHER", "MANUAL_CARD"])
     .optional().or(z.literal("")),
   paymentDetails: z.string().optional(),
   selectedExtras: z.array(z.number()).optional(), // Array of extra service rule IDs
@@ -148,6 +150,7 @@ export function AdminBookingForm({
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [overrideConflict, setOverrideConflict] = useState(false);
   const [placesPredictions, setPlacesPredictions] = useState<{ description: string; placeId?: string }[]>([]);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
   const clientOptions: ClientOption[] = clients.map((c) => ({
     id: c.id,
@@ -1307,10 +1310,28 @@ export function AdminBookingForm({
                     <option value="ZELLE">Zelle</option>
                     <option value="VENMO">Venmo</option>
                     <option value="OTHER">Other</option>
+                    <option value="MANUAL_CARD">Enter Card Manually (Charge Now/Save)</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-[#5c5a55] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
+
+              {watch("paymentMethod") === "MANUAL_CARD" && (
+                <div className="md:col-span-2 mt-2">
+                  <ManualPaymentElement
+                    onTokenCreated={(token, last4, brand) => {
+                      setValue("paymentDetails", `tok_${token}`); // Storing token ID
+                      setValue("paymentMethod", "CREDIT_CARD"); // Switch back to generic type for backend
+                      // Optionally store display info elsewhere or append
+                      toast.success(`Card captured: ${brand} •••• ${last4}`);
+                      setShowManualEntry(false);
+                    }}
+                    onCancel={() => {
+                      setValue("paymentMethod", "");
+                    }}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
