@@ -102,7 +102,7 @@ function BankTransactionsPage() {
       { id, status },
       {
         onSuccess: () => {
-          void listTransactions().then(setTransactions);
+          void transactionsQuery.refetch();
           setApprovedMap((prev) => ({ ...prev, [id]: status === "posted" }));
           toast.success(`Marked ${status}`);
         },
@@ -293,7 +293,10 @@ function BankTransactionsPage() {
                             txCategoryMutation.mutate(
                               { id: tx.id, category: e.target.value, subCategory: subCategoryEdit[tx.id] },
                               {
-                                onSuccess: () => toast.success("Category saved"),
+                                onSuccess: () => {
+                                  toast.success("Category saved");
+                                  void transactionsQuery.refetch();
+                                },
                                 onError: (err) => toast.error(err.message || "Save failed"),
                               }
                             );
