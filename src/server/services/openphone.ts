@@ -258,19 +258,21 @@ export const openPhone = {
         const senderId = isOutgoing ? finalAdminId : contactUser.id;
         const recipientId = isOutgoing ? contactUser.id : finalAdminId;
 
+        const content = msg.text || msg.content || "";
+
         return await (db.message as any).upsert({
             where: { externalId: msg.id },
             create: {
                 externalId: msg.id,
                 sender: { connect: { id: senderId } },
                 recipient: { connect: { id: recipientId } },
-                content: msg.content || "",
+                content: content,
                 mediaUrls: msg.media?.map((m: any) => m.url) || [],
                 createdAt: new Date(msg.createdAt),
                 isRead: isOutgoing, // Only mark read by default if we sent it
             },
             update: {
-                content: msg.content || "",
+                content: content,
                 mediaUrls: msg.media?.map((m: any) => m.url) || [],
             },
         });
