@@ -202,14 +202,28 @@ export const openPhone = {
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
         const fromPhone = this.normalizePhone(msg.from);
-        if (!fromPhone) return null;
+        if (!fromPhone) {
+            console.log("[OpenPhone] Skip upsertMessage: No fromPhone");
+            return null;
+        }
 
         const systemPhoneNormalized = this.normalizePhone(systemPhone);
         const toPhones = (msg.to || []) as string[];
         const contactPhoneRaw = fromPhone === systemPhoneNormalized ? toPhones[0] : msg.from;
         const contactPhone = this.normalizePhone(contactPhoneRaw);
 
-        if (!contactPhone) return null;
+        console.log("[OpenPhone] Upserting Message:", {
+            id: msg.id,
+            from: fromPhone,
+            system: systemPhoneNormalized,
+            isOutgoing: fromPhone === systemPhoneNormalized,
+            contactPhone: contactPhone
+        });
+
+        if (!contactPhone) {
+            console.log("[OpenPhone] Skip upsertMessage: No contactPhone determined");
+            return null;
+        }
 
         const normalizedDigits = contactPhone.replace(/\D/g, "");
         let contactUser = await db.user.findFirst({
@@ -217,6 +231,7 @@ export const openPhone = {
         });
 
         if (!contactUser) {
+            console.log("[OpenPhone] Creating Guest User for:", contactPhone);
             contactUser = await db.user.create({
                 data: {
                     firstName: "Guest",
@@ -249,7 +264,7 @@ export const openPhone = {
                 content: msg.content || "",
                 mediaUrls: msg.media?.map((m: any) => m.url) || [],
                 createdAt: new Date(msg.createdAt),
-                isRead: true,
+                isRead: isOutgoing, // Only mark read by default if we sent it
             },
             update: {
                 content: msg.content || "",
@@ -262,12 +277,22 @@ export const openPhone = {
         const { db } = await import("~/server/db");
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
-        if (!call.from && !call.to) return null;
+        if (!call.from && !call.to) {
+            console.log("[OpenPhone] Skip upsertCall: No from/to");
+            return null;
+        }
 
         const fromPhoneNormalized = this.normalizePhone(call.from);
         const systemPhoneNormalized = this.normalizePhone(systemPhone);
         const contactPhoneRaw = fromPhoneNormalized === systemPhoneNormalized ? call.to : call.from;
         const contactPhone = this.normalizePhone(contactPhoneRaw);
+
+        console.log("[OpenPhone] Upserting Call:", {
+            id: call.id,
+            from: fromPhoneNormalized,
+            system: systemPhoneNormalized,
+            contactPhone: contactPhone
+        });
 
         if (!contactPhone) return null;
 
