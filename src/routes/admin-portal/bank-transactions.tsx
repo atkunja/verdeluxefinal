@@ -33,6 +33,7 @@ function BankTransactionsPage() {
   const txStatusMutation = useMutation(trpc.payments.updateTransactionStatus.mutationOptions());
   const txCategoryMutation = useMutation(trpc.payments.updateTransactionCategory.mutationOptions());
   const payoutMutation = useMutation(trpc.payments.initiateAchPayout.mutationOptions());
+  const syncMercuryMutation = useMutation(trpc.accounting.syncMercuryTransactions.mutationOptions());
 
   const accountsQuery = useQuery(trpc.accounting.listAccounts.queryOptions(undefined, { staleTime: 60000 }));
   const transactionsQuery = useQuery(trpc.accounting.listTransactions.queryOptions(undefined, { staleTime: 30000 }));
@@ -42,30 +43,30 @@ function BankTransactionsPage() {
   useEffect(() => {
     console.log("Accounts Effect run", { data: accountsQuery.data, isLoading: accountsQuery.isLoading });
     const remoteAccounts = accountsQuery.data?.accounts;
-    // Only use remote data if we found accounts. If empty/error, assume dev/mock mode.
-    if (remoteAccounts && Array.isArray(remoteAccounts) && remoteAccounts.length > 0) {
-      console.log("Setting accounts from query data");
+
+    // Only update if we have actual remote data (even if empty list, it's valid remote response)
+    if (remoteAccounts && Array.isArray(remoteAccounts)) {
+      console.log("Setting accounts from query data", remoteAccounts.length);
       setAccounts(
         remoteAccounts.map((acc: any) => ({
           id: acc.id || acc.external_id || acc.account_id || acc.name,
-          institution: acc.institution || "Mercury",
+          institution: "Mercury",
           name: acc.name || acc.account_name || "Account",
-          last4: acc.mask || acc.last4 || "0000",
+          last4: acc.mask || acc.last4 || (acc.id ? acc.id.slice(-4) : "0000"),
           postedBalance: Number(acc.balance ?? acc.posted_balance ?? 0),
           availableBalance: Number(acc.available_balance ?? acc.balance ?? 0),
           lastSynced: new Date().toISOString(),
         }))
       );
-    } else {
-      console.log("Setting accounts from mock fallback");
-      listAccounts().then(setAccounts);
     }
   }, [accountsQuery.data]);
 
   useEffect(() => {
     console.log("Transactions Effect run", { data: transactionsQuery.data });
     const remoteTx = transactionsQuery.data?.transactions;
-    if (remoteTx && Array.isArray(remoteTx) && remoteTx.length > 0) {
+
+    if (remoteTx && Array.isArray(remoteTx)) {
+      console.log("Setting transactions from query data", remoteTx.length);
       setTransactions(
         remoteTx.map((t: any) => ({
           id: t.externalId || t.id?.toString() || Math.random().toString(36).slice(2),
@@ -75,11 +76,9 @@ function BankTransactionsPage() {
           accountName: t.accountName || t.account || "Account",
           category: t.category || "Uncategorized",
           amount: Number(t.amount ?? t.debit ?? 0) || 0,
-          status: (t.status as Transaction["status"]) || "pending",
+          status: (t.status as Transaction["status"]) || "posted",
         }))
       );
-    } else {
-      listTransactions().then(setTransactions);
     }
   }, [transactionsQuery.data]);
 
@@ -187,11 +186,21 @@ function BankTransactionsPage() {
           </button>
           <button
             onClick={() => {
-              toast.loading("Syncing with Mercury...", { duration: 2000 });
-              setTimeout(() => {
-                listTransactions().then(setTransactions);
-                toast.success("Sync complete");
-              }, 2000);
+              const t = toast.loading("Syncing with Mercury...");
+              syncMercuryMutation.mutate(undefined, {
+                onSuccess: (res: any) => {
+                  if (res.success) {
+                    toast.success(`Sync complete! ${res.count} transactions fetched.`, { id: t });
+                    void accountsQuery.refetch();
+                    void transactionsQuery.refetch();
+                  } else {
+                    toast.error(`Sync failed: ${res.error}`, { id: t });
+                  }
+                },
+                onError: (err: any) => {
+                  toast.error(`Sync error: ${err.message}`, { id: t });
+                }
+              });
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-[#163022] px-3 py-2 text-sm font-semibold text-white shadow hover:bg-[#0f241a]"
           >
