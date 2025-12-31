@@ -59,6 +59,7 @@ export const updateBookingAdmin = requireAdmin
   .mutation(async ({ input }) => {
     const existingBooking = await db.booking.findUnique({
       where: { id: input.bookingId },
+      include: { client: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, stripeCustomerId: true } } }
     });
 
     if (!existingBooking) {
@@ -81,6 +82,53 @@ export const updateBookingAdmin = requireAdmin
       });
       if (cleaners.length !== uniqueCleanerIds.length || cleaners.some((c) => c.role !== "CLEANER")) {
         throw new Error("One or more cleaners invalid");
+      }
+    }
+
+    // Handle Manual Card Token Exchange
+    let paymentDetailsFinal = input.paymentDetails;
+    if (
+      input.paymentMethod === "CREDIT_CARD" &&
+      input.paymentDetails?.startsWith("tok_") &&
+      stripe
+    ) {
+      try {
+        const client = existingBooking.client;
+        if (!client) throw new Error("Booking has no client attached");
+
+        let stripeCustomerId = client.stripeCustomerId;
+        if (!stripeCustomerId) {
+          const customer = await stripe.customers.create({
+            email: client.email ?? undefined,
+            name: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+            phone: client.phone ?? undefined,
+            metadata: { userId: String(client.id) },
+          });
+          stripeCustomerId = customer.id;
+          await db.user.update({
+            where: { id: client.id },
+            data: { stripeCustomerId },
+          });
+        }
+
+        const paymentMethod = await stripe.paymentMethods.create({
+          type: 'card',
+          card: { token: input.paymentDetails },
+        });
+
+        await stripe.paymentMethods.attach(paymentMethod.id, {
+          customer: stripeCustomerId,
+        });
+
+        await stripe.customers.update(stripeCustomerId, {
+          invoice_settings: { default_payment_method: paymentMethod.id },
+        });
+
+        paymentDetailsFinal = paymentMethod.id;
+
+      } catch (err) {
+        console.error("Failed to process manual card token in update:", err);
+        throw new Error(`Failed to save credit card: ${(err as any).message}`);
       }
     }
 
@@ -125,7 +173,7 @@ export const updateBookingAdmin = requireAdmin
     if (input.cleanerPaymentAmount !== undefined)
       updateData.cleanerPaymentAmount = input.cleanerPaymentAmount;
     if (input.paymentMethod !== undefined) updateData.paymentMethod = input.paymentMethod;
-    if (input.paymentDetails !== undefined) updateData.paymentDetails = input.paymentDetails;
+    if (input.paymentDetails !== undefined) updateData.paymentDetails = paymentDetailsFinal;
     if (input.selectedExtras !== undefined)
       updateData.selectedExtras = input.selectedExtras;
     if (input.scope === "series" && existingBooking.serviceFrequency && existingBooking.serviceFrequency !== "ONE_TIME" && !existingBooking.recurrenceId) {
@@ -380,7 +428,7 @@ export const updateBookingAdmin = requireAdmin
                 stripeIntentId: refund.id,
                 amount: delta, // negative
                 status: refund.status,
-                currency: stripePayment.currency || "usd",
+                currency: stripePayment.currency ?? "usd",
                 description: "Price decrease refund",
               },
             });
@@ -406,7 +454,7 @@ export const updateBookingAdmin = requireAdmin
             } catch (err) {
               const newIntent = await stripe.paymentIntents.create({
                 amount: Math.round((input.finalPrice ?? 0) * 100),
-                currency: stripePayment.currency || "usd",
+                currency: stripePayment.currency ?? "usd",
                 description: `Recreated hold for booking #${booking.id}`,
                 metadata: { bookingId: booking.id.toString() },
                 capture_method: "manual",
@@ -426,7 +474,7 @@ export const updateBookingAdmin = requireAdmin
             // Captured: charge the delta
             const intent = await stripe.paymentIntents.create({
               amount: Math.round(delta * 100),
-              currency: stripePayment.currency || "usd",
+              currency: stripePayment.currency ?? "usd",
               description: `Price increase for booking #${booking.id}`,
               metadata: { bookingId: booking.id.toString() },
             }, {

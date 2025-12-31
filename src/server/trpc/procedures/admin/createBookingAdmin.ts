@@ -2,6 +2,7 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { randomUUID } from "crypto";
 import { requireAdmin } from "~/server/trpc/main";
+import { stripe } from "~/server/stripe/client";
 
 export const createBookingAdmin = requireAdmin
   .input(
@@ -117,6 +118,58 @@ export const createBookingAdmin = requireAdmin
     const primaryCleanerId = (input.cleanerIds && input.cleanerIds[0]) ?? input.cleanerId ?? null;
     const recurrenceId = input.recurrenceId || (input.serviceFrequency && input.serviceFrequency !== "ONE_TIME" ? randomUUID() : null);
 
+    // 2.5 Handle Stripe Token Exchange (Manual Card Entry)
+    let paymentDetailsFinal = input.paymentDetails;
+    if (
+      input.paymentMethod === "CREDIT_CARD" &&
+      input.paymentDetails?.startsWith("tok_") &&
+      stripe
+    ) {
+      try {
+        // A. Get or Create Stripe Customer
+        let stripeCustomerId = clientData?.stripeCustomerId;
+        if (!stripeCustomerId) {
+          const customer = await stripe.customers.create({
+            email: (input.clientEmail || clientData?.email) ?? undefined,
+            name: `${input.clientFirstName || clientData?.firstName || ""} ${input.clientLastName || clientData?.lastName || ""}`.trim(),
+            phone: (input.clientPhone || clientData?.phone) ?? undefined,
+            metadata: { userId: String(finalClientId) },
+          });
+          stripeCustomerId = customer.id;
+          // IMPORTANT: Save this to the user immediately so we don't dup customers later
+          await db.user.update({
+            where: { id: finalClientId },
+            data: { stripeCustomerId },
+          });
+        }
+
+        // B. Create Source/PaymentMethod from Token
+        // Since we are using tokens from Elements but want to use PaymentMethods API ideally
+        // We can create a card PaymentMethod directly from the token.
+        const paymentMethod = await stripe.paymentMethods.create({
+          type: 'card',
+          card: { token: input.paymentDetails },
+        });
+
+        // C. Attach to Customer
+        await stripe.paymentMethods.attach(paymentMethod.id, {
+          customer: stripeCustomerId,
+        });
+
+        // D. Set as default (optional, but good for "We charge it")
+        await stripe.customers.update(stripeCustomerId, {
+          invoice_settings: { default_payment_method: paymentMethod.id },
+        });
+
+        paymentDetailsFinal = paymentMethod.id; // Store pm_... instead of tok_...
+
+      } catch (err) {
+        console.error("Failed to process manual card token:", err);
+        // We throw here because we don't want to create a booking with a dead token that looks valid
+        throw new Error(`Failed to save credit card: ${(err as any).message}`);
+      }
+    }
+
     // 3. Create the Main Booking
     const booking = await db.booking.create({
       data: {
@@ -149,7 +202,7 @@ export const createBookingAdmin = requireAdmin
         numberOfCleanersRequested: input.numberOfCleanersRequested,
         cleanerPaymentAmount: input.cleanerPaymentAmount,
         paymentMethod: input.paymentMethod,
-        paymentDetails: input.paymentDetails,
+        paymentDetails: paymentDetailsFinal,
         selectedExtras: input.selectedExtras ?? undefined,
         recurrenceId,
         occurrenceNumber: input.occurrenceNumber ?? (recurrenceId ? 1 : null),
