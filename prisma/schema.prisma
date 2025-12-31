@@ -35,6 +35,8 @@ model User {
   cleanerTrainingProgress      CleanerTrainingProgress[]
   documents                    Document[]
   emailLogs                    EmailLog[]
+  isPinned                     Boolean                    @default(false)
+  notes                        String?
   assignedTasks                ManualTask[]
   receivedMessages             Message[]                  @relation("ReceivedMessages")
   sentMessages                 Message[]                  @relation("SentMessages")
@@ -46,6 +48,7 @@ model User {
   reviewedTimeOffRequests      TimeOffRequest[]           @relation("AdminReviewedRequests")
 
   @@index([role])
+  @@index([isPinned])
 }
 
 model Booking {

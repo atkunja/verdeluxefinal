@@ -45,6 +45,8 @@ export const getAllUsersAdmin = requireAdmin
         temporaryPassword: true,
         hasResetPassword: true,
         adminPermissions: true,
+        isPinned: true,
+        notes: true,
       },
       orderBy: {
         createdAt: "desc",

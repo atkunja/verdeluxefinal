@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Trash2, Phone, MessageSquare, Send, Search, RefreshCw, Edit2, Check, X, Download, Plus, Image as ImageIcon, X as CloseIcon } from "lucide-react";
+import { Trash2, Phone, MessageSquare, Send, Search, RefreshCw, Edit2, Check, X, Download, Plus, Image as ImageIcon, X as CloseIcon, Pin, PinOff, User as UserIcon, Mail } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import { useAuthStore } from "~/stores/authStore";
 import { ActionConfirmationModal } from "~/components/admin/ActionConfirmationModal";
@@ -48,10 +48,15 @@ function CommunicationsPage() {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [editFirstName, setEditFirstName] = useState("");
-    const [editLastName, setEditLastName] = useState("");
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [profileEditData, setProfileEditData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        notes: ""
+    });
 
     const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({}, { staleTime: 300000 })); // 5 mins
     const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}, { staleTime: 300000 })); // 5 mins
@@ -88,12 +93,21 @@ function CommunicationsPage() {
         })
     );
 
-    const renameContactMutation = useMutation(
-        trpc.messaging.renameContact.mutationOptions({
+    const updateContactMutation = useMutation(
+        trpc.messaging.updateContact.mutationOptions({
             onSuccess: () => {
                 usersQuery.refetch();
-                setIsEditingName(false);
-                toast.success("Contact renamed");
+                setIsProfileModalOpen(false);
+                toast.success("Contact updated");
+            }
+        })
+    );
+
+    const togglePinMutation = useMutation(
+        trpc.messaging.togglePinContact.mutationOptions({
+            onSuccess: () => {
+                usersQuery.refetch();
+                toast.success("Pin status updated");
             }
         })
     );
@@ -191,6 +205,10 @@ function CommunicationsPage() {
                 const dateA = a.lastItem ? new Date(a.lastItem.createdAt).getTime() : 0;
                 const dateB = b.lastItem ? new Date(b.lastItem.createdAt).getTime() : 0;
                 return dateB - dateA;
+            })
+            .sort((a, b) => {
+                if (a.user.isPinned === b.user.isPinned) return 0;
+                return a.user.isPinned ? -1 : 1;
             });
 
         return {
@@ -244,18 +262,27 @@ function CommunicationsPage() {
 
     const handleStartEdit = () => {
         if (!selectedConversation) return;
-        setEditFirstName(selectedConversation.user.firstName || "");
-        setEditLastName(selectedConversation.user.lastName || "");
-        setIsEditingName(true);
+        setProfileEditData({
+            firstName: selectedConversation.user.firstName || "",
+            lastName: selectedConversation.user.lastName || "",
+            email: selectedConversation.user.email || "",
+            phone: selectedConversation.user.phone || "",
+            notes: (selectedConversation.user as any).notes || ""
+        });
+        setIsProfileModalOpen(true);
     };
 
-    const handleSaveName = () => {
+    const handleSaveProfile = () => {
         if (!selectedContactId) return;
-        renameContactMutation.mutate({
+        updateContactMutation.mutate({
             contactId: selectedContactId,
-            firstName: editFirstName,
-            lastName: editLastName
+            ...profileEditData
         });
+    };
+
+    const handleTogglePin = (e: React.MouseEvent, contactId: number) => {
+        e.stopPropagation();
+        togglePinMutation.mutate({ contactId });
     };
 
     const handleDeleteConversation = () => {
@@ -396,6 +423,15 @@ function CommunicationsPage() {
                                                 <span className="truncate">{conv.lastItem?.content || "No records yet"}</span>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={(e) => handleTogglePin(e, conv.user.id)}
+                                            className={`p-1.5 rounded-lg transition-colors ${selectedContactId === conv.user.id
+                                                ? 'hover:bg-white/20 text-white/40 hover:text-white'
+                                                : 'hover:bg-gray-200 text-gray-300 hover:text-gray-500'
+                                                } ${conv.user.isPinned ? 'text-blue-400' : ''}`}
+                                        >
+                                            {conv.user.isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4 opacity-0 group-hover:opacity-100" />}
+                                        </button>
                                     </div>
                                 </div>
                             ))
@@ -417,48 +453,21 @@ function CommunicationsPage() {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        {isEditingName ? (
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    value={editFirstName}
-                                                    onChange={(e) => setEditFirstName(e.target.value)}
-                                                    className="w-24 bg-white border border-emerald-200 rounded-lg px-2 py-1 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
-                                                    placeholder="First Name"
-                                                />
-                                                <input
-                                                    value={editLastName}
-                                                    onChange={(e) => setEditLastName(e.target.value)}
-                                                    className="w-24 bg-white border border-emerald-200 rounded-lg px-2 py-1 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
-                                                    placeholder="Last Name"
-                                                />
-                                                <button
-                                                    onClick={handleSaveName}
-                                                    className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
-                                                    disabled={renameContactMutation.isPending}
-                                                >
-                                                    <Check className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setIsEditingName(false)}
-                                                    className="p-1.5 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-colors"
-                                                >
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2 group">
-                                                <h3 className="font-bold text-[17px] text-gray-900 leading-tight truncate">
-                                                    {selectedConversation.user.firstName} {selectedConversation.user.lastName}
-                                                </h3>
-                                                <button
-                                                    onClick={handleStartEdit}
-                                                    className="p-1 opacity-0 group-hover:opacity-100 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-all active:scale-90"
-                                                    title="Edit Name"
-                                                >
-                                                    <Edit2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        )}
+                                        <div className="flex items-center gap-2 group">
+                                            <h3 className="font-bold text-[17px] text-gray-900 leading-tight truncate">
+                                                {selectedConversation.user.firstName} {selectedConversation.user.lastName}
+                                            </h3>
+                                            <button
+                                                onClick={handleStartEdit}
+                                                className="p-1 opacity-0 group-hover:opacity-100 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-all active:scale-90"
+                                                title="Edit Contact Profile"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" />
+                                            </button>
+                                            {selectedConversation.user.isPinned && (
+                                                <Pin className="w-3.5 h-3.5 text-blue-500 ml-1" />
+                                            )}
+                                        </div>
                                         <p className="text-[12px] font-medium text-gray-400">{selectedConversation.user.phone}</p>
                                     </div>
                                 </div>
@@ -667,6 +676,105 @@ function CommunicationsPage() {
                 variant="danger"
                 onConfirm={confirmDeleteConversation}
             />
+
+            {/* Profile Edit Modal */}
+            {isProfileModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden transform transition-all">
+                        <div className="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">Contact Profile</h3>
+                                <p className="text-xs text-gray-400 font-medium">Manage details and internal notes</p>
+                            </div>
+                            <button onClick={() => setIsProfileModalOpen(false)} className="p-2 hover:bg-white rounded-2xl text-gray-400 hover:text-gray-900 transition-all">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">First Name</label>
+                                    <div className="relative">
+                                        <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input
+                                            value={profileEditData.firstName}
+                                            onChange={(e) => setProfileEditData(prev => ({ ...prev, firstName: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            placeholder="John"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Last Name</label>
+                                    <input
+                                        value={profileEditData.lastName}
+                                        onChange={(e) => setProfileEditData(prev => ({ ...prev, lastName: e.target.value }))}
+                                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                        placeholder="Doe"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Phone Number</label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                    <input
+                                        value={profileEditData.phone}
+                                        onChange={(e) => setProfileEditData(prev => ({ ...prev, phone: e.target.value }))}
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                        placeholder="+1 (555) 000-0000"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Email Address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                    <input
+                                        value={profileEditData.email}
+                                        onChange={(e) => setProfileEditData(prev => ({ ...prev, email: e.target.value }))}
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                        placeholder="john@example.com"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5 pt-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 flex items-center justify-between">
+                                    Internal Notes
+                                    <span className="font-medium lowercase tracking-normal text-gray-300">Visible only to admins</span>
+                                </label>
+                                <textarea
+                                    value={profileEditData.notes}
+                                    onChange={(e) => setProfileEditData(prev => ({ ...prev, notes: e.target.value }))}
+                                    rows={4}
+                                    className="w-full px-4 py-4 bg-gray-50 border-none rounded-3xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+                                    placeholder="Add details about this client, preferences, or issues..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-8 bg-gray-50/50 border-t border-gray-100 flex gap-3">
+                            <button
+                                onClick={() => setIsProfileModalOpen(false)}
+                                className="flex-1 py-4 text-sm font-bold text-gray-500 hover:text-gray-900 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveProfile}
+                                disabled={updateContactMutation.isPending}
+                                className="flex-[2] py-4 bg-[#163022] text-white rounded-2xl text-sm font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50 disabled:translate-y-0"
+                            >
+                                {updateContactMutation.isPending ? "Saving..." : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminShell>
     );
 }

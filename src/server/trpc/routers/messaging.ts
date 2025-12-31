@@ -9,6 +9,8 @@ import { syncCalls } from "../procedures/messaging/syncCalls";
 import { deleteConversation } from "../procedures/messaging/deleteConversation";
 import { renameContact } from "../procedures/messaging/renameContact";
 import { markConversationRead } from "../procedures/messaging/markConversationRead";
+import { updateContact } from "../procedures/messaging/updateContact";
+import { togglePinContact } from "../procedures/messaging/togglePinContact";
 
 export const messagingRouter = createTRPCRouter({
   sendMessage,
@@ -20,5 +22,7 @@ export const messagingRouter = createTRPCRouter({
   syncCalls,
   deleteConversation,
   renameContact,
+  updateContact,
+  togglePinContact,
   markConversationRead,
 });
