@@ -5,41 +5,55 @@ import { env } from "~/server/env";
 
 export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
     try {
-        // 1. Get all active conversations
-        const convData = await openPhone.getConversations();
-        const conversations = (convData.data || []) as any[];
         let count = 0;
         const adminId = ctx.profile.id;
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
+        let nextPageToken: string | undefined = undefined;
+        let convPage = 1;
 
-        console.log(`[Sync] Throttled syncing calls for ${conversations.length} conversations`);
+        console.log(`[Sync] Starting full pagination call sync...`);
 
-        // 2. Iterate through conversations with a delay
-        for (const conv of conversations) {
-            // Extract participants 
-            const participants = (conv.participants || [])
-                .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
-                .filter((p: string | undefined) => {
-                    if (!p || typeof p !== 'string') return false;
-                    const normalized = p.replace(/\D/g, "");
-                    const systemDigits = systemPhone.replace(/\D/g, "");
-                    return normalized !== systemDigits && normalized.length > 5;
-                });
+        // 1. Paginate through ALL conversations
+        do {
+            console.log(`[Sync] Fetching conversation page ${convPage}...`);
+            const convData = await openPhone.getConversations(nextPageToken);
+            const conversations = (convData.data || []) as any[];
+            nextPageToken = convData.nextPageToken;
 
-            if (participants.length === 0) continue;
+            for (const conv of conversations) {
+                // Extract participants 
+                const participants = (conv.participants || [])
+                    .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
+                    .filter((p: string | undefined) => {
+                        if (!p || typeof p !== 'string') return false;
+                        const normalized = p.replace(/\D/g, "");
+                        const systemDigits = systemPhone.replace(/\D/g, "");
+                        return normalized !== systemDigits && normalized.length > 5;
+                    });
 
-            // Fetch calls for this specific conversation
-            const callsData = await openPhone.getCalls(participants);
-            const calls = (callsData.data || []) as any[];
+                if (participants.length === 0) continue;
 
-            for (const call of calls) {
-                await openPhone.upsertCall(call, adminId);
-                count++;
+                // Sync first 2 pages of calls for each conversation
+                let callPageToken: string | undefined = undefined;
+                for (let pCount = 0; pCount < 2; pCount++) {
+                    const callsData = await openPhone.getCalls(participants, callPageToken);
+                    const calls = (callsData.data || []) as any[];
+                    callPageToken = callsData.nextPageToken;
+
+                    for (const call of calls) {
+                        await openPhone.upsertCall(call, adminId);
+                        count++;
+                    }
+
+                    if (!callPageToken) break;
+                    await openPhone.sleep(100);
+                }
+
+                // Throttling: Wait 500ms before next conversation
+                await openPhone.sleep(500);
             }
-
-            // Throttling: Wait 500ms before next conversation
-            await openPhone.sleep(500);
-        }
+            convPage++;
+        } while (nextPageToken);
 
         return { success: true, count };
     } catch (error) {
