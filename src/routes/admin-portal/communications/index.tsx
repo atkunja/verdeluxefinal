@@ -215,7 +215,7 @@ function CommunicationsPage() {
             <div className="flex h-[calc(100vh-220px)] gap-6 rounded-[32px] border border-white/40 bg-white/40 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.05)] backdrop-blur-xl">
 
                 {/* Contact List */}
-                <div className="flex w-80 flex-col border-r border-gray-100 pr-4">
+                <div className="flex w-96 flex-col border-r border-gray-100 pr-4">
                     <div className="mb-4 flex items-center justify-between px-2">
                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Messages</h3>
                         <button
@@ -340,8 +340,8 @@ function CommunicationsPage() {
                             <div className="flex items-center justify-between border-b border-gray-100 pb-5 mb-6 px-1">
                                 <div className="flex items-center gap-4 flex-1">
                                     <div className="relative flex-shrink-0">
-                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center border border-emerald-200 shadow-sm">
-                                            <User className="w-6 h-6 text-emerald-600" />
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#163022] to-[#0d1d14] flex items-center justify-center border border-[#163022]/10 shadow-sm text-white font-bold">
+                                            {selectedConversation.user.firstName?.[0] || 'U'}{selectedConversation.user.lastName?.[0] || ''}
                                         </div>
                                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
                                     </div>
@@ -491,9 +491,9 @@ function CommunicationsPage() {
                                     const isMe = item.senderId === user?.id;
                                     return (
                                         <div key={`msg-${item.id}`} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
-                                            <div className={`group relative max-w-[75%] shadow-[0_4px_20px_rgba(0,0,0,0.03)] ${isMe
+                                            <div className={`group relative max-w-[85%] sm:max-w-[70%] shadow-[0_4px_25px_rgba(0,0,0,0.04)] ${isMe
                                                 ? 'bg-gradient-to-br from-[#163022] to-[#0d1d14] text-white rounded-[24px] rounded-tr-none'
-                                                : 'bg-white border border-gray-100 text-gray-700 rounded-[24px] rounded-tl-none'
+                                                : 'bg-white border border-gray-100 text-gray-700 rounded-[24px] rounded-tl-none pr-8'
                                                 }`}>
                                                 <div className="p-4">
                                                     <p className="text-[14.5px] leading-relaxed font-sans font-medium whitespace-pre-wrap">{item.content}</p>
