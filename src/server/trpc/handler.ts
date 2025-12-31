@@ -42,15 +42,25 @@ export default defineEventHandler(async (event) => {
   let corsHeaders = getCorsHeaders(origin);
 
   // If no CORS headers were set (origin not allowed or missing), 
-  // use permissive CORS for debugging cross-origin issues
+  // use permissive CORS for debugging cross-origin issues.
+  // CRITICAL: Cannot use "*" with "Access-Control-Allow-Credentials: true".
   if (Object.keys(corsHeaders).length === 0) {
-    console.log(`[CORS] No CORS headers from getCorsHeaders. Using permissive CORS.`);
-    corsHeaders = {
-      "Access-Control-Allow-Origin": origin || "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "authorization, content-type",
-      "Access-Control-Allow-Credentials": "true",
-    };
+    if (origin) {
+      console.log(`[CORS] Setting permissive origin for: ${origin}`);
+      corsHeaders = {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, content-type",
+        "Access-Control-Allow-Credentials": "true",
+      };
+    } else {
+      console.log(`[CORS] No origin found. Using wildcard without credentials.`);
+      corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, content-type",
+      };
+    }
   }
 
   console.log(`[CORS] Returning headers:`, JSON.stringify(corsHeaders));
