@@ -16,16 +16,14 @@ export const listTransactions = requireAdmin
   )
   .query(async ({ input }) => {
     const params = new URLSearchParams();
-    const limit = input?.limit ?? 50;
-    const page = input?.page ?? 1;
-    params.set("per_page", limit.toString());
-    params.set("page", page.toString());
+    const limit = input?.limit ?? 100;
+    params.set("limit", limit.toString());
     if (input?.startDate) params.set("start_date", input.startDate);
     if (input?.endDate) params.set("end_date", input.endDate);
 
     let data: any;
     try {
-      data = await mercuryFetch<any>(`/v1/transactions?${params.toString()}`);
+      data = await mercuryFetch<any>(`/api/v1/transactions?${params.toString()}`);
     } catch (err: any) {
       // Graceful fallback when sandbox has no data or key invalid
       return { transactions: [], error: err?.message || "Mercury transactions unavailable" };

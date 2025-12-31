@@ -44,7 +44,7 @@ export const mercury = {
     async getTransactions(accountId: string): Promise<MercuryTransaction[]> {
         if (!env.MERCURY_API_KEY) return [];
 
-        const response = await fetch(`${BASE_URL}/api/v1/account/${accountId}/transactions`, {
+        const response = await fetch(`${BASE_URL}/api/v1/transactions?account_id=${accountId}`, {
             headers: {
                 Authorization: `Bearer ${env.MERCURY_API_KEY}`,
                 "Content-Type": "application/json",
