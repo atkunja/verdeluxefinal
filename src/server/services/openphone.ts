@@ -113,24 +113,30 @@ export const openPhone = {
         return await response.json();
     },
 
-    async getMessages(participants?: string[], pageToken?: string) {
+    async sleep(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    async getMessages(participants: string[], pageToken?: string) {
         // We need the phone number ID, not just the number
         const phoneNumberId = await this.getPhoneNumberId();
 
         const url = new URL(`${BASE_URL}/messages`);
         url.searchParams.append("phoneNumberId", phoneNumberId);
 
-        // If participants provided, filter by them. Otherwise, fetch all (bulk).
-        if (participants && participants.length > 0) {
-            const validParticipants = participants
-                .map(p => p?.trim())
-                .filter(p => p && p !== "undefined" && p.length > 5);
+        // participants must be provided and be an array of E.164 strings.
+        const validParticipants = participants
+            .map(p => p?.trim())
+            .filter(p => p && p !== "undefined" && p.length > 5);
 
-            validParticipants.forEach(p => {
-                const norm = this.normalizePhone(p);
-                if (norm) url.searchParams.append("participants", norm);
-            });
+        if (validParticipants.length === 0) {
+            return { data: [] };
         }
+
+        validParticipants.forEach(p => {
+            const norm = this.normalizePhone(p);
+            if (norm) url.searchParams.append("participants", norm);
+        });
 
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);

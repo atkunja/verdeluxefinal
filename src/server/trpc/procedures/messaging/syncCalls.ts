@@ -1,22 +1,44 @@
 import { requireAdmin } from "~/server/trpc/main";
 import { db } from "~/server/db";
 import { openPhone } from "~/server/services/openphone";
+import { env } from "~/server/env";
 
 export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
     try {
+        // 1. Get all active conversations
+        const convData = await openPhone.getConversations();
+        const conversations = (convData.data || []) as any[];
         let count = 0;
         const adminId = ctx.profile.id;
+        const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
-        // Bulk fetch recent calls
-        // This avoids making an API call per conversation
-        const callsData = await openPhone.getCalls();
-        const calls = (callsData.data || []) as any[];
+        console.log(`[Sync] Throttled syncing calls for ${conversations.length} conversations`);
 
-        console.log(`[Sync] Bulk syncing ${calls.length} calls`);
+        // 2. Iterate through conversations with a delay
+        for (const conv of conversations) {
+            // Extract participants 
+            const participants = (conv.participants || [])
+                .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
+                .filter((p: string | undefined) => {
+                    if (!p || typeof p !== 'string') return false;
+                    const normalized = p.replace(/\D/g, "");
+                    const systemDigits = systemPhone.replace(/\D/g, "");
+                    return normalized !== systemDigits && normalized.length > 5;
+                });
 
-        for (const call of calls) {
-            await openPhone.upsertCall(call, adminId);
-            count++;
+            if (participants.length === 0) continue;
+
+            // Fetch calls for this specific conversation
+            const callsData = await openPhone.getCalls(participants);
+            const calls = (callsData.data || []) as any[];
+
+            for (const call of calls) {
+                await openPhone.upsertCall(call, adminId);
+                count++;
+            }
+
+            // Throttling: Wait 300ms before next conversation
+            await openPhone.sleep(300);
         }
 
         return { success: true, count };
