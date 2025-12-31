@@ -17,7 +17,8 @@ interface MercuryTransaction {
 interface MercuryAccount {
     id: string;
     name: string;
-    balance: number;
+    currentBalance: number;
+    availableBalance: number;
 }
 
 export const mercury = {

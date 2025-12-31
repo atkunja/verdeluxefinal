@@ -15,11 +15,11 @@ export const syncMercuryTransactions = baseProcedure.mutation(async () => {
         create: {
           externalId: account.id,
           name: account.name,
-          balance: account.balance,
+          balance: account.currentBalance || 0,
           status: "active",
         },
         update: {
-          balance: account.balance,
+          balance: account.currentBalance || 0,
           name: account.name,
         },
       });
@@ -68,7 +68,7 @@ export const syncMercuryTransactions = baseProcedure.mutation(async () => {
               date: new Date(tx.postedAt || tx.createdAt),
               amount: amount,
               category: "EXPENSE",
-              description: tx.description || tx.counterpartyName || "Expense",
+              description: tx.note || tx.counterpartyName || "Expense",
               vendor: tx.counterpartyName,
               accountingEntryId: entry.id,
             }

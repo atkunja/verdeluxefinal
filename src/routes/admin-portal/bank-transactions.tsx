@@ -53,8 +53,8 @@ function BankTransactionsPage() {
           institution: "Mercury",
           name: acc.name || acc.account_name || "Account",
           last4: acc.mask || acc.last4 || (acc.id ? acc.id.slice(-4) : "0000"),
-          postedBalance: Number(acc.balance ?? acc.posted_balance ?? 0),
-          availableBalance: Number(acc.available_balance ?? acc.balance ?? 0),
+          postedBalance: Number(acc.currentBalance ?? acc.balance ?? acc.posted_balance ?? 0),
+          availableBalance: Number(acc.availableBalance ?? acc.balance ?? acc.available_balance ?? 0),
           lastSynced: new Date().toISOString(),
         }))
       );
