@@ -201,9 +201,9 @@ function AdminDashboardPage() {
   const trpc = useTRPC();
   const firstName = user?.firstName || "Admin";
 
-  const statsQuery = useQuery(trpc.getBookingStatsAdmin.queryOptions());
-  const tasksQuery = useQuery(trpc.getAdminTasks.queryOptions());
-  const pendingChargesQuery = useQuery(trpc.payments.getPendingCharges.queryOptions());
+  const statsQuery = useQuery(trpc.getBookingStatsAdmin.queryOptions(undefined, { staleTime: 60000 })); // 1 min cache
+  const tasksQuery = useQuery(trpc.getAdminTasks.queryOptions(undefined, { staleTime: 60000 }));
+  const pendingChargesQuery = useQuery(trpc.payments.getPendingCharges.queryOptions(undefined, { staleTime: 30000 })); // 30s cache
 
   const chargeMutation = useMutation(trpc.stripe.createChargeWithSavedMethod.mutationOptions({
     onSuccess: () => {

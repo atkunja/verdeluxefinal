@@ -29,50 +29,49 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
             const conversations = (convData.data || []) as any[];
             nextPageToken = convData.nextPageToken;
 
-            for (const conv of conversations) {
-                // Skip if the conversation hasn't been updated since our last sync
-                if (sinceDate && conv.updatedAt && new Date(conv.updatedAt) <= sinceDate) {
-                    continue;
-                }
-
-                // Extract participants 
-                const participants = (conv.participants || [])
-                    .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
-                    .filter((p: string | undefined) => {
-                        if (!p || typeof p !== 'string') return false;
-                        const normalized = p.replace(/\D/g, "");
-                        const systemDigits = systemPhone.replace(/\D/g, "");
-                        return normalized !== systemDigits && normalized.length > 5;
-                    });
-
-                if (participants.length === 0) {
-                    continue;
-                }
-
-                // Sync messages for each conversation
-                let msgPageToken: string | undefined = undefined;
-                // For incremental, we only need the latest page usually, but we'll check token
-                for (let pCount = 0; pCount < 3; pCount++) {
-                    const msgsData = await openPhone.getMessages(participants, msgPageToken);
-                    const messages = (msgsData.data || []) as any[];
-                    msgPageToken = msgsData.nextPageToken;
-
-                    let hasReachedOldMessages = false;
-                    for (const msg of messages) {
-                        // Optimization: if we hit a message older than our last sync, we can potentially stop this conversation
-                        if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
-                            hasReachedOldMessages = true;
-                            // continue to process this batch just in case of overlaps, but set flag
-                        }
-                        await openPhone.upsertMessage(msg, adminId);
-                        count++;
+            // Process this page of conversations in parallel with a concurrency limit
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
+                const batch = conversations.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async (conv) => {
+                    // Skip if the conversation hasn't been updated since our last sync
+                    if (sinceDate && conv.updatedAt && new Date(conv.updatedAt) <= sinceDate) {
+                        return;
                     }
 
-                    if (!msgPageToken || hasReachedOldMessages) break;
-                    await openPhone.sleep(100);
-                }
+                    // Extract participants 
+                    const participants = (conv.participants || [])
+                        .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
+                        .filter((p: string | undefined) => {
+                            if (!p || typeof p !== 'string') return false;
+                            const normalized = p.replace(/\D/g, "");
+                            const systemDigits = systemPhone.replace(/\D/g, "");
+                            return normalized !== systemDigits && normalized.length > 5;
+                        });
 
-                await openPhone.sleep(200);
+                    if (participants.length === 0) return;
+
+                    // Sync messages for each conversation
+                    let msgPageToken: string | undefined = undefined;
+                    // Most incremental syncs only need 1 page, we'll cap at 2 for performance
+                    for (let pCount = 0; pCount < 2; pCount++) {
+                        const msgsData = await openPhone.getMessages(participants, msgPageToken);
+                        const messages = (msgsData.data || []) as any[];
+                        msgPageToken = msgsData.nextPageToken;
+
+                        let hasReachedOldMessages = false;
+                        // Parallelize upserts within a message page
+                        await Promise.all(messages.map(async (msg) => {
+                            if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
+                                hasReachedOldMessages = true;
+                            }
+                            await openPhone.upsertMessage(msg, adminId);
+                            count++;
+                        }));
+
+                        if (!msgPageToken || hasReachedOldMessages) break;
+                    }
+                }));
             }
             convPage++;
         } while (nextPageToken);

@@ -13,6 +13,7 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
   const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
   const prevMonthRange = normalizeDetroitRange(startOfPrevMonth, endOfPrevMonth);
 
+  // Consolidate every single query into one massive Promise.all for maximum parallelization
   const [
     totalBookings,
     completedBookings,
@@ -22,7 +23,12 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
     revenuePendingAgg,
     previousMonthBookings,
     previousMonthRevenueAgg,
-    currentMonthRevenueAgg
+    currentMonthRevenueAgg,
+    sixMonthsBookings,
+    upcomingAppointmentsRaw,
+    unassignedBookings,
+    activeCleaners,
+    totalCleaners
   ] = await Promise.all([
     db.booking.count(),
     db.booking.count({ where: { status: "COMPLETED" } }),
@@ -61,6 +67,26 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
         status: { not: "CANCELLED" },
       },
     }),
+    db.booking.findMany({
+      where: {
+        scheduledDate: { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) },
+        status: { not: "CANCELLED" },
+      },
+      select: { finalPrice: true, scheduledDate: true },
+    }),
+    db.booking.findMany({
+      where: { scheduledDate: { gte: now }, status: { not: "CANCELLED" } },
+      include: {
+        client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        cleaner: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, color: true } },
+        payments: { select: { amount: true, paidAt: true } },
+      },
+      orderBy: { scheduledDate: "asc" },
+      take: 10,
+    }),
+    db.booking.count({ where: { status: { not: "CANCELLED" }, cleanerId: null } }),
+    db.user.count({ where: { role: "CLEANER", hasResetPassword: true } }),
+    db.user.count({ where: { role: "CLEANER" } }),
   ]);
 
   const revenue = {
@@ -69,19 +95,6 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
   };
   const previousMonthRevenue = previousMonthRevenueAgg._sum.finalPrice ?? 0;
   const currentMonthRevenue = currentMonthRevenueAgg._sum.finalPrice ?? 0;
-
-  // Last 6 months revenue trend (Optimized: Single query)
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const sixMonthsBookings = await db.booking.findMany({
-    where: {
-      scheduledDate: { gte: sixMonthsAgo },
-      status: { not: "CANCELLED" },
-    },
-    select: {
-      finalPrice: true,
-      scheduledDate: true,
-    },
-  });
 
   const revenueTrends: { month: string; monthKey: string; revenue: number }[] = [];
   for (let i = 5; i >= 0; i--) {
@@ -104,17 +117,6 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
     });
   }
 
-  const upcomingAppointmentsRaw = await db.booking.findMany({
-    where: { scheduledDate: { gte: now }, status: { not: "CANCELLED" } },
-    include: {
-      client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-      cleaner: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, color: true } },
-      payments: { select: { amount: true, paidAt: true } },
-    },
-    orderBy: { scheduledDate: "asc" },
-    take: 10,
-  });
-
   const upcomingAppointments = upcomingAppointmentsRaw.map((booking) => {
     const totalPaid = booking.payments.reduce((sum, p) => (p.paidAt ? sum + p.amount : sum), 0);
     const isPaid = (booking.finalPrice || 0) > 0 && totalPaid >= (booking.finalPrice || 0);
@@ -125,13 +127,6 @@ export const getBookingStatsAdmin = requireAdmin.query(async () => {
       paymentStatus: isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid",
     };
   });
-
-  // Consolidate cleaner counts into one query if possible, but these are simple counts
-  const [unassignedBookings, activeCleaners, totalCleaners] = await Promise.all([
-    db.booking.count({ where: { status: { not: "CANCELLED" }, cleanerId: null } }),
-    db.user.count({ where: { role: "CLEANER", hasResetPassword: true } }),
-    db.user.count({ where: { role: "CLEANER" } }),
-  ]);
 
   return {
     totalBookings,

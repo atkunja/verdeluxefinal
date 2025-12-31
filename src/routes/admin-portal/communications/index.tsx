@@ -27,9 +27,9 @@ function CommunicationsPage() {
     const [editLastName, setEditLastName] = useState("");
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-    const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({}));
-    const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}));
-    const callsQuery = useQuery(trpc.messaging.getCalls.queryOptions({}));
+    const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({}, { staleTime: 300000 })); // 5 mins
+    const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}, { staleTime: 300000 })); // 5 mins
+    const callsQuery = useQuery(trpc.messaging.getCalls.queryOptions({}, { staleTime: 300000 })); // 5 mins
 
     const sendMessageMutation = useMutation(
         trpc.messaging.sendMessage.mutationOptions({

@@ -99,15 +99,14 @@ function BookingsPage() {
   const [pendingMove, setPendingMove] = useState<{ id: string; date: string; isRecurring: boolean } | null>(null);
   const queryClient = useQueryClient();
 
-  const bookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({}, { enabled: true }));
-  const chargesQuery = useQuery(trpc.payments.listCharges.queryOptions(undefined, { enabled: true }));
-  const holdsQuery = useQuery(trpc.payments.listHolds.queryOptions(undefined, { enabled: true }));
+  const bookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({}, { staleTime: 60000 })); // 1 min cache
+  const chargesQuery = useQuery(trpc.payments.listCharges.queryOptions(undefined, { staleTime: 60000 }));
+  const holdsQuery = useQuery(trpc.payments.listHolds.queryOptions(undefined, { staleTime: 60000 }));
 
   useEffect(() => {
     if ((bookingsQuery.data as any)?.bookings) {
       setEvents(
         (bookingsQuery.data as any).bookings.map((b: any) => ({
-
           id: b.id.toString(),
           customer: `${b.client?.firstName ?? ""} ${b.client?.lastName ?? ""} `.trim() || b.client?.email || "Client",
           contact: b.client?.phone || b.client?.email || "",
@@ -117,7 +116,6 @@ function BookingsPage() {
           provider: `${b.cleaner?.firstName ?? ""} ${b.cleaner?.lastName ?? ""} `.trim() || (b.status === "PENDING" ? "UNASSIGNED" : "Cleaner"),
           providerColor: b.cleaner?.color || (b.status === "PENDING" ? "#64748b" : "#163022"),
           status: b.status,
-
           location: b.address,
           price: b.finalPrice || 0,
           paymentStatus: (b.stripePayments?.[0]?.status as any) || "pending",
@@ -129,8 +127,6 @@ function BookingsPage() {
           })),
         }))
       );
-    } else {
-      listBookings().then(setEvents);
     }
   }, [bookingsQuery.data]);
 
@@ -170,8 +166,6 @@ function BookingsPage() {
         })
       );
       setCharges(normalized);
-    } else {
-      listCharges().then(setCharges);
     }
   }, [chargesQuery.data, holdsQuery.data]);
 
@@ -342,6 +336,14 @@ function BookingsPage() {
       }
     >
       <div className="relative flex flex-col gap-8 h-full">
+        {(bookingsQuery.isLoading || chargesQuery.isLoading || holdsQuery.isLoading) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm rounded-3xl">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-10 w-10 border-4 border-[#163022]/20 border-t-[#163022] rounded-full animate-spin" />
+              <p className="text-xs font-bold text-[#163022] uppercase tracking-widest">Updating Calendar...</p>
+            </div>
+          </div>
+        )}
         <div className="w-full">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">

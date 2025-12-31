@@ -44,6 +44,8 @@ model User {
   timeEntries                  TimeEntry[]
   timeOffRequests              TimeOffRequest[]           @relation("CleanerTimeOffRequests")
   reviewedTimeOffRequests      TimeOffRequest[]           @relation("AdminReviewedRequests")
+
+  @@index([role])
 }
 
 model Booking {
@@ -95,6 +97,7 @@ model Booking {
   timeEntries               TimeEntry[]
 
   @@index([scheduledDate, status])
+  @@index([status])
   @@index([clientId])
   @@index([cleanerId])
 }
@@ -193,6 +196,10 @@ model CallLog {
   aiTranscripts AITranscript[]
   contact       User?          @relation("ContactCallLogs", fields: [contactId], references: [id])
   user          User?          @relation("UserCallLogs", fields: [userId], references: [id])
+
+  @@index([startTime])
+  @@index([externalId])
+  @@index([contactId])
 }
 
 model PricingRule {
@@ -406,6 +413,9 @@ model StripePayment {
   status         String
   description    String?
   booking        Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([stripeIntentId])
 }
 
 model MercuryAccount {
@@ -431,6 +441,9 @@ model MercuryTransaction {
   accountId       Int?
   accountingEntry AccountingEntry? @relation("AccountingEntryMercury")
   account         MercuryAccount?  @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([transactionAt])
 }
 
 model Lead {

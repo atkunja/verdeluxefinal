@@ -27,19 +27,19 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
             nextPageToken = callData.nextPageToken;
 
             let hasReachedOldCalls = false;
-            for (const callItem of calls) {
-                // If we hit calls older than our last sync, we can stop after this batch
+            // Parallelize database upserts for the entire batch
+            await Promise.all(calls.map(async (callItem) => {
                 if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
                     hasReachedOldCalls = true;
-                    // continue to process batch to ensure 100% coverage
                 }
                 await openPhone.upsertCall(callItem, adminId);
                 count++;
-            }
+            }));
 
             if (!nextPageToken || hasReachedOldCalls) break;
             pPage++;
-            await openPhone.sleep(200);
+            // Small sleep to avoid hammering the DB too hard, but parallel is much faster
+            await openPhone.sleep(100);
         } while (nextPageToken);
 
         return { success: true, count };
