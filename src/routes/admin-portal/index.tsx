@@ -417,7 +417,7 @@ function AdminDashboardPage() {
                     dayBookingsQuery.data?.bookings.map((booking: any) => (
                       <Link
                         to="/admin-portal/bookings"
-                        search={{ date: booking.scheduledDate.split("T")[0] } as any}
+                        search={{ date: new Date(booking.scheduledDate).toISOString().split("T")[0] } as any}
                         key={booking.id}
                         className="block p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
                       >
