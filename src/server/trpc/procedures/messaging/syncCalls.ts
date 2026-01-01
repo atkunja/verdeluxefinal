@@ -19,26 +19,48 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
 
         console.log(`[Sync] Starting ${sinceDate ? 'incremental' : 'full'} pagination call sync...`);
 
-        // 2. Paginate through ALL calls (OpenPhone /calls endpoint lists all calls by default)
+        // 2. Paginate through ALL conversations to get participants
         do {
-            console.log(`[Sync] Fetching call page ${pPage}...`);
-            const callData = await openPhone.getCalls(undefined, nextPageToken);
-            const calls = (callData.data || []) as any[];
-            nextPageToken = callData.nextPageToken;
+            console.log(`[Sync] Fetching conversation page ${pPage}...`);
+            const convData = await openPhone.getConversations(nextPageToken);
+            const conversations = (convData.data || []) as any[];
+            nextPageToken = convData.nextPageToken;
 
-            let hasReachedOldCalls = false;
-            // Parallelize database upserts for the entire batch
-            await Promise.all(calls.map(async (callItem) => {
-                if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
-                    hasReachedOldCalls = true;
-                }
-                await openPhone.upsertCall(callItem, adminId);
-                count++;
-            }));
+            // Process batch of conversations
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
+                const batch = conversations.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async (conv) => {
+                    // Extract participants similar to syncMessages
+                    const participants = (conv.participants || [])
+                        .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
+                        .filter((p: string | undefined) => {
+                            if (!p || typeof p !== 'string') return false;
+                            const normalized = p.replace(/\D/g, "");
+                            // Filter out our own number if needed, but getCalls needs the other party
+                            const systemDigits = (env.OPENPHONE_PHONE_NUMBER || "").replace(/\D/g, "");
+                            return normalized !== systemDigits && normalized.length > 5;
+                        });
 
-            if (!nextPageToken || hasReachedOldCalls) break;
+                    if (participants.length === 0) return;
+
+                    // Fetch calls for these participants
+                    // We only need 1 page of calls usually if running incrementally
+                    const callData = await openPhone.getCalls(participants, undefined);
+                    const calls = (callData.data || []) as any[];
+
+                    let hasReachedOldCalls = false;
+                    await Promise.all(calls.map(async (callItem) => {
+                        if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
+                            hasReachedOldCalls = true;
+                        }
+                        await openPhone.upsertCall(callItem, adminId);
+                        count++;
+                    }));
+                }));
+            }
+
             pPage++;
-            // Small sleep to avoid hammering the DB too hard, but parallel is much faster
             await openPhone.sleep(100);
         } while (nextPageToken);
 

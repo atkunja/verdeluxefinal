@@ -489,7 +489,6 @@ function CommunicationsPage() {
                                                 return;
                                             }
                                             makeCallMutation.mutate({
-                                                authToken: token,
                                                 toNumber: selectedConversation.user.phone || ""
                                             });
                                         }}

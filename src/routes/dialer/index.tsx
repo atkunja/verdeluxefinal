@@ -55,7 +55,6 @@ function DialerPage() {
     }
     if (!token) return;
     makeCallMutation.mutate({
-      authToken: token,
       toNumber: phoneNumber,
     });
   };

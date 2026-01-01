@@ -1,35 +1,31 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import jwt from "jsonwebtoken";
 import { db } from "~/server/db";
-import { baseProcedure } from "~/server/trpc/main";
+import { requireAuth } from "~/server/trpc/main";
 import { env } from "~/server/env";
 
-export const makeCall = baseProcedure
+export const makeCall = requireAuth
   .input(
     z.object({
-      authToken: z.string(),
       toNumber: z.string().min(10, "Valid phone number is required"),
     })
   )
-  .mutation(async ({ input }) => {
-    // Verify JWT token
-    let userId: number;
-    try {
-      const decoded = jwt.verify(input.authToken, env.JWT_SECRET) as {
-        userId: number;
-      };
-      userId = decoded.userId;
-    } catch (error) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Invalid authentication token",
-      });
-    }
+  .mutation(async ({ ctx, input }) => {
+    // User is already verified by requireAuth
+    const userId = ctx.authUser.id;
 
-    // Get user from database
+    // Get user from database to ensure they exist in our DB (requireAuth ensures they are auth'd but we need their DB record)
+    // Actually requireAuth puts authUser in ctx, but we might need the full DB user if we need fields not in ctx.
+    // However, the original code looked up user by ID.
+    // Let's use ctx.profile.id which requireAuth provides if available, or fetch.
+    // requireAuth ensures ctx.authUser and ctx.profile are present.
+
+    // The previous code used `userId` (number) from the decoded token.
+    // ctx.profile.id is the numeric ID we want.
+    const dbUserId = ctx.profile.id;
+
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { id: dbUserId },
     });
 
     if (!user) {
@@ -80,7 +76,7 @@ export const makeCall = baseProcedure
       // Log the call to your database
       const callLog = await db.callLog.create({
         data: {
-          userId,
+          userId: dbUserId,
           contactId: contactUser?.id,
           callSid: call.id,
           fromNumber: env.OPENPHONE_PHONE_NUMBER,
@@ -109,7 +105,7 @@ export const makeCall = baseProcedure
       // Create a failure log in your database
       const callLog = await db.callLog.create({
         data: {
-          userId,
+          userId: dbUserId,
           contactId: contactUser?.id,
           callSid: `failed-${Date.now()}`,
           fromNumber: env.OPENPHONE_PHONE_NUMBER,

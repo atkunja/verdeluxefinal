@@ -181,17 +181,22 @@ export const openPhone = {
                 .map(p => p?.trim())
                 .filter(p => p && p !== "undefined" && p.length > 5);
 
-            validParticipants.forEach(p => {
-                const norm = this.normalizePhone(p);
-                if (norm) url.searchParams.append("participants", norm);
-            });
+            if (validParticipants.length > 0) {
+                validParticipants.forEach(p => {
+                    const norm = this.normalizePhone(p);
+                    if (norm) url.searchParams.append("participants", norm);
+                });
+            }
         }
 
         if (pageToken) {
             url.searchParams.append("pageToken", pageToken);
         }
 
-        const response = await fetch(url.toString(), {
+        const finalUrl = url.toString();
+        console.log("[OpenPhone] Fetching calls:", finalUrl); // debug
+
+        const response = await fetch(finalUrl, {
             headers: {
                 Authorization: `${env.OPENPHONE_API_KEY}`,
             },
