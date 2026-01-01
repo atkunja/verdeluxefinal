@@ -304,6 +304,16 @@ export const updateBookingAdmin = requireAdmin
         });
       }
     } else {
+      // Single move logic
+      // If it was part of a series (has recurrenceId) but we are moving ONLY this one,
+      // we must detach it to prevent "ensureFutureRecurrences" from using this new date 
+      // as a seed for a parallel series.
+      if (existingBooking.recurrenceId) {
+        updateData.recurrenceId = null;
+        updateData.serviceFrequency = "ONE_TIME";
+        // We preserve other fields, but this is now an exception/one-off.
+      }
+
       booking = await db.booking.update({
         where: { id: input.bookingId },
         data: updateData,
