@@ -290,9 +290,26 @@ export const openPhone = {
         }
 
         if (!contactUser) {
-            // Skip messages from unregistered contacts (no spam/unknown numbers)
-            console.log("[OpenPhone] Skip upsertMessage: Contact not registered as User or Lead:", contactPhone);
-            return null;
+            if (isOutgoing) {
+                console.log("[OpenPhone] Creating Contact User for outgoing message to unknown number:", contactPhone);
+                contactUser = await db.user.create({
+                    data: {
+                        firstName: "Contact",
+                        lastName: contactPhone,
+                        phone: contactPhone,
+                        email: `${normalizedDigits}@contact.v-luxe.com`,
+                        password: "contact-no-login-permitted",
+                        role: "CLIENT" as any
+                    }
+                });
+                if (options?.contactCache) {
+                    options.contactCache.set(cacheKey, contactUser);
+                }
+            } else {
+                // Skip messages from unregistered contacts (no spam/unknown numbers)
+                console.log("[OpenPhone] Skip upsertMessage: Contact not registered as User or Lead:", contactPhone);
+                return null;
+            }
         }
 
         const senderId = isOutgoing ? adminId : contactUser.id;
@@ -386,10 +403,29 @@ export const openPhone = {
             }
         }
 
+        const isOutgoingCall = fromPhoneNormalized === systemPhoneNormalized;
+
         if (!contactUser) {
-            // Skip calls from unregistered contacts (no spam/unknown numbers)
-            console.log("[OpenPhone] Skip upsertCall: Contact not registered as User or Lead:", contactPhone);
-            return null;
+            if (isOutgoingCall) {
+                console.log("[OpenPhone] Creating Contact User for outgoing call to unknown number:", contactPhone);
+                contactUser = await db.user.create({
+                    data: {
+                        firstName: "Contact",
+                        lastName: contactPhone,
+                        phone: contactPhone,
+                        email: `${normalizedDigits}@contact.v-luxe.com`,
+                        password: "contact-no-login-permitted",
+                        role: "CLIENT" as any
+                    }
+                });
+                if (options?.contactCache) {
+                    options.contactCache.set(cacheKey, contactUser);
+                }
+            } else {
+                // Skip calls from unregistered contacts (no spam/unknown numbers)
+                console.log("[OpenPhone] Skip upsertCall: Contact not registered as User or Lead:", contactPhone);
+                return null;
+            }
         }
 
         return await (db.callLog as any).upsert({
