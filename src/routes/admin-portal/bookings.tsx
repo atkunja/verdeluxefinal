@@ -99,7 +99,7 @@ function BookingsPage() {
   const [pendingMove, setPendingMove] = useState<{ id: string; date: string; isRecurring: boolean } | null>(null);
   const queryClient = useQueryClient();
 
-  const bookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({}, { staleTime: 5000 }));
+  const bookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({ backfillRecurrence: true }, { staleTime: 5000 }));
   const chargesQuery = useQuery(trpc.payments.listCharges.queryOptions(undefined, { staleTime: 60000 }));
   const holdsQuery = useQuery(trpc.payments.listHolds.queryOptions(undefined, { staleTime: 60000 }));
 

@@ -14,15 +14,14 @@ interface MoveBookingModalProps {
 }
 
 export function MoveBookingModal({ isOpen, onClose, booking, onConfirm }: MoveBookingModalProps) {
-    const [scope, setScope] = useState<"single" | "series">("single");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (!isOpen || !booking) return null;
 
-    const handleConfirm = async () => {
+    const handleConfirm = async (selectedScope: "single" | "series") => {
         setIsSubmitting(true);
         try {
-            await onConfirm(scope);
+            await onConfirm(selectedScope);
             onClose();
         } catch (error) {
             console.error("Move failed", error);
@@ -51,64 +50,76 @@ export function MoveBookingModal({ isOpen, onClose, booking, onConfirm }: MoveBo
 
                 <div className="space-y-4">
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-800">
-                        <p className="font-medium">Rescheduling this booking</p>
+                        <p className="font-medium">Rescheduling Confirmation</p>
                         <p className="text-xs mt-1 text-blue-700/80">
-                            You are moving this booking to a new date.
+                            Move booking from <span className="font-bold">{booking.date}</span> (Original) to a new date?
                         </p>
                     </div>
 
                     {booking.isRecurring ? (
                         <div className="space-y-3">
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">Move Scope</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() => setScope("single")}
-                                    className={`px-3 py-2 text-sm rounded-lg border text-center transition-colors ${scope === "single"
-                                        ? "bg-gray-900 text-white border-gray-900 shadow-sm"
-                                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                                        }`}
-                                >
-                                    This Booking Only
-                                </button>
-                                <button
-                                    onClick={() => setScope("series")}
-                                    className={`px-3 py-2 text-sm rounded-lg border text-center transition-colors ${scope === "series"
-                                        ? "bg-gray-900 text-white border-gray-900 shadow-sm"
-                                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                                        }`}
-                                >
-                                    This & All Future
-                                </button>
-                            </div>
-                            <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg text-[11px] text-amber-800">
-                                <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                                <p>
-                                    {scope === "series"
-                                        ? "Moving the series will shift all future occurrences relative to the new date."
-                                        : "Moving only this occurrence will not affect the rest of the schedule."}
-                                </p>
-                            </div>
+                            <label className="text-sm font-medium text-gray-700 block">Select Move Type</label>
+
+                            <button
+                                onClick={() => handleConfirm("single")}
+                                disabled={isSubmitting}
+                                className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all group text-left"
+                            >
+                                <div>
+                                    <div className="font-bold text-gray-900 group-hover:text-[#163022]">Move This Occurrence Only</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">Other bookings in the series remain unchanged.</div>
+                                </div>
+                                <div className="h-5 w-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-[#163022]">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-[#163022] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => handleConfirm("series")}
+                                disabled={isSubmitting}
+                                className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all group text-left"
+                            >
+                                <div>
+                                    <div className="font-bold text-gray-900 group-hover:text-[#163022]">Move This & All Future</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">Shift the entire schedule from this date forward.</div>
+                                </div>
+                                <div className="h-5 w-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-[#163022]">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-[#163022] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                            </button>
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-600">Confirm you want to move this booking to the selected date.</p>
+                        <p className="text-sm text-gray-600">Are you sure you want to calculate the new price and move this booking?</p>
                     )}
 
-                    <div className="flex gap-3 pt-2">
+                    {!booking.isRecurring && (
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleConfirm("single")}
+                                className="flex-1 rounded-xl bg-[#163022] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0f241a] shadow-sm disabled:opacity-70"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? "Moving..." : "Confirm Move"}
+                            </button>
+                        </div>
+                    )}
+
+                    {booking.isRecurring && (
                         <button
                             onClick={onClose}
-                            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            className="w-full mt-2 text-xs font-semibold text-gray-400 hover:text-gray-600 py-2"
                             disabled={isSubmitting}
                         >
                             Cancel
                         </button>
-                        <button
-                            onClick={handleConfirm}
-                            className="flex-1 rounded-xl bg-[#163022] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0f241a] shadow-sm disabled:opacity-70"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? "Moving..." : "Confirm Move"}
-                        </button>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
