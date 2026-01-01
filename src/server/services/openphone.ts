@@ -260,9 +260,28 @@ export const openPhone = {
         });
 
         if (!contactUser) {
-            // Skip messages from unregistered contacts (no spam/unknown numbers)
-            console.log("[OpenPhone] Skip upsertMessage: Contact not registered:", contactPhone);
-            return null;
+            // If not found in User, check Lead table
+            const lead = await db.lead.findFirst({
+                where: { phone: { contains: normalizedDigits.slice(-10) } }
+            });
+
+            if (lead) {
+                console.log("[OpenPhone] Creating User from Lead:", contactPhone);
+                contactUser = await db.user.create({
+                    data: {
+                        firstName: lead.name.split(' ')[0] || "Lead",
+                        lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
+                        phone: contactPhone,
+                        email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+                        password: "lead-no-login-permitted",
+                        role: "CLIENT" as any
+                    }
+                });
+            } else {
+                // Skip messages from unregistered contacts (no spam/unknown numbers)
+                console.log("[OpenPhone] Skip upsertMessage: Contact not registered as User or Lead:", contactPhone);
+                return null;
+            }
         }
 
         let finalAdminId = adminIdOverride;
@@ -337,9 +356,28 @@ export const openPhone = {
         });
 
         if (!contactUser) {
-            // Skip calls from unregistered contacts (no spam/unknown numbers)
-            console.log("[OpenPhone] Skip upsertCall: Contact not registered:", contactPhone);
-            return null;
+            // If not found in User, check Lead table
+            const lead = await db.lead.findFirst({
+                where: { phone: { contains: normalizedDigits.slice(-10) } }
+            });
+
+            if (lead) {
+                console.log("[OpenPhone] Creating User from Lead:", contactPhone);
+                contactUser = await db.user.create({
+                    data: {
+                        firstName: lead.name.split(' ')[0] || "Lead",
+                        lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
+                        phone: contactPhone,
+                        email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+                        password: "lead-no-login-permitted",
+                        role: "CLIENT" as any
+                    }
+                });
+            } else {
+                // Skip calls from unregistered contacts (no spam/unknown numbers)
+                console.log("[OpenPhone] Skip upsertCall: Contact not registered as User or Lead:", contactPhone);
+                return null;
+            }
         }
 
         let finalAdminId = adminIdOverride;
