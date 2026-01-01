@@ -137,17 +137,6 @@ export const openPhone = {
 
         const data = await this._request(url.toString());
 
-        // Diagnostic: Log first 5 messages to see raw structure for incoming vs outgoing
-        if (data.data && data.data.length > 0) {
-            console.log(`[OpenPhone] Raw getMessages sample for participants [${participants.join(", ")}]:`,
-                JSON.stringify(data.data.slice(0, 5), (key, value) => {
-                    if (key === 'text' || key === 'content' || key === 'body') {
-                        return (value as string).substring(0, 30) + "...";
-                    }
-                    return value;
-                }, 2)
-            );
-        }
 
         return data;
     },
@@ -175,10 +164,7 @@ export const openPhone = {
             url.searchParams.append("pageToken", pageToken);
         }
 
-        const finalUrl = url.toString();
-        console.log("[OpenPhone] Fetching calls:", finalUrl); // debug
-
-        return await this._request(finalUrl);
+        return await this._request(url.toString());
     },
 
     async verifySignature(body: string, signature: string): Promise<boolean> {
@@ -207,18 +193,6 @@ export const openPhone = {
         const contactPhoneRaw = isOutgoing ? toPhones[0] : msg.from;
         const contactPhone = this.normalizePhone(contactPhoneRaw);
 
-        // Unified deep log to prevent interleaving
-        console.log("[OpenPhone] Upsert Debug Info:", JSON.stringify({
-            id: msg.id,
-            from: fromPhone,
-            system: systemPhoneNormalized,
-            isOutgoing,
-            contactPhone,
-            rawText: msg.text,
-            rawContent: msg.content,
-            rawBody: msg.body,
-            keys: Object.keys(msg)
-        }, null, 2));
 
         if (!contactPhone) {
             console.log("[OpenPhone] Skip upsertMessage: No contactPhone determined");
@@ -261,25 +235,19 @@ export const openPhone = {
         }
 
         if (!contactUser) {
-            if (isOutgoing) {
-                console.log("[OpenPhone] Creating Contact User for outgoing message to unknown number:", contactPhone);
-                contactUser = await db.user.create({
-                    data: {
-                        firstName: "Contact",
-                        lastName: contactPhone,
-                        phone: contactPhone,
-                        email: `${normalizedDigits}@contact.v-luxe.com`,
-                        password: "contact-no-login-permitted",
-                        role: "CLIENT" as any
-                    }
-                });
-                if (options?.contactCache) {
-                    options.contactCache.set(cacheKey, contactUser);
+            console.log("[OpenPhone] Creating Contact User for unknown number:", contactPhone);
+            contactUser = await db.user.create({
+                data: {
+                    firstName: "Contact",
+                    lastName: contactPhone,
+                    phone: contactPhone,
+                    email: `${normalizedDigits}@contact.v-luxe.com`,
+                    password: "contact-no-login-permitted",
+                    role: "CLIENT" as any
                 }
-            } else {
-                // Skip messages from unregistered contacts (no spam/unknown numbers)
-                console.log("[OpenPhone] Skip upsertMessage: Contact not registered as User or Lead:", contactPhone);
-                return null;
+            });
+            if (options?.contactCache) {
+                options.contactCache.set(cacheKey, contactUser);
             }
         }
 
@@ -377,25 +345,19 @@ export const openPhone = {
         const isOutgoingCall = fromPhoneNormalized === systemPhoneNormalized;
 
         if (!contactUser) {
-            if (isOutgoingCall) {
-                console.log("[OpenPhone] Creating Contact User for outgoing call to unknown number:", contactPhone);
-                contactUser = await db.user.create({
-                    data: {
-                        firstName: "Contact",
-                        lastName: contactPhone,
-                        phone: contactPhone,
-                        email: `${normalizedDigits}@contact.v-luxe.com`,
-                        password: "contact-no-login-permitted",
-                        role: "CLIENT" as any
-                    }
-                });
-                if (options?.contactCache) {
-                    options.contactCache.set(cacheKey, contactUser);
+            console.log("[OpenPhone] Creating Contact User for unknown number (Call):", contactPhone);
+            contactUser = await db.user.create({
+                data: {
+                    firstName: "Contact",
+                    lastName: contactPhone,
+                    phone: contactPhone,
+                    email: `${normalizedDigits}@contact.v-luxe.com`,
+                    password: "contact-no-login-permitted",
+                    role: "CLIENT" as any
                 }
-            } else {
-                // Skip calls from unregistered contacts (no spam/unknown numbers)
-                console.log("[OpenPhone] Skip upsertCall: Contact not registered as User or Lead:", contactPhone);
-                return null;
+            });
+            if (options?.contactCache) {
+                options.contactCache.set(cacheKey, contactUser);
             }
         }
 

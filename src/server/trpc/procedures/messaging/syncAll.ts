@@ -19,58 +19,68 @@ export const syncAll = requireAdmin.mutation(async ({ ctx }) => {
         });
         const sinceDate = lastMessage?.createdAt;
 
-        console.log(`[Sync] Starting ${sinceDate ? 'incremental' : 'full'} message-only sync...`);
-
         // Cache for the duration of this sync
         const contactCache = new Map<string, any>();
 
-        // 2. Paginate through ALL conversations
+        // 2. Paginate through conversations
         do {
-            console.log(`[Sync] Fetching conversation page ${convPage}...`);
+            if (convPage > 2) break; // Optimization: Only scan first 2 pages (100 conversations)
+
             const convData = await openPhone.getConversations(nextPageToken);
             const conversations = (convData.data || []) as any[];
             nextPageToken = convData.nextPageToken;
 
-            // Process this page of conversations
-            const BATCH_SIZE = 5;
-            for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
-                const batch = conversations.slice(i, i + BATCH_SIZE);
+            if (conversations.length === 0) break;
 
-                await Promise.all(batch.map(async (conv) => {
-                    // Extract participants 
-                    const participants = (conv.participants || [])
-                        .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
-                        .filter((p: string | undefined) => {
-                            if (!p || typeof p !== 'string') return false;
-                            const normalized = p.replace(/\D/g, "");
-                            const systemDigits = systemPhone.replace(/\D/g, "");
-                            return normalized !== systemDigits && normalized.length > 5;
-                        });
+            // Sequential processing to avoid 429 burst penalties
+            for (const conv of conversations) {
+                // Skip conversation if it hasn't had activity since our last sync
+                const lastActivity = conv.lastActivityAt ? new Date(conv.lastActivityAt) :
+                    (conv.updatedAt ? new Date(conv.updatedAt) : null);
 
-                    if (participants.length === 0) return;
+                if (sinceDate && lastActivity && lastActivity <= sinceDate) {
+                    continue;
+                }
 
-                    // Sync messages
-                    try {
-                        const msgsData = await openPhone.getMessages(participants, undefined);
-                        const messages = (msgsData.data || []) as any[];
+                const participants = (conv.participants || [])
+                    .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
+                    .filter((p: string | undefined) => {
+                        if (!p || typeof p !== 'string') return false;
+                        const normalized = p.replace(/\D/g, "");
+                        const systemDigits = systemPhone.replace(/\D/g, "");
+                        return normalized !== systemDigits && normalized.length > 5;
+                    });
 
-                        for (const msg of messages) {
-                            if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
-                                break;
-                            }
-                            await openPhone.upsertMessage(msg, adminId, { contactCache });
-                            msgCount++;
+                if (participants.length === 0) continue;
+
+                // Sync messages
+                try {
+                    const msgsData = await openPhone.getMessages(participants, undefined);
+                    const messages = (msgsData.data || []) as any[];
+
+                    for (const msg of messages) {
+                        if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
+                            break;
                         }
-                    } catch (err: any) {
-                        console.error("[Sync] Message sync error for conversation:", err.message);
+                        const result = await openPhone.upsertMessage(msg, adminId, { contactCache });
+                        if (result) msgCount++;
                     }
-                }));
-                // Small breath between batches to be kind to the API
-                await openPhone.sleep(500);
+                } catch (err: any) {
+                    // Silently continue locally as _request handles retries
+                }
             }
+
+            // Reached old conversations page
+            const lastConv = conversations[conversations.length - 1];
+            const lastPageActivity = lastConv.lastActivityAt ? new Date(lastConv.lastActivityAt) : null;
+            if (sinceDate && lastPageActivity && lastPageActivity <= sinceDate) {
+                break;
+            }
+
             convPage++;
         } while (nextPageToken);
 
+        if (msgCount > 0) console.log(`[Sync] Completed. Synced ${msgCount} new messages.`);
         return { success: true, count: msgCount, messageCount: msgCount };
     } catch (error: any) {
         console.error("Sync Error:", error);
