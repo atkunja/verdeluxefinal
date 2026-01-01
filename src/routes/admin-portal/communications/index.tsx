@@ -73,7 +73,6 @@ function CommunicationsPage() {
         staleTime: 5000,
         refetchInterval: 10000, // Poll every 10 seconds for new messages
     }));
-    const callsQuery = useQuery(trpc.messaging.getCalls.queryOptions({}, { staleTime: 60000 }));
 
     const sendMessageMutation = useMutation(
         trpc.messaging.sendMessage.mutationOptions({
@@ -88,20 +87,14 @@ function CommunicationsPage() {
         })
     );
 
-    const syncMessagesMutation = useMutation(
-        trpc.messaging.syncMessages.mutationOptions({
+    const syncAllMutation = useMutation(
+        trpc.messaging.syncAll.mutationOptions({
             onSuccess: (data) => {
                 messagesQuery.refetch();
-                toast.success(`Synced ${data.count} messages`);
-            }
-        })
-    );
-
-    const syncCallsMutation = useMutation(
-        trpc.messaging.syncCalls.mutationOptions({
-            onSuccess: (data) => {
-                callsQuery.refetch();
-                toast.success(`Synced ${data.count} calls`);
+                toast.success(`Synced ${data.messageCount} messages`);
+            },
+            onError: (err: any) => {
+                toast.error(`Sync failed: ${err.message}`);
             }
         })
     );
@@ -129,7 +122,6 @@ function CommunicationsPage() {
         trpc.messaging.deleteConversation.mutationOptions({
             onSuccess: () => {
                 messagesQuery.refetch();
-                callsQuery.refetch();
                 setSelectedContactId(null);
                 toast.success("Conversation deleted");
             }
@@ -147,18 +139,13 @@ function CommunicationsPage() {
     // makeCallMutation removed - OpenPhone API doesn't support programmatic calls
 
     const handleSyncAll = async () => {
-        await Promise.all([
-            syncMessagesMutation.mutateAsync(),
-            syncCallsMutation.mutateAsync()
-        ]);
+        await syncAllMutation.mutateAsync();
     };
 
-    // Auto-sync messages and calls when page loads
+    // Auto-sync everything when page loads
     useEffect(() => {
-        // Only sync if mutations are not already pending
-        if (!syncMessagesMutation.isPending && !syncCallsMutation.isPending) {
-            syncMessagesMutation.mutate();
-            syncCallsMutation.mutate();
+        if (!syncAllMutation.isPending) {
+            syncAllMutation.mutate();
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -176,12 +163,7 @@ function CommunicationsPage() {
                     m => m.senderId === contactUser.id || m.recipientId === contactUser.id
                 ).map(m => ({ ...m, type: 'message' as const }));
 
-                const userCalls = (callsQuery.data || []) as any[];
-                const filteredCalls = userCalls.filter(
-                    c => c.contactId === contactUser.id
-                ).map(c => ({ ...c, type: 'call' as const }));
-
-                const allItems = [...filteredMessages, ...filteredCalls].sort(
+                const allItems = filteredMessages.sort(
                     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                 );
 
@@ -218,7 +200,7 @@ function CommunicationsPage() {
             clients: all.filter(c => c.user.role === 'CLIENT' || c.user.email.includes('@guest')),
             employees: all.filter(c => c.user.role === 'CLEANER' || c.user.role === 'ADMIN' || c.user.role === 'OWNER')
         };
-    }, [usersQuery.data, messagesQuery.data, callsQuery.data, searchQuery, user?.id]);
+    }, [usersQuery.data, messagesQuery.data, searchQuery, user?.id]);
 
     const allConversations = [...segmentedConversations.clients, ...segmentedConversations.employees];
     const selectedConversation = allConversations.find(c => c.user.id === selectedContactId);
@@ -316,7 +298,7 @@ function CommunicationsPage() {
     }, [activeConversationItems]);
 
     return (
-        <AdminShell title="Communications" subtitle="SMS & Calls via OpenPhone">
+        <AdminShell title="Communications" subtitle="Text Messages via OpenPhone">
             <div className="flex h-[calc(100vh-220px)] gap-6 rounded-[32px] border border-white/40 bg-white/40 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.05)] backdrop-blur-xl">
 
                 {/* Contact List */}
@@ -325,11 +307,11 @@ function CommunicationsPage() {
                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Messages</h3>
                         <button
                             onClick={handleSyncAll}
-                            disabled={syncMessagesMutation.isPending || syncCallsMutation.isPending}
+                            disabled={syncAllMutation.isPending}
                             className="p-2.5 hover:bg-white/80 rounded-2xl text-gray-500 transition-all hover:shadow-sm"
                             title="Sync All from OpenPhone"
                         >
-                            <RefreshCw className={`w-4 h-4 ${(syncMessagesMutation.isPending || syncCallsMutation.isPending) ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`w-4 h-4 ${syncAllMutation.isPending ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
 
@@ -418,9 +400,7 @@ function CommunicationsPage() {
                                                 </span>
                                             </div>
                                             <div className={`text-[13px] mt-0.5 truncate flex items-center gap-1 ${selectedContactId === conv.user.id ? 'text-white/80' : 'text-gray-500'}`}>
-                                                {conv.lastItem?.type === 'call' ? (
-                                                    <><Phone className="w-3 h-3" /> Call</>
-                                                ) : conv.lastItem?.senderId === user?.id ? (
+                                                {conv.lastItem?.senderId === user?.id ? (
                                                     <span className="opacity-50">You:</span>
                                                 ) : null}
                                                 <span className="truncate">{conv.lastItem?.content || "No records yet"}</span>
@@ -488,7 +468,7 @@ function CommunicationsPage() {
                             </div>
 
                             <div className="flex-1 overflow-y-auto space-y-4 pr-4 custom-scrollbar mb-6 scroll-smooth">
-                                {(messagesQuery.isLoading || callsQuery.isLoading) ? (
+                                {messagesQuery.isLoading ? (
                                     Array.from({ length: 5 }).map((_, i) => <MessageSkeleton key={i} isMe={i % 2 === 0} />)
                                 ) : groupedItems.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-20 text-gray-300">
@@ -504,37 +484,6 @@ function CommunicationsPage() {
                                                 <span className="text-[11px] font-black uppercase tracking-widest text-gray-300 px-3 py-1 bg-gray-50 rounded-full">{group.date}</span>
                                             </div>
                                             {group.items.map((item, idx) => {
-                                                if (item.type === 'call') {
-                                                    return (
-                                                        <div key={`call-${item.id}`} className="flex justify-center my-6">
-                                                            <div className="bg-white/60 border border-gray-100 rounded-[24px] p-5 text-center shadow-sm w-full max-w-md group hover:shadow-md transition-shadow">
-                                                                <div className="flex items-center justify-center gap-2 text-gray-500 mb-2">
-                                                                    <div className={`p-1.5 rounded-lg ${item.direction === 'incoming' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'}`}>
-                                                                        <Phone className="w-4 h-4" />
-                                                                    </div>
-                                                                    <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">{item.direction} Call</span>
-                                                                    <span className="text-[10px] text-gray-300">• {new Date(item.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                </div>
-                                                                <div className="text-[15px] font-bold text-gray-800">
-                                                                    <span className="capitalize">{item.status}</span>
-                                                                    {item.duration ? <span className="text-gray-400 font-medium font-sans ml-1 text-[13px]">• {Math.floor(item.duration / 60)}m {item.duration % 60}s</span> : ''}
-                                                                </div>
-
-                                                                {item.recordingUrl && (
-                                                                    <div className="mt-4">
-                                                                        <a
-                                                                            href={item.recordingUrl}
-                                                                            target="_blank"
-                                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl text-xs font-bold transition-colors border border-gray-100"
-                                                                        >
-                                                                            <Download className="w-3.5 h-3.5" /> Play Recording
-                                                                        </a>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
 
                                                 const isMe = item.senderId === user?.id;
                                                 const nextItem = group.items[idx + 1];
@@ -652,7 +601,7 @@ function CommunicationsPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 title="Delete Conversation"
-                description={`This will permanently delete all messages and call logs with ${selectedConversation?.user.firstName} ${selectedConversation?.user.lastName}. This action cannot be undone.`}
+                description={`This will permanently delete ALL messages with ${selectedConversation?.user.firstName} ${selectedConversation?.user.lastName}. This action cannot be undone.`}
                 confirmLabel="Delete Everything"
                 variant="danger"
                 onConfirm={confirmDeleteConversation}

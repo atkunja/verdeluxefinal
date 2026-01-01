@@ -6,6 +6,7 @@ import { markMessageRead } from "../procedures/messaging/markMessageRead";
 import { getUnreadCount } from "../procedures/messaging/getUnreadCount";
 import { syncMessages } from "../procedures/messaging/syncMessages";
 import { syncCalls } from "../procedures/messaging/syncCalls";
+import { syncAll } from "../procedures/messaging/syncAll";
 import { deleteConversation } from "../procedures/messaging/deleteConversation";
 import { renameContact } from "../procedures/messaging/renameContact";
 import { markConversationRead } from "../procedures/messaging/markConversationRead";
@@ -20,6 +21,7 @@ export const messagingRouter = createTRPCRouter({
   getUnreadCount,
   syncMessages,
   syncCalls,
+  syncAll,
   deleteConversation,
   renameContact,
   updateContact,

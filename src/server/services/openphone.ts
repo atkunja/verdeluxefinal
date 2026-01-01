@@ -21,17 +21,8 @@ interface OpenPhoneMessage {
 
 export const openPhone = {
     async sendMessage({ to, content, mediaUrls }: SendMessageParams) {
-        const response = await fetch(`${BASE_URL}/messages`, {
+        return this._request(`${BASE_URL}/messages`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `${env.OPENPHONE_API_KEY}`, // Prefixing 'Bearer' usually required but test script had variable logic.
-                // Wait, test script said: `const authHeader = useBearer ? ... : ...`. 
-                // I will trust standard Bearer auth if test script was ambiguous or try to match it.
-                // Actually line 7 of test-openphone.ts: `const authHeader = useBearer ? Bearer ... : ...`
-                // And runTests called it with true and false. 
-                // I will use Bearer as it's standard.
-            },
             body: JSON.stringify({
                 to: [to],
                 from: env.OPENPHONE_PHONE_NUMBER,
@@ -39,6 +30,27 @@ export const openPhone = {
                 media: mediaUrls,
             }),
         });
+    },
+
+    async _request(url: string, options: any = {}, retryCount = 0): Promise<any> {
+        const headers = {
+            "Content-Type": "application/json",
+            Authorization: `${env.OPENPHONE_API_KEY}`,
+            ...options.headers,
+        };
+
+        const response = await fetch(url, { ...options, headers });
+
+        if (response.status === 429) {
+            if (retryCount >= 3) {
+                const text = await response.text();
+                throw new Error(`OpenPhone API Rate Limit Exceeded after 3 retries: ${text}`);
+            }
+            const delay = Math.pow(2, retryCount) * 2000; // 2s, 4s, 8s
+            console.log(`[OpenPhone] 429 Rate Limit. Retrying in ${delay}ms... (Attempt ${retryCount + 1})`);
+            await this.sleep(delay);
+            return this._request(url, options, retryCount + 1);
+        }
 
         if (!response.ok) {
             const text = await response.text();
@@ -54,17 +66,7 @@ export const openPhone = {
     async getPhoneNumberId(): Promise<string> {
         if (this._phoneNumberId) return this._phoneNumberId;
 
-        const url = `${BASE_URL}/phone-numbers`;
-        const response = await fetch(url, {
-            headers: { Authorization: `${env.OPENPHONE_API_KEY}` },
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`OpenPhone API Error (getPhoneNumbers): ${response.status} ${text}`);
-        }
-
-        const data = await response.json();
+        const data = await this._request(`${BASE_URL}/phone-numbers`);
         // Find the ID for the configured phone number
         // Clean the env number to match format if needed, assuming E.164 match
         const matching = data.data?.find((p: any) => p.number === env.OPENPHONE_PHONE_NUMBER);
@@ -101,16 +103,7 @@ export const openPhone = {
             url.searchParams.append("pageToken", pageToken);
         }
 
-        const response = await fetch(url.toString(), {
-            headers: { Authorization: `${env.OPENPHONE_API_KEY}` },
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`OpenPhone API Error (getConversations): ${response.status} ${text}`);
-        }
-
-        return await response.json();
+        return await this._request(url.toString());
     },
 
     async sleep(ms: number) {
@@ -142,18 +135,7 @@ export const openPhone = {
             url.searchParams.append("pageToken", pageToken);
         }
 
-        const response = await fetch(url.toString(), {
-            headers: {
-                Authorization: `${env.OPENPHONE_API_KEY}`,
-            },
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`OpenPhone API Error (getMessages): ${response.status} ${text}`);
-        }
-
-        const data = await response.json();
+        const data = await this._request(url.toString());
 
         // Diagnostic: Log first 5 messages to see raw structure for incoming vs outgoing
         if (data.data && data.data.length > 0) {
@@ -196,18 +178,7 @@ export const openPhone = {
         const finalUrl = url.toString();
         console.log("[OpenPhone] Fetching calls:", finalUrl); // debug
 
-        const response = await fetch(finalUrl, {
-            headers: {
-                Authorization: `${env.OPENPHONE_API_KEY}`,
-            },
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`OpenPhone API Error (getCalls): ${response.status} ${text}`);
-        }
-
-        return await response.json();
+        return await this._request(finalUrl);
     },
 
     async verifySignature(body: string, signature: string): Promise<boolean> {
