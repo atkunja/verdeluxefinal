@@ -169,5 +169,22 @@ export const getAllBookingsAdmin = requireAdmin
       };
     });
 
-    return { bookings: bookingsWithDerivedStatus };
+    // Get unread message counts per client for calendar badge
+    const clientIds = [...new Set(bookings.map(b => b.clientId))];
+    const unreadCounts = await db.message.groupBy({
+      by: ['senderId'],
+      where: {
+        senderId: { in: clientIds },
+        isRead: false,
+      },
+      _count: { id: true },
+    });
+    const unreadMap = new Map(unreadCounts.map(u => [u.senderId, u._count.id]));
+
+    const bookingsWithUnread = bookingsWithDerivedStatus.map(booking => ({
+      ...booking,
+      hasUnreadMessages: (unreadMap.get(booking.clientId) || 0) > 0,
+    }));
+
+    return { bookings: bookingsWithUnread };
   });

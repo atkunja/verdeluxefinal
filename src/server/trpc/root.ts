@@ -42,7 +42,7 @@ import { calculateBookingPrice } from "./procedures/admin/calculateBookingPrice"
 import { getBookingAvailability } from "./procedures/admin/getBookingAvailability";
 import { getCleanerAvailabilityDetails } from "./procedures/admin/getCleanerAvailabilityDetails";
 import { generateToken } from "./procedures/dialer/generateToken";
-import { makeCall } from "./procedures/dialer/makeCall";
+// makeCall removed - OpenPhone API does not support programmatic call initiation
 import { getCallHistory } from "./procedures/dialer/getCallHistory";
 import { submitTimeOffRequest } from "./procedures/cleaner/submitTimeOffRequest";
 import { getTimeOffRequests } from "./procedures/cleaner/getTimeOffRequests";
@@ -157,7 +157,7 @@ export const appRouter = createTRPCRouter({
   getCleanerAvailabilityDetails,
   // Dialer procedures
   generateToken,
-  makeCall,
+  // makeCall, // Removed - not supported by OpenPhone API
   getCallHistory,
   time: timeRouter,
   messaging: messagingRouter,

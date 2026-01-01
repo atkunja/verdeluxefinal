@@ -260,17 +260,9 @@ export const openPhone = {
         });
 
         if (!contactUser) {
-            console.log("[OpenPhone] Creating Guest User for:", contactPhone);
-            contactUser = await db.user.create({
-                data: {
-                    firstName: "Guest",
-                    lastName: contactPhone,
-                    phone: contactPhone,
-                    email: `${normalizedDigits}@guest.v-luxe.com`,
-                    password: "guest-no-login-permitted",
-                    role: "CLIENT" as any
-                }
-            });
+            // Skip messages from unregistered contacts (no spam/unknown numbers)
+            console.log("[OpenPhone] Skip upsertMessage: Contact not registered:", contactPhone);
+            return null;
         }
 
         let finalAdminId = adminIdOverride;
@@ -345,16 +337,9 @@ export const openPhone = {
         });
 
         if (!contactUser) {
-            contactUser = await db.user.create({
-                data: {
-                    firstName: "Guest",
-                    lastName: contactPhone,
-                    phone: contactPhone,
-                    email: `${normalizedDigits}@guest-call.v-luxe.com`,
-                    password: "guest-no-login-permitted",
-                    role: "CLIENT" as any
-                }
-            });
+            // Skip calls from unregistered contacts (no spam/unknown numbers)
+            console.log("[OpenPhone] Skip upsertCall: Contact not registered:", contactPhone);
+            return null;
         }
 
         let finalAdminId = adminIdOverride;

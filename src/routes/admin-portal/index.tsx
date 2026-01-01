@@ -419,8 +419,11 @@ function AdminDashboardPage() {
                         to="/admin-portal/bookings"
                         search={{ date: new Date(booking.scheduledDate).toISOString().split("T")[0] } as any}
                         key={booking.id}
-                        className="block p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
+                        className="block p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group relative"
                       >
+                        {booking.hasUnreadMessages && (
+                          <div className="absolute top-3 right-3 w-3 h-3 bg-blue-500 rounded-full animate-pulse" title="Unread messages" />
+                        )}
                         <div className="flex justify-between items-start mb-2">
                           <p className="text-xs font-black text-white group-hover:text-brand-200 transition-colors">
                             {booking.client.firstName} {booking.client.lastName}
