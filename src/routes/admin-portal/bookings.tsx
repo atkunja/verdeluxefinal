@@ -99,7 +99,7 @@ function BookingsPage() {
   const [pendingMove, setPendingMove] = useState<{ id: string; date: string; isRecurring: boolean } | null>(null);
   const queryClient = useQueryClient();
 
-  const bookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({}, { staleTime: 60000 })); // 1 min cache
+  const bookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({}, { staleTime: 5000 }));
   const chargesQuery = useQuery(trpc.payments.listCharges.queryOptions(undefined, { staleTime: 60000 }));
   const holdsQuery = useQuery(trpc.payments.listHolds.queryOptions(undefined, { staleTime: 60000 }));
 
@@ -125,6 +125,8 @@ function BookingsPage() {
             name: `${c.cleaner?.firstName ?? ""} ${c.cleaner?.lastName ?? ""} `.trim(),
             color: c.cleaner?.color || "#163022",
           })),
+          recurrenceId: b.recurrenceId,
+          serviceFrequency: b.serviceFrequency,
         }))
       );
     }
@@ -251,7 +253,9 @@ function BookingsPage() {
     const booking = events.find(e => e.id === id);
     if (!booking) return;
 
-    setPendingMove({ id, date, isRecurring: !!booking.serviceType && booking.serviceType !== "ONE_TIME" });
+    // Robust check for recurrence options
+    const isRecurring = !!booking.recurrenceId || (!!booking.serviceFrequency && booking.serviceFrequency !== "ONE_TIME");
+    setPendingMove({ id, date, isRecurring });
     setMoveModalOpen(true);
   };
 
@@ -420,7 +424,7 @@ function BookingsPage() {
                               <button
                                 key={event.id}
                                 draggable
-                                onDragStart={(e) => handleDragStart(e, event.id)}
+                                onDragStart={(e) => e.dataTransfer.setData("text/plain", event.id)}
                                 onClick={() => setActiveBooking(event)}
                                 onMouseEnter={(e) => {
                                   if (hoverTimeoutRef.current) {
@@ -478,7 +482,15 @@ function BookingsPage() {
                             const dateStr = day.toISOString().slice(0, 10);
                             const dayEvents = filteredEvents.filter((ev) => ev.scheduledDate === dateStr);
                             return (
-                              <div key={dateStr} className="rounded-xl border border-gray-200 bg-[#f9fafb] p-2">
+                              <div
+                                key={dateStr}
+                                className="rounded-xl border border-gray-200 bg-[#f9fafb] p-2"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                  const id = e.dataTransfer.getData("text/plain");
+                                  if (id) handleMovePrompt(id, dateStr);
+                                }}
+                              >
                                 <div className="mb-2 flex items-center justify-between text-xs font-semibold text-gray-700">
                                   <span>{day.toDateString()}</span>
                                   <button
@@ -496,7 +508,7 @@ function BookingsPage() {
                                       <div
                                         key={event.id}
                                         draggable
-                                        onDragStart={(e) => handleDragStart(e, event.id)}
+                                        onDragStart={(e) => e.dataTransfer.setData("text/plain", event.id)}
                                         onClick={() => setActiveBooking(event)}
                                         className="absolute left-1 right-1 rounded-lg border border-gray-200 bg-white p-2 shadow hover:border-[#163022]"
                                         style={{
@@ -983,19 +995,6 @@ async function handleBookingAction(
   // action logic is completely handled inside the setActionModal callback above
 }
 
-function handleDragStart(e: React.DragEvent, id: string) {
-  e.dataTransfer.setData("text/plain", id);
-}
-
-function handleDrop(e: React.DragEvent, dateStr: string, moveBooking: (id: string, newDate: string) => void) {
-  const id = e.dataTransfer.getData("text/plain");
-  if (!id) return;
-  const changeSeries = window.confirm("Change this and future recurring bookings? Click Cancel to move only this booking.");
-  const applyToAll = changeSeries;
-  // In a real impl, call API with applyToAll flag.
-  e.preventDefault();
-  moveBooking(id, dateStr);
-}
 
 function BookingSummaryPanel({
   booking,

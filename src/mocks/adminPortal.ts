@@ -41,6 +41,8 @@ export interface BookingEvent {
   paymentIntentId?: string;
   cleaners?: { name: string; color: string }[];
   status?: string;
+  recurrenceId?: string;
+  serviceFrequency?: string;
 }
 
 export interface ChargeRow {
