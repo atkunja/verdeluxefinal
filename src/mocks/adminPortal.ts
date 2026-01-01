@@ -43,6 +43,7 @@ export interface BookingEvent {
   status?: string;
   recurrenceId?: string;
   serviceFrequency?: string;
+  hasUnreadMessages?: boolean;
 }
 
 export interface ChargeRow {

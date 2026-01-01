@@ -11,6 +11,9 @@ import { uploadMedia } from "~/utils/uploadMedia";
 
 export const Route = createFileRoute("/admin-portal/communications/")({
     component: CommunicationsPage,
+    validateSearch: (search: Record<string, unknown>) => ({
+        contactId: search.contactId ? Number(search.contactId) : undefined,
+    }),
 });
 
 function ContactSkeleton() {
@@ -58,7 +61,14 @@ function CommunicationsPage() {
         notes: ""
     });
 
+    const { contactId } = Route.useSearch();
     const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({}, { staleTime: 300000 })); // 5 mins
+
+    useEffect(() => {
+        if (contactId && !selectedContactId) {
+            setSelectedContactId(contactId);
+        }
+    }, [contactId]);
     const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}, { staleTime: 300000 })); // 5 mins
     const callsQuery = useQuery(trpc.messaging.getCalls.queryOptions({}, { staleTime: 300000 })); // 5 mins
 

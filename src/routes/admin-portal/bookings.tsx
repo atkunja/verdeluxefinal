@@ -1,5 +1,5 @@
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ReactNode, useEffect, useMemo, useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AdminShell } from "~/components/admin/AdminShell";
@@ -127,6 +127,8 @@ function BookingsPage() {
           })),
           recurrenceId: b.recurrenceId,
           serviceFrequency: b.serviceFrequency,
+          hasUnreadMessages: b.hasUnreadMessages,
+          clientId: b.clientId,
         }))
       );
     }
@@ -443,12 +445,15 @@ function BookingsPage() {
                                     setTooltipTarget(null);
                                   }, 200);
                                 }}
-                                className="block w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs shadow hover:border-[#163022] hover:shadow-md transition-all"
+                                className="block w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs shadow hover:border-[#163022] hover:shadow-md transition-all relative"
                                 style={{
                                   borderLeftWidth: '3px',
                                   borderLeftColor: event.providerColor,
                                 }}
                               >
+                                {event.hasUnreadMessages && (
+                                  <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse z-10" title="Unread messages" />
+                                )}
                                 <div className="flex items-center justify-between">
                                   <span className="font-semibold text-gray-800">{event.scheduledTime}</span>
                                   <span
@@ -510,12 +515,15 @@ function BookingsPage() {
                                         draggable
                                         onDragStart={(e) => e.dataTransfer.setData("text/plain", event.id)}
                                         onClick={() => setActiveBooking(event)}
-                                        className="absolute left-1 right-1 rounded-lg border border-gray-200 bg-white p-2 shadow hover:border-[#163022]"
+                                        className="absolute left-1 right-1 rounded-lg border border-gray-200 bg-white p-2 shadow hover:border-[#163022] relative"
                                         style={{
                                           top,
                                           height,
                                         }}
                                       >
+                                        {event.hasUnreadMessages && (
+                                          <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse z-10" title="Unread messages" />
+                                        )}
                                         <div className="flex items-center justify-between text-[11px]">
                                           <span className="font-semibold text-gray-800">
                                             {event.scheduledTime} • {formatDurationLabel(event.durationHours || 1)}
@@ -1097,6 +1105,24 @@ function BookingSummaryPanel({
               <ActionButton label="View Payment Log" color="bg-sky-100 text-sky-700 border border-sky-200" onClick={() => onAction("payment-log")} />
               <ActionButton label="Refund" color="bg-emerald-100 text-emerald-700 border border-emerald-200" onClick={() => onAction("refund")} />
               <ActionButton label="Retry Payment" color="bg-amber-100 text-amber-700 border border-amber-200" onClick={() => onAction("retry-payment")} />
+              {booking.hasUnreadMessages && (
+                <Link
+                  to="/admin-portal/communications"
+                  search={{ contactId: (booking as any).clientId }}
+                  className="col-span-2 block w-full rounded-lg px-3 py-2 text-sm font-semibold text-center bg-red-600 text-white shadow-sm hover:bg-red-700"
+                >
+                  Chat with Client (Unread)
+                </Link>
+              )}
+              {!booking.hasUnreadMessages && (
+                <Link
+                  to="/admin-portal/communications"
+                  search={{ contactId: (booking as any).clientId }}
+                  className="col-span-2 block w-full rounded-lg px-3 py-2 text-sm font-semibold text-center bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200"
+                >
+                  Open Chat
+                </Link>
+              )}
             </div>
             <div className="space-y-2 rounded-lg bg-[#f9fafb] p-3 text-xs text-gray-700">
               <div className="font-semibold text-[#0f172a]">Notifications</div>
@@ -1201,8 +1227,11 @@ function UnassignedList({ bookings, onSelect }: { bookings: BookingEvent[], onSe
             <button
               key={booking.id}
               onClick={() => onSelect(booking)}
-              className="w-full rounded-xl border border-gray-100 bg-gray-50 p-3 text-left transition-all hover:border-[#163022] hover:bg-white hover:shadow-md group"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 p-3 text-left transition-all hover:border-[#163022] hover:bg-white hover:shadow-md group relative"
             >
+              {booking.hasUnreadMessages && (
+                <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm" title="Unread messages" />
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#163022]">
                   {booking.scheduledDate}
