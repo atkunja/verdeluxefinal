@@ -32,13 +32,21 @@ export default defineEventHandler(async (event) => {
         const { type, data } = payload;
         console.log(`[Webhook] Event: ${type}, Object ID: ${data?.object?.id}`);
 
+        // Fetch primary admin for context
+        const { db } = await import("~/server/db");
+        const admin = await db.user.findFirst({
+            where: { OR: [{ role: "OWNER" }, { role: "ADMIN" }] },
+            orderBy: { id: "asc" }
+        });
+        const adminId = admin?.id || 1;
+
         if (type.startsWith("message.")) {
             const message = data.object;
-            const result = await openPhone.upsertMessage(message);
+            const result = await openPhone.upsertMessage(message, adminId);
             console.log("[Webhook] Message upsert result:", result ? "SUCCESS" : "SKIPPED (no contact phone)");
         } else if (type.startsWith("call.")) {
             const call = data.object;
-            const result = await openPhone.upsertCall(call);
+            const result = await openPhone.upsertCall(call, adminId);
             console.log("[Webhook] Call upsert result:", result ? "SUCCESS" : "SKIPPED (no contact phone)");
         }
 

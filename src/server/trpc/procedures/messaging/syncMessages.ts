@@ -22,6 +22,9 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
         console.log(`[Sync] Starting ${sinceDate ? 'incremental' : 'full'} pagination message sync...`);
         if (sinceDate) console.log(`[Sync] Fetching messages since: ${sinceDate.toISOString()}`);
 
+        // Create a cache for the duration of this sync to avoid redundant DB lookups
+        const contactCache = new Map<string, any>();
+
         // 2. Paginate through ALL conversations
         do {
             console.log(`[Sync] Fetching conversation page ${convPage}...`);
@@ -29,15 +32,16 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
             const conversations = (convData.data || []) as any[];
             nextPageToken = convData.nextPageToken;
 
-            // Process this page of conversations - reduced batch size to avoid rate limits
-            const BATCH_SIZE = 2;
+            // Process this page of conversations - increased batch size for speed
+            const BATCH_SIZE = 5;
             for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
                 const batch = conversations.slice(i, i + BATCH_SIZE);
-                // Process sequentially instead of in parallel to avoid rate limits
-                for (const conv of batch) {
+
+                // Parallelize within the batch, but use sequential upserts per conversation to maintain order
+                await Promise.all(batch.map(async (conv) => {
                     // Skip if the conversation hasn't been updated since our last sync
                     if (sinceDate && conv.updatedAt && new Date(conv.updatedAt) <= sinceDate) {
-                        continue;
+                        return;
                     }
 
                     // Extract participants 
@@ -50,18 +54,19 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
                             return normalized !== systemDigits && normalized.length > 5;
                         });
 
-                    if (participants.length === 0) continue;
+                    if (participants.length === 0) return;
 
                     // Sync messages for each conversation
                     try {
                         const msgsData = await openPhone.getMessages(participants, undefined);
                         const messages = (msgsData.data || []) as any[];
 
+                        // Upsert messages sequentially within a conversation to ensure order/consistency
                         for (const msg of messages) {
                             if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
                                 break;
                             }
-                            await openPhone.upsertMessage(msg, adminId);
+                            await openPhone.upsertMessage(msg, adminId, { contactCache });
                             count++;
                         }
                     } catch (err: any) {
@@ -72,15 +77,9 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
                             throw err;
                         }
                     }
-
-                    // Delay between each conversation to avoid rate limits
-                    await openPhone.sleep(300);
-                }
-                // Delay between batches
-                await openPhone.sleep(500);
+                }));
             }
             convPage++;
-            await openPhone.sleep(500);
         } while (nextPageToken);
 
         return { success: true, count };

@@ -69,8 +69,11 @@ function CommunicationsPage() {
             setSelectedContactId(contactId);
         }
     }, [contactId]);
-    const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}, { staleTime: 300000 })); // 5 mins
-    const callsQuery = useQuery(trpc.messaging.getCalls.queryOptions({}, { staleTime: 300000 })); // 5 mins
+    const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}, {
+        staleTime: 5000,
+        refetchInterval: 10000, // Poll every 10 seconds for new messages
+    }));
+    const callsQuery = useQuery(trpc.messaging.getCalls.queryOptions({}, { staleTime: 60000 }));
 
     const sendMessageMutation = useMutation(
         trpc.messaging.sendMessage.mutationOptions({

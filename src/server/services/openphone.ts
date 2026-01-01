@@ -220,7 +220,7 @@ export const openPhone = {
         return digest === signature;
     },
 
-    async upsertMessage(msg: any, adminIdOverride?: number) {
+    async upsertMessage(msg: any, adminId: number, options?: { contactCache?: Map<string, any> }) {
         const { db } = await import("~/server/db");
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
@@ -255,47 +255,48 @@ export const openPhone = {
         }
 
         const normalizedDigits = contactPhone.replace(/\D/g, "");
-        let contactUser = await db.user.findFirst({
-            where: { phone: { contains: normalizedDigits.slice(-10) } }
-        });
+        const cacheKey = normalizedDigits.slice(-10);
+        let contactUser = options?.contactCache?.get(cacheKey);
 
         if (!contactUser) {
-            // If not found in User, check Lead table
-            const lead = await db.lead.findFirst({
-                where: { phone: { contains: normalizedDigits.slice(-10) } }
+            contactUser = await db.user.findFirst({
+                where: { phone: { contains: cacheKey } }
             });
 
-            if (lead) {
-                console.log("[OpenPhone] Creating User from Lead:", contactPhone);
-                contactUser = await db.user.create({
-                    data: {
-                        firstName: lead.name.split(' ')[0] || "Lead",
-                        lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
-                        phone: contactPhone,
-                        email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
-                        password: "lead-no-login-permitted",
-                        role: "CLIENT" as any
-                    }
+            if (!contactUser) {
+                // If not found in User, check Lead table
+                const lead = await db.lead.findFirst({
+                    where: { phone: { contains: cacheKey } }
                 });
-            } else {
-                // Skip messages from unregistered contacts (no spam/unknown numbers)
-                console.log("[OpenPhone] Skip upsertMessage: Contact not registered as User or Lead:", contactPhone);
-                return null;
+
+                if (lead) {
+                    console.log("[OpenPhone] Creating User from Lead:", contactPhone);
+                    contactUser = await db.user.create({
+                        data: {
+                            firstName: lead.name.split(' ')[0] || "Lead",
+                            lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
+                            phone: contactPhone,
+                            email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+                            password: "lead-no-login-permitted",
+                            role: "CLIENT" as any
+                        }
+                    });
+                }
+            }
+
+            if (contactUser && options?.contactCache) {
+                options.contactCache.set(cacheKey, contactUser);
             }
         }
 
-        let finalAdminId = adminIdOverride;
-        if (!finalAdminId) {
-            // Prefer the owner or first admin
-            const admin = await db.user.findFirst({
-                where: { OR: [{ role: 'OWNER' }, { role: 'ADMIN' }] },
-                orderBy: { id: 'asc' }
-            });
-            finalAdminId = admin?.id || 1;
+        if (!contactUser) {
+            // Skip messages from unregistered contacts (no spam/unknown numbers)
+            console.log("[OpenPhone] Skip upsertMessage: Contact not registered as User or Lead:", contactPhone);
+            return null;
         }
 
-        const senderId = isOutgoing ? finalAdminId : contactUser.id;
-        const recipientId = isOutgoing ? contactUser.id : finalAdminId;
+        const senderId = isOutgoing ? adminId : contactUser.id;
+        const recipientId = isOutgoing ? contactUser.id : adminId;
 
         // OpenPhone API v1 uses 'text', but some webhooks or older versions might use 'content' or 'body'
         let content = msg.text || msg.body || msg.content || "";
@@ -323,7 +324,7 @@ export const openPhone = {
         });
     },
 
-    async upsertCall(call: any, adminIdOverride?: number) {
+    async upsertCall(call: any, adminId: number, options?: { contactCache?: Map<string, any> }) {
         const { db } = await import("~/server/db");
         const systemPhone = env.OPENPHONE_PHONE_NUMBER || "";
 
@@ -351,39 +352,44 @@ export const openPhone = {
         if (!contactPhone) return null;
 
         const normalizedDigits = contactPhone.replace(/\D/g, "");
-        let contactUser = await db.user.findFirst({
-            where: { phone: { contains: normalizedDigits.slice(-10) } }
-        });
+        const cacheKey = normalizedDigits.slice(-10);
+        let contactUser = options?.contactCache?.get(cacheKey);
 
         if (!contactUser) {
-            // If not found in User, check Lead table
-            const lead = await db.lead.findFirst({
-                where: { phone: { contains: normalizedDigits.slice(-10) } }
+            contactUser = await db.user.findFirst({
+                where: { phone: { contains: cacheKey } }
             });
 
-            if (lead) {
-                console.log("[OpenPhone] Creating User from Lead:", contactPhone);
-                contactUser = await db.user.create({
-                    data: {
-                        firstName: lead.name.split(' ')[0] || "Lead",
-                        lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
-                        phone: contactPhone,
-                        email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
-                        password: "lead-no-login-permitted",
-                        role: "CLIENT" as any
-                    }
+            if (!contactUser) {
+                // If not found in User, check Lead table
+                const lead = await db.lead.findFirst({
+                    where: { phone: { contains: cacheKey } }
                 });
-            } else {
-                // Skip calls from unregistered contacts (no spam/unknown numbers)
-                console.log("[OpenPhone] Skip upsertCall: Contact not registered as User or Lead:", contactPhone);
-                return null;
+
+                if (lead) {
+                    console.log("[OpenPhone] Creating User from Lead:", contactPhone);
+                    contactUser = await db.user.create({
+                        data: {
+                            firstName: lead.name.split(' ')[0] || "Lead",
+                            lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
+                            phone: contactPhone,
+                            email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+                            password: "lead-no-login-permitted",
+                            role: "CLIENT" as any
+                        }
+                    });
+                }
+            }
+
+            if (contactUser && options?.contactCache) {
+                options.contactCache.set(cacheKey, contactUser);
             }
         }
 
-        let finalAdminId = adminIdOverride;
-        if (!finalAdminId) {
-            const firstAdmin = await db.user.findFirst({ where: { role: 'ADMIN' } });
-            finalAdminId = firstAdmin?.id || 1;
+        if (!contactUser) {
+            // Skip calls from unregistered contacts (no spam/unknown numbers)
+            console.log("[OpenPhone] Skip upsertCall: Contact not registered as User or Lead:", contactPhone);
+            return null;
         }
 
         return await (db.callLog as any).upsert({
@@ -397,7 +403,7 @@ export const openPhone = {
                 toNumber: call.to,
                 recordingUrl: call.recording?.url,
                 startTime: new Date(call.createdAt),
-                user: { connect: { id: finalAdminId } },
+                user: { connect: { id: adminId } },
                 contact: { connect: { id: contactUser.id } },
                 transcript: call.transcript,
                 summary: call.summary,

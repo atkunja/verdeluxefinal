@@ -19,6 +19,9 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
 
         console.log(`[Sync] Starting ${sinceDate ? 'incremental' : 'full'} pagination call sync...`);
 
+        // Create a cache for the duration of this sync to avoid redundant DB lookups
+        const contactCache = new Map<string, any>();
+
         // 2. Paginate through ALL conversations to get participants
         do {
             console.log(`[Sync] Fetching conversation page ${pPage}...`);
@@ -26,12 +29,13 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
             const conversations = (convData.data || []) as any[];
             nextPageToken = convData.nextPageToken;
 
-            // Process batch of conversations - reduced batch size to avoid rate limits
-            const BATCH_SIZE = 2;
+            // Process batch of conversations - increased batch size for better throughput
+            const BATCH_SIZE = 5;
             for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
                 const batch = conversations.slice(i, i + BATCH_SIZE);
-                // Process sequentially instead of in parallel to avoid rate limits
-                for (const conv of batch) {
+
+                // Process in parallel to speed up sync
+                await Promise.all(batch.map(async (conv) => {
                     // Extract participants similar to syncMessages
                     const participants = (conv.participants || [])
                         .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
@@ -42,7 +46,7 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
                             return normalized !== systemDigits && normalized.length > 5;
                         });
 
-                    if (participants.length === 0) continue;
+                    if (participants.length === 0) return;
 
                     // Fetch calls for these participants
                     try {
@@ -53,7 +57,7 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
                             if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
                                 break;
                             }
-                            await openPhone.upsertCall(callItem, adminId);
+                            await openPhone.upsertCall(callItem, adminId, { contactCache });
                             count++;
                         }
                     } catch (err: any) {
@@ -64,16 +68,10 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
                             throw err;
                         }
                     }
-
-                    // Delay between each conversation to avoid rate limits
-                    await openPhone.sleep(300);
-                }
-                // Delay between batches
-                await openPhone.sleep(500);
+                }));
             }
 
             pPage++;
-            await openPhone.sleep(500);
         } while (nextPageToken);
 
         return { success: true, count };
