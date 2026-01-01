@@ -70,8 +70,8 @@ function CommunicationsPage() {
         }
     }, [contactId]);
     const messagesQuery = useQuery(trpc.messaging.getMessages.queryOptions({}, {
-        staleTime: 5000,
-        refetchInterval: 10000, // Poll every 10 seconds for new messages
+        staleTime: 0,
+        refetchInterval: 2000, // Poll every 2 seconds for new messages
     }));
 
     const sendMessageMutation = useMutation(
