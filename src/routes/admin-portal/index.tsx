@@ -205,15 +205,25 @@ function AdminDashboardPage() {
   const tasksQuery = useQuery(trpc.getAdminTasks.queryOptions(undefined, { staleTime: 5000 }));
   const pendingChargesQuery = useQuery(trpc.payments.getPendingCharges.queryOptions(undefined, { staleTime: 5000 }));
 
+  const todaysDate = useMemo(() => new Date(), []);
+  const [selectedDate, setSelectedDate] = useState<Date>(todaysDate);
+
+  const toLocalISO = (d: Date) => {
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+  };
+
+  const dayBookingsQuery = useQuery(trpc.getAllBookingsAdmin.queryOptions({
+    startDate: toLocalISO(selectedDate),
+    endDate: toLocalISO(selectedDate)
+  }, { staleTime: 5000 }));
+
   const chargeMutation = useMutation(trpc.stripe.createChargeWithSavedMethod.mutationOptions({
     onSuccess: () => {
       pendingChargesQuery.refetch();
       tasksQuery.refetch();
     }
   }));
-
-  const todaysDate = useMemo(() => new Date(), []);
-  const [selectedDate, setSelectedDate] = useState<Date>(todaysDate);
 
   const handleCharge = async (bookingId: string, customerId: number, customerName: string, amount: number) => {
     const ok = window.confirm(`Charge $${amount.toFixed(2)} to ${customerName}'s card?`);
@@ -389,19 +399,39 @@ function AdminDashboardPage() {
               </div>
 
               <div className="pt-8 border-t border-white/5 space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-brand-400">Scheduled Overview</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-400">
+                  Agenda • {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(selectedDate)}
+                </p>
                 <div className="space-y-3">
-                  {tasksQuery.data?.slice(0, 3).map(task => (
-                    <div key={task.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="text-xs font-black text-white group-hover:text-brand-200 transition-colors">{task.title}</p>
-                        <span className="text-[9px] font-bold text-brand-400">{task.time}</span>
-                      </div>
-                      <p className="text-[11px] font-medium text-brand-300 leading-relaxed line-clamp-2">{task.description}</p>
+                  {dayBookingsQuery.isLoading ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="h-16 rounded-2xl bg-white/5 animate-pulse" />
+                      <div className="h-16 rounded-2xl bg-white/5 animate-pulse" />
                     </div>
-                  ))}
-                  {(!tasksQuery.data || tasksQuery.data.length === 0) && (
-                    <p className="text-xs text-brand-500 italic text-center py-4">No events scheduled.</p>
+                  ) : dayBookingsQuery.data?.bookings.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 text-center">
+                      <CalendarDays className="h-6 w-6 text-brand-500 mx-auto opacity-50 mb-2" />
+                      <p className="text-xs text-brand-400 font-medium">No jobs scheduled</p>
+                    </div>
+                  ) : (
+                    dayBookingsQuery.data?.bookings.map((booking: any) => (
+                      <Link
+                        to="/admin-portal/bookings"
+                        search={{ date: booking.scheduledDate.split("T")[0] } as any}
+                        key={booking.id}
+                        className="block p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <p className="text-xs font-black text-white group-hover:text-brand-200 transition-colors">
+                            {booking.client.firstName} {booking.client.lastName}
+                          </p>
+                          <span className="text-[9px] font-bold text-brand-400">{booking.scheduledTime}</span>
+                        </div>
+                        <p className="text-[11px] font-medium text-brand-300 leading-relaxed truncate">
+                          {booking.serviceType} • {booking.city || "Detroit"}
+                        </p>
+                      </Link>
+                    ))
                   )}
                 </div>
               </div>
