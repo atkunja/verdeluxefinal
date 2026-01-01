@@ -26,42 +26,54 @@ export const syncCalls = requireAdmin.mutation(async ({ ctx }) => {
             const conversations = (convData.data || []) as any[];
             nextPageToken = convData.nextPageToken;
 
-            // Process batch of conversations
-            const BATCH_SIZE = 5;
+            // Process batch of conversations - reduced batch size to avoid rate limits
+            const BATCH_SIZE = 2;
             for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
                 const batch = conversations.slice(i, i + BATCH_SIZE);
-                await Promise.all(batch.map(async (conv) => {
+                // Process sequentially instead of in parallel to avoid rate limits
+                for (const conv of batch) {
                     // Extract participants similar to syncMessages
                     const participants = (conv.participants || [])
                         .map((p: any) => typeof p === 'object' ? p.phoneNumber : p)
                         .filter((p: string | undefined) => {
                             if (!p || typeof p !== 'string') return false;
                             const normalized = p.replace(/\D/g, "");
-                            // Filter out our own number if needed, but getCalls needs the other party
                             const systemDigits = (env.OPENPHONE_PHONE_NUMBER || "").replace(/\D/g, "");
                             return normalized !== systemDigits && normalized.length > 5;
                         });
 
-                    if (participants.length === 0) return;
+                    if (participants.length === 0) continue;
 
                     // Fetch calls for these participants
-                    // We only need 1 page of calls usually if running incrementally
-                    const callData = await openPhone.getCalls(participants, undefined);
-                    const calls = (callData.data || []) as any[];
+                    try {
+                        const callData = await openPhone.getCalls(participants, undefined);
+                        const calls = (callData.data || []) as any[];
 
-                    let hasReachedOldCalls = false;
-                    await Promise.all(calls.map(async (callItem) => {
-                        if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
-                            hasReachedOldCalls = true;
+                        for (const callItem of calls) {
+                            if (sinceDate && new Date(callItem.createdAt) <= sinceDate) {
+                                break;
+                            }
+                            await openPhone.upsertCall(callItem, adminId);
+                            count++;
                         }
-                        await openPhone.upsertCall(callItem, adminId);
-                        count++;
-                    }));
-                }));
+                    } catch (err: any) {
+                        if (err.message?.includes('429')) {
+                            console.log('[Sync] Rate limited, waiting 5s...');
+                            await openPhone.sleep(5000);
+                        } else {
+                            throw err;
+                        }
+                    }
+
+                    // Delay between each conversation to avoid rate limits
+                    await openPhone.sleep(300);
+                }
+                // Delay between batches
+                await openPhone.sleep(500);
             }
 
             pPage++;
-            await openPhone.sleep(100);
+            await openPhone.sleep(500);
         } while (nextPageToken);
 
         return { success: true, count };

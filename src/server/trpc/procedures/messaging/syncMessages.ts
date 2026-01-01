@@ -29,14 +29,15 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
             const conversations = (convData.data || []) as any[];
             nextPageToken = convData.nextPageToken;
 
-            // Process this page of conversations in parallel with a concurrency limit
-            const BATCH_SIZE = 5;
+            // Process this page of conversations - reduced batch size to avoid rate limits
+            const BATCH_SIZE = 2;
             for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
                 const batch = conversations.slice(i, i + BATCH_SIZE);
-                await Promise.all(batch.map(async (conv) => {
+                // Process sequentially instead of in parallel to avoid rate limits
+                for (const conv of batch) {
                     // Skip if the conversation hasn't been updated since our last sync
                     if (sinceDate && conv.updatedAt && new Date(conv.updatedAt) <= sinceDate) {
-                        return;
+                        continue;
                     }
 
                     // Extract participants 
@@ -49,31 +50,37 @@ export const syncMessages = requireAdmin.mutation(async ({ ctx }) => {
                             return normalized !== systemDigits && normalized.length > 5;
                         });
 
-                    if (participants.length === 0) return;
+                    if (participants.length === 0) continue;
 
                     // Sync messages for each conversation
-                    let msgPageToken: string | undefined = undefined;
-                    // Most incremental syncs only need 1 page, we'll cap at 2 for performance
-                    for (let pCount = 0; pCount < 2; pCount++) {
-                        const msgsData = await openPhone.getMessages(participants, msgPageToken);
+                    try {
+                        const msgsData = await openPhone.getMessages(participants, undefined);
                         const messages = (msgsData.data || []) as any[];
-                        msgPageToken = msgsData.nextPageToken;
 
-                        let hasReachedOldMessages = false;
-                        // Parallelize upserts within a message page
-                        await Promise.all(messages.map(async (msg) => {
+                        for (const msg of messages) {
                             if (sinceDate && new Date(msg.createdAt) <= sinceDate) {
-                                hasReachedOldMessages = true;
+                                break;
                             }
                             await openPhone.upsertMessage(msg, adminId);
                             count++;
-                        }));
-
-                        if (!msgPageToken || hasReachedOldMessages) break;
+                        }
+                    } catch (err: any) {
+                        if (err.message?.includes('429')) {
+                            console.log('[Sync] Rate limited, waiting 5s...');
+                            await openPhone.sleep(5000);
+                        } else {
+                            throw err;
+                        }
                     }
-                }));
+
+                    // Delay between each conversation to avoid rate limits
+                    await openPhone.sleep(300);
+                }
+                // Delay between batches
+                await openPhone.sleep(500);
             }
             convPage++;
+            await openPhone.sleep(500);
         } while (nextPageToken);
 
         return { success: true, count };
