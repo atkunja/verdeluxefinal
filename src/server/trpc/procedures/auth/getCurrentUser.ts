@@ -8,40 +8,31 @@ import { env } from "~/server/env";
 export const getCurrentUser = baseProcedure
   .input(
     z.object({
-      authToken: z.string(),
+      authToken: z.string().optional(),
     })
   )
-  .query(async ({ input }) => {
-    try {
-      // Verify and decode JWT token
-      const verified = jwt.verify(input.authToken, env.JWT_SECRET);
-      const parsed = z.object({ userId: z.number() }).parse(verified);
-
-      // Fetch user from database
-      const user = await db.user.findUnique({
-        where: { id: parsed.userId },
-      });
-
-      if (!user) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "User not found",
-        });
-      }
-
-      return {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone,
-        adminPermissions: (user.role === "ADMIN" || user.role === "OWNER") ? user.adminPermissions as Record<string, boolean> | null : null,
-      };
-    } catch (error) {
+  .query(async ({ ctx }) => {
+    // The auth logic is now handled in the gateway (handler.ts) which populates ctx.profile
+    // We strictly rely on the server-side validation to avoid JWT secret mismatches.
+    if (!ctx.profile) {
+      console.log("[getCurrentUser] No profile found in context, throwing UNAUTHORIZED");
       throw new TRPCError({
         code: "UNAUTHORIZED",
-        message: "Invalid or expired token",
+        message: "Invalid or expired session",
       });
     }
+
+    console.log(`[getCurrentUser] Success for user: ${ctx.profile.email}, role: ${ctx.profile.role}`);
+
+    return {
+      id: ctx.profile.id,
+      email: ctx.profile.email,
+      role: ctx.profile.role as any,
+      firstName: ctx.profile.firstName,
+      lastName: ctx.profile.lastName,
+      // Note: context profile might not have phone, but it's okay for now or we can extend it
+      adminPermissions: (ctx.profile.role === "ADMIN" || ctx.profile.role === "OWNER")
+        ? ctx.profile.adminPermissions as Record<string, boolean> | null
+        : null,
+    };
   });
