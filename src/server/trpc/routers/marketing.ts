@@ -1,6 +1,6 @@
 
 import { z } from "zod";
-import { createTRPCRouter, requireAdmin, publicProcedure } from "~/server/trpc/main";
+import { createTRPCRouter, requireAdmin, baseProcedure as publicProcedure } from "~/server/trpc/main";
 import { db } from "~/server/db";
 import { createCampaign } from "../procedures/marketing/createCampaign";
 import { scheduleCampaign } from "../procedures/marketing/scheduleCampaign";
