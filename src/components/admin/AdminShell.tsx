@@ -145,8 +145,9 @@ function AdminSidebar() {
     });
   }, [hasPermission, role]);
 
-  const mainNavItems = filteredNavItems.slice(0, filteredNavItems.findIndex(i => i.label === "Management") || 4);
-  const opsNavItems = filteredNavItems.slice(filteredNavItems.findIndex(i => i.label === "Management") || 4);
+  const managementIndex = filteredNavItems.findIndex(i => i.label === "Management");
+  const mainNavItems = managementIndex !== -1 ? filteredNavItems.slice(0, managementIndex) : filteredNavItems;
+  const opsNavItems = managementIndex !== -1 ? filteredNavItems.slice(managementIndex) : [];
 
 
   return (
