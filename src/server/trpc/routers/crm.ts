@@ -5,6 +5,7 @@ import { updateLead } from "../procedures/crm/updateLead";
 import { deleteLead } from "../procedures/crm/deleteLead";
 import { analyzeCallTranscript } from "../procedures/ai/analyzeCallTranscript";
 import { convertLeadToBooking } from "../procedures/crm/convertLeadToBooking";
+import { convertLeadToClient } from "../procedures/crm/convertLeadToClient";
 
 import { getLeadSources } from "../procedures/crm/getLeadSources";
 import { createLeadSource } from "../procedures/crm/createLeadSource";
@@ -20,6 +21,7 @@ export const crmRouter = createTRPCRouter({
   deleteLead,
   analyzeCallTranscript,
   convertLeadToBooking,
+  convertLeadToClient,
   getLeadSources,
   createLeadSource,
   deleteLeadSource,

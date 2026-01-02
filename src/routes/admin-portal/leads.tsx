@@ -207,14 +207,24 @@ function LeadsPipelinePage() {
     updateStatusMutation.mutate({ id, status });
   };
 
-  const navigate = useNavigate();
+  const convertClientMutation = useMutation({
+    ...trpc.crm.convertLeadToClient.mutationOptions(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: trpc.crm.getLeads.queryOptions().queryKey });
+      if (data.isNewUser) {
+        alert("Lead converted to Client! You can now message them.");
+      } else {
+        alert("Lead linked to existing Client!");
+      }
+    },
+    onError: (err) => {
+      alert("Failed to convert lead: " + err.message);
+    }
+  });
 
   const handleConvert = (lead: typeof leads[0]) => {
-    if (!window.confirm(`Convert ${lead.name} to a booking?`)) return;
-    void navigate({
-      to: "/admin-portal/bookings",
-      search: { createFromLeadId: lead.id } as any
-    });
+    if (!window.confirm(`Convert ${lead.name} to a Client? This will create a user account for them.`)) return;
+    convertClientMutation.mutate({ leadId: lead.id });
   };
 
   const deleteLeadMutation = useMutation({
@@ -413,7 +423,7 @@ function LeadsPipelinePage() {
                             onClick={() => handleConvert(lead)}
                             className="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
                           >
-                            Convert
+                            Convert to Client
                           </button>
                         )}
                         <button
@@ -500,7 +510,7 @@ function LeadsPipelinePage() {
                           onClick={() => handleConvert(lead)}
                           className="h-8 px-3 rounded-lg bg-[#163022] text-xs font-bold text-white hover:bg-[#264e3c] transition-all"
                         >
-                          Convert
+                          Convert to Client
                         </button>
                       )}
                       <button
