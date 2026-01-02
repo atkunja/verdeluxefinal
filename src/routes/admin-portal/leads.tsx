@@ -207,24 +207,14 @@ function LeadsPipelinePage() {
     updateStatusMutation.mutate({ id, status });
   };
 
-  const convertClientMutation = useMutation({
-    ...trpc.crm.convertLeadToClient.mutationOptions(),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: trpc.crm.getLeads.queryOptions().queryKey });
-      if (data.isNewUser) {
-        alert("Lead converted to Client! You can now message them.");
-      } else {
-        alert("Lead linked to existing Client!");
-      }
-    },
-    onError: (err) => {
-      alert("Failed to convert lead: " + err.message);
-    }
-  });
+  const navigate = useNavigate();
 
   const handleConvert = (lead: typeof leads[0]) => {
-    if (!window.confirm(`Convert ${lead.name} to a Client? This will create a user account for them.`)) return;
-    convertClientMutation.mutate({ leadId: lead.id });
+    if (!window.confirm(`Convert ${lead.name} to a Client? This will take you to the booking screen.`)) return;
+    navigate({
+      to: "/admin-portal/bookings",
+      search: { createFromLeadId: lead.id },
+    });
   };
 
   const deleteLeadMutation = useMutation({
