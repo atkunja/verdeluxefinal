@@ -252,7 +252,11 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
           </nav>
 
           {/* Avatar at bottom */}
-          <div className="mt-auto pb-2">
+          <div className="mt-auto pb-2 flex flex-col items-center gap-1">
+            <div className="text-[10px] text-gray-400 text-center leading-tight">
+              {user?.role}<br />
+              Bk: {String((user?.adminPermissions as any)?.manage_bookings)}
+            </div>
             {user ? (
               <div className="w-10 h-10 rounded-full bg-[#163022] text-white flex items-center justify-center font-semibold text-sm shadow-md ring-2 ring-white">
                 {user.firstName?.[0] || user.email?.[0] || "U"}
