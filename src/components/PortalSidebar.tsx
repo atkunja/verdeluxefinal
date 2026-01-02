@@ -25,6 +25,14 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
   ]); // Default expanded
   const router = useRouterState();
   const { user } = useAuthStore();
+
+  // Debug log for permissions issue
+  console.log("PortalSidebar render:", {
+    userId: user?.id,
+    role: user?.role,
+    perms: user?.adminPermissions
+  });
+
   const baseRoute =
     portalType === "admin"
       ? "/admin-portal"
