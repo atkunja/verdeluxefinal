@@ -51,6 +51,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.58.1",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "redaxios": "^0.5.1",
     "stripe": "^16.0.0",
     "superjson": "^2.2.2",
