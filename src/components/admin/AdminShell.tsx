@@ -19,6 +19,7 @@ import {
 import { useAuthStore } from "~/stores/authStore";
 import { useTRPC } from "~/trpc/react";
 import { useQuery } from "@tanstack/react-query";
+import { useAdminPermissions } from "~/hooks/useAdminPermissions";
 
 interface AdminShellProps {
   title?: string;
@@ -41,9 +42,35 @@ const navItems = [
 
 export function AdminShell({ title, subtitle, children, actions }: AdminShellProps) {
   const { user } = useAuthStore();
-  const isAdmin = user?.role === "ADMIN" || user?.role === "OWNER";
+  const { hasPermission, isLoading, role } = useAdminPermissions();
+  const isAdmin = role === "ADMIN" || role === "OWNER";
+  const router = useRouterState();
 
-  if (!isAdmin) {
+  // Helper to check if current route is allowed
+  const isAllowed = useMemo(() => {
+    if (role === "OWNER") return true;
+    const path = router.location.pathname;
+
+    if (path.startsWith("/admin-portal/bookings")) return hasPermission("manage_bookings");
+    if (path.startsWith("/admin-portal/bank-transactions") || path.startsWith("/admin-portal/billing")) return hasPermission("access_bank");
+    if (path.startsWith("/admin-portal/revenue-reports")) return hasPermission("view_reports");
+    if (path.startsWith("/admin-portal/management")) return hasPermission("manage_admins");
+    if (path.startsWith("/admin-portal/communications")) return hasPermission("use_dialer");
+    if (path.startsWith("/admin-portal/leads") || path.startsWith("/admin-portal/signups")) return hasPermission("manage_customers");
+    if (path.startsWith("/admin-portal/schedule-requests")) return hasPermission("manage_time_off_requests");
+
+    return true; // Default allow (e.g. Dashboard)
+  }, [role, hasPermission, router.location.pathname]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f3f0e6] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-brand-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAdmin || !isAllowed) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-premium p-10 max-w-md w-full text-center border border-slate-100">
@@ -97,6 +124,30 @@ export function AdminShell({ title, subtitle, children, actions }: AdminShellPro
 
 function AdminSidebar() {
   const router = useRouterState();
+  const { hasPermission, role } = useAdminPermissions();
+
+  const filteredNavItems = useMemo(() => {
+    return navItems.filter(item => {
+      if (role === "OWNER") return true;
+
+      switch (item.label) {
+        case "Dashboard": return true;
+        case "Leads": return hasPermission("manage_customers");
+        case "Bookings": return hasPermission("manage_bookings");
+        case "Messages": return hasPermission("use_dialer");
+        case "Management": return hasPermission("manage_admins");
+        case "Bank": return hasPermission("access_bank");
+        case "Schedule": return hasPermission("manage_time_off_requests");
+        case "Revenue": return hasPermission("view_reports");
+        case "Signups": return hasPermission("manage_customers");
+        default: return true;
+      }
+    });
+  }, [hasPermission, role]);
+
+  const mainNavItems = filteredNavItems.slice(0, filteredNavItems.findIndex(i => i.label === "Management") || 4);
+  const opsNavItems = filteredNavItems.slice(filteredNavItems.findIndex(i => i.label === "Management") || 4);
+
 
   return (
     <aside className="w-64 bg-white border-r border-slate-100 hidden lg:flex flex-col h-screen shrink-0 z-50 shadow-sm">
@@ -129,7 +180,7 @@ function AdminSidebar() {
         <div>
           <p className="px-3 mb-4 text-[11px] font-bold uppercase tracking-widest text-slate-400">Main Menu</p>
           <nav className="flex flex-col gap-1.5">
-            {navItems.slice(0, 4).map((item) => {
+            {mainNavItems.map((item) => {
               const Icon = item.icon;
               const active = router.location.pathname === item.path ||
                 (item.path !== "/admin-portal" && router.location.pathname.startsWith(item.path));
@@ -151,7 +202,7 @@ function AdminSidebar() {
         <div>
           <p className="px-3 mb-4 text-[11px] font-bold uppercase tracking-widest text-slate-400">Operations</p>
           <nav className="flex flex-col gap-1.5">
-            {navItems.slice(4).map((item) => {
+            {opsNavItems.map((item) => {
               const Icon = item.icon;
               const active = router.location.pathname === item.path ||
                 (item.path !== "/admin-portal" && router.location.pathname.startsWith(item.path));
