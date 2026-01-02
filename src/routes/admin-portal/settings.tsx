@@ -188,6 +188,8 @@ function CommunicationsTab() {
         </button>
       </div>
 
+      <TestEmailSection />
+
       <div className="grid gap-6">
         {(templates || []).map((template) => (
           <div key={template.id} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -433,6 +435,55 @@ function ChecklistTab() {
   );
 }
 
+function TestEmailSection() {
+  const trpc = useTRPC();
+  const sendTestMutation = useMutation(trpc.email.sendTestEmail.mutationOptions());
+  const [email, setEmail] = useState("");
+
+  return (
+    <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div>
+        <h3 className="font-bold text-blue-900 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4" /> Test Your Email Configuration
+        </h3>
+        <p className="text-sm text-blue-700/80 mt-1">
+          Send a test email to verify that your SMTP settings are correct.
+        </p>
+      </div>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!email) return;
+          try {
+            await sendTestMutation.mutateAsync({ email });
+            toast.success("Test email sent!");
+            setEmail("");
+          } catch (err: any) {
+            toast.error(err.message || "Failed to send test email");
+          }
+        }}
+        className="flex gap-2 w-full md:w-auto"
+      >
+        <input
+          type="email"
+          placeholder="Enter email address..."
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="rounded-xl border border-blue-200 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none w-full md:w-64"
+        />
+        <button
+          type="submit"
+          disabled={sendTestMutation.isPending}
+          className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+        >
+          {sendTestMutation.isPending ? "Sending..." : "Send Test"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function CreateChecklistForm({ onCancel, onSuccess }: { onCancel: () => void, onSuccess: () => void }) {
   const trpc = useTRPC();
   const createMutation = useMutation(trpc.createChecklistTemplate.mutationOptions());
@@ -653,6 +704,10 @@ function WebsiteTab() {
         </div>
       </section>
 
+      <BlogSection />
+
+      <LocationSection />
+
       {/* Keeping Legal as Mock for now since no backend yet */}
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm opacity-60 pointer-events-none grayscale">
         <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -669,7 +724,7 @@ function WebsiteTab() {
           </div>
         </div>
       </section>
-    </div>
+    </div >
   );
 }
 
@@ -677,6 +732,7 @@ function WebsiteTab() {
 function PricingTab() {
   const [isCreating, setIsCreating] = useState(false);
   const trpc = useTRPC();
+  const queryClient = useQueryClient(); // Added queryClient for CouponsSection
 
   const { data, isLoading, refetch } = useQuery(trpc.getPricingRules.queryOptions());
   const createMutation = useMutation(trpc.createPricingRule.mutationOptions());
@@ -715,7 +771,7 @@ function PricingTab() {
   const rules = data?.pricingRules || [];
 
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex justify-end mb-6">
         <button
           onClick={() => setIsCreating(true)}
@@ -748,7 +804,7 @@ function PricingTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rules.map((rule) => (
+            {rules.map((rule: any) => (
               <PricingRuleRow
                 key={rule.id}
                 rule={rule}
@@ -766,6 +822,8 @@ function PricingTab() {
           </tbody>
         </table>
       </div>
+
+      <CouponsSection />
     </div>
   );
 }
@@ -1090,5 +1148,245 @@ function DayAvailability({ day }: { day: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+function CouponsSection() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { data: coupons } = useQuery(trpc.marketing.getCoupons.queryOptions());
+  const createMutation = useMutation(trpc.marketing.createCoupon.mutationOptions());
+  const deleteMutation = useMutation(trpc.marketing.deleteCoupon.mutationOptions());
+  const [isCreating, setIsCreating] = useState(false);
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm relative overflow-hidden">
+      <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2 font-heading tracking-tight">
+        <span className="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center"><Tag className="w-4 h-4" /></span>
+        Coupons & Discounts
+      </h3>
+
+      <div className="space-y-3">
+        {isCreating ? (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const code = fd.get("code") as string;
+              const amount = parseFloat(fd.get("amount") as string);
+              const type = fd.get("type") as "PERCENT" | "FIXED_AMOUNT";
+              try {
+                await createMutation.mutateAsync({ code, discountAmount: amount, discountType: type });
+                toast.success("Coupon created");
+                setIsCreating(false);
+                queryClient.invalidateQueries({ queryKey: trpc.marketing.getCoupons.queryOptions().queryKey });
+              } catch (err: any) { toast.error(err.message); }
+            }}
+            className="p-4 bg-pink-50/30 border border-pink-100 rounded-xl mb-4 animate-in slide-in-from-top-2"
+          >
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <input name="code" placeholder="CODE (e.g. SUMMER20)" className="uppercase font-mono font-bold text-sm px-3 py-2 rounded-lg border border-gray-200" required />
+              <select name="type" className="text-sm px-3 py-2 rounded-lg border border-gray-200">
+                <option value="FIXED_AMOUNT">$ Fixed Off</option>
+                <option value="PERCENT">% Off</option>
+              </select>
+              <input name="amount" type="number" placeholder="Amount" step="0.01" className="text-sm px-3 py-2 rounded-lg border border-gray-200" required />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setIsCreating(false)} className="text-xs font-bold text-gray-500 px-3 py-1.5">Cancel</button>
+              <button type="submit" className="text-xs font-bold text-white bg-pink-600 px-3 py-1.5 rounded-lg">Save Coupon</button>
+            </div>
+          </form>
+        ) : (
+          <button onClick={() => setIsCreating(true)} className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-sm hover:border-pink-200 hover:text-pink-600 hover:bg-pink-50/30 transition-all mb-4">
+            + Create New Coupon
+          </button>
+        )}
+
+        {(coupons || []).map((coupon: any) => (
+          <div key={coupon.id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="px-2 py-1 bg-gray-100 rounded text-xs font-mono font-bold text-gray-600">{coupon.code}</div>
+              <div className="text-sm font-semibold text-gray-700">
+                {coupon.discountType === "PERCENT" ? `${coupon.discountAmount}% Off` : `$${coupon.discountAmount} Off`}
+              </div>
+            </div>
+            <button onClick={async () => {
+              if (!confirm("Delete coupon?")) return;
+              await deleteMutation.mutateAsync({ id: coupon.id });
+              queryClient.invalidateQueries({ queryKey: trpc.marketing.getCoupons.queryOptions().queryKey });
+            }} className="text-gray-300 hover:text-red-500 transition-colors">
+              <Trash className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BlogSection() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { data: posts } = useQuery(trpc.marketing.getPosts.queryOptions());
+  const createMutation = useMutation(trpc.marketing.createPost.mutationOptions());
+  const deleteMutation = useMutation(trpc.marketing.deletePost.mutationOptions());
+  const [isCreating, setIsCreating] = useState(false);
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center"><Pencil className="w-4 h-4" /></span>
+          Blog Posts
+        </h3>
+        <button onClick={() => setIsCreating(true)} className="text-sm font-bold bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-900/10 transition-all flex items-center gap-2">
+          + New Post
+        </button>
+      </div>
+
+      {isCreating && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            try {
+              await createMutation.mutateAsync({
+                title: fd.get("title") as string,
+                slug: fd.get("slug") as string,
+                content: fd.get("content") as string,
+                isPublished: fd.get("isPublished") === "on"
+              });
+              toast.success("Post created");
+              setIsCreating(false);
+              queryClient.invalidateQueries({ queryKey: trpc.marketing.getPosts.queryOptions().queryKey });
+            } catch (err: any) { toast.error(err.message); }
+          }}
+          className="p-6 bg-indigo-50/50 border border-indigo-100 rounded-2xl mb-6 space-y-4"
+        >
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-indigo-900 uppercase">Title</label>
+              <input name="title" className="w-full px-4 py-2 rounded-xl border border-indigo-200 text-sm" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-indigo-900 uppercase">Slug (URL)</label>
+              <input name="slug" className="w-full px-4 py-2 rounded-xl border border-indigo-200 text-sm font-mono" placeholder="my-new-post" required />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-indigo-900 uppercase">Content (Markdown)</label>
+            <textarea name="content" rows={6} className="w-full px-4 py-2 rounded-xl border border-indigo-200 text-sm font-mono" required />
+          </div>
+          <div className="flex justify-between items-center">
+            <label className="flex items-center gap-2 text-sm font-bold text-indigo-900 cursor-pointer">
+              <input type="checkbox" name="isPublished" className="w-4 h-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500" />
+              Publish Immediately
+            </label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 rounded-xl text-sm font-bold text-indigo-600 hover:bg-indigo-100">Cancel</button>
+              <button type="submit" className="px-6 py-2 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700">Save Post</button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      <div className="space-y-3">
+        {(posts || []).map((post: any) => (
+          <div key={post.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div>
+              <div className="font-bold text-gray-900 flex items-center gap-2">
+                {post.title}
+                {post.isPublished ?
+                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded uppercase tracking-wider">Published</span> :
+                  <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-[10px] rounded uppercase tracking-wider">Draft</span>
+                }
+              </div>
+              <div className="text-xs text-gray-500 font-mono mt-1">/blog/{post.slug}</div>
+            </div>
+            <button onClick={async () => {
+              if (!confirm("Delete post?")) return;
+              await deleteMutation.mutateAsync({ id: post.id });
+              queryClient.invalidateQueries({ queryKey: trpc.marketing.getPosts.queryOptions().queryKey });
+            }} className="text-gray-400 hover:text-red-500 p-2">
+              <Trash className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+        {(posts || []).length === 0 && !isCreating && <div className="text-center py-8 text-gray-400 text-sm">No blog posts yet.</div>}
+      </div>
+    </section>
+  );
+}
+
+function LocationSection() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { data: locations } = useQuery(trpc.marketing.getLocationPages.queryOptions());
+  const createMutation = useMutation(trpc.marketing.createLocationPage.mutationOptions());
+  const deleteMutation = useMutation(trpc.marketing.deleteLocationPage.mutationOptions());
+  const [isCreating, setIsCreating] = useState(false);
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 font-heading tracking-tight">
+          <span className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center"><MapPin className="w-4 h-4" /></span>
+          Location Pages
+        </h3>
+        <button onClick={() => setIsCreating(true)} className="text-sm font-bold bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 shadow-lg shadow-orange-900/10 transition-all flex items-center gap-2">
+          + Add Location
+        </button>
+      </div>
+
+      {isCreating && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            try {
+              await createMutation.mutateAsync({
+                city: fd.get("city") as string,
+                slug: fd.get("slug") as string,
+              });
+              toast.success("Location page created");
+              setIsCreating(false);
+              queryClient.invalidateQueries({ queryKey: trpc.marketing.getLocationPages.queryOptions().queryKey });
+            } catch (err: any) { toast.error(err.message); }
+          }}
+          className="p-4 bg-orange-50 rounded-xl mb-4 flex gap-3 items-end"
+        >
+          <div className="flex-1">
+            <label className="text-xs font-bold text-orange-900 uppercase block mb-1">City Name</label>
+            <input name="city" placeholder="e.g. Ann Arbor" className="w-full px-3 py-2 rounded-lg border border-orange-200 text-sm" required />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs font-bold text-orange-900 uppercase block mb-1">Slug</label>
+            <input name="slug" placeholder="ann-arbor" className="w-full px-3 py-2 rounded-lg border border-orange-200 text-sm font-mono" required />
+          </div>
+          <button type="submit" className="px-4 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 h-[38px]">Save</button>
+          <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 rounded-lg text-sm font-bold text-orange-600 hover:bg-orange-100 h-[38px]">Cancel</button>
+
+        </form>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {(locations || []).map((loc: any) => (
+          <div key={loc.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:border-orange-200 hover:shadow-sm transition-all">
+            <div>
+              <div className="font-bold text-gray-900">{loc.city}</div>
+              <div className="text-[10px] text-gray-500 font-mono">/locations/{loc.slug}</div>
+            </div>
+            <button onClick={async () => {
+              if (!confirm("Delete location page?")) return;
+              await deleteMutation.mutateAsync({ id: loc.id });
+              queryClient.invalidateQueries({ queryKey: trpc.marketing.getLocationPages.queryOptions().queryKey });
+            }} className="text-gray-300 hover:text-red-500 p-1">
+              <Trash className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

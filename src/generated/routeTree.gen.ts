@@ -23,13 +23,16 @@ import { Route as CleanerPortalIndexImport } from './../routes/cleaner-portal/in
 import { Route as ChecklistIndexImport } from './../routes/checklist/index'
 import { Route as BookingQuizIndexImport } from './../routes/booking-quiz/index'
 import { Route as BookNowIndexImport } from './../routes/book-now/index'
+import { Route as BlogIndexImport } from './../routes/blog/index'
 import { Route as AdminPortalIndexImport } from './../routes/admin-portal/index'
+import { Route as LocationsSlugImport } from './../routes/locations/$slug'
 import { Route as BookingQuizStartImport } from './../routes/booking-quiz/start'
 import { Route as BookingQuizScheduleImport } from './../routes/booking-quiz/schedule'
 import { Route as BookingQuizPaymentImport } from './../routes/booking-quiz/payment'
 import { Route as BookingQuizDetailsImport } from './../routes/booking-quiz/details'
 import { Route as BookingQuizAddressDetailsImport } from './../routes/booking-quiz/address-details'
 import { Route as BookingQuizAddressImport } from './../routes/booking-quiz/address'
+import { Route as BlogSlugImport } from './../routes/blog/$slug'
 import { Route as AdminPortalStorageImport } from './../routes/admin-portal/storage'
 import { Route as AdminPortalSignupsImport } from './../routes/admin-portal/signups'
 import { Route as AdminPortalSettingsImport } from './../routes/admin-portal/settings'
@@ -168,9 +171,21 @@ const BookNowIndexRoute = BookNowIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const BlogIndexRoute = BlogIndexImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AdminPortalIndexRoute = AdminPortalIndexImport.update({
   id: '/admin-portal/',
   path: '/admin-portal/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LocationsSlugRoute = LocationsSlugImport.update({
+  id: '/locations/$slug',
+  path: '/locations/$slug',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -208,6 +223,12 @@ const BookingQuizAddressRoute = BookingQuizAddressImport.update({
   id: '/address',
   path: '/address',
   getParentRoute: () => BookingQuizRoute,
+} as any)
+
+const BlogSlugRoute = BlogSlugImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const AdminPortalStorageRoute = AdminPortalStorageImport.update({
@@ -581,6 +602,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPortalStorageImport
       parentRoute: typeof rootRoute
     }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugImport
+      parentRoute: typeof rootRoute
+    }
     '/booking-quiz/address': {
       id: '/booking-quiz/address'
       path: '/address'
@@ -623,11 +651,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingQuizStartImport
       parentRoute: typeof BookingQuizImport
     }
+    '/locations/$slug': {
+      id: '/locations/$slug'
+      path: '/locations/$slug'
+      fullPath: '/locations/$slug'
+      preLoaderRoute: typeof LocationsSlugImport
+      parentRoute: typeof rootRoute
+    }
     '/admin-portal/': {
       id: '/admin-portal/'
       path: '/admin-portal'
       fullPath: '/admin-portal'
       preLoaderRoute: typeof AdminPortalIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogIndexImport
       parentRoute: typeof rootRoute
     }
     '/book-now/': {
@@ -967,13 +1009,16 @@ export interface FileRoutesByFullPath {
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
   '/booking-quiz/payment': typeof BookingQuizPaymentRoute
   '/booking-quiz/schedule': typeof BookingQuizScheduleRoute
   '/booking-quiz/start': typeof BookingQuizStartRoute
+  '/locations/$slug': typeof LocationsSlugRoute
   '/admin-portal': typeof AdminPortalIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/book-now': typeof BookNowIndexRoute
   '/booking-quiz/': typeof BookingQuizIndexRoute
   '/checklist': typeof ChecklistIndexRoute
@@ -1031,13 +1076,16 @@ export interface FileRoutesByTo {
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
   '/booking-quiz/payment': typeof BookingQuizPaymentRoute
   '/booking-quiz/schedule': typeof BookingQuizScheduleRoute
   '/booking-quiz/start': typeof BookingQuizStartRoute
+  '/locations/$slug': typeof LocationsSlugRoute
   '/admin-portal': typeof AdminPortalIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/book-now': typeof BookNowIndexRoute
   '/booking-quiz': typeof BookingQuizIndexRoute
   '/checklist': typeof ChecklistIndexRoute
@@ -1097,13 +1145,16 @@ export interface FileRoutesById {
   '/admin-portal/settings': typeof AdminPortalSettingsRoute
   '/admin-portal/signups': typeof AdminPortalSignupsRoute
   '/admin-portal/storage': typeof AdminPortalStorageRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/booking-quiz/address': typeof BookingQuizAddressRoute
   '/booking-quiz/address-details': typeof BookingQuizAddressDetailsRoute
   '/booking-quiz/details': typeof BookingQuizDetailsRoute
   '/booking-quiz/payment': typeof BookingQuizPaymentRoute
   '/booking-quiz/schedule': typeof BookingQuizScheduleRoute
   '/booking-quiz/start': typeof BookingQuizStartRoute
+  '/locations/$slug': typeof LocationsSlugRoute
   '/admin-portal/': typeof AdminPortalIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/book-now/': typeof BookNowIndexRoute
   '/booking-quiz/': typeof BookingQuizIndexRoute
   '/checklist/': typeof ChecklistIndexRoute
@@ -1164,13 +1215,16 @@ export interface FileRouteTypes {
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
+    | '/blog/$slug'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
     | '/booking-quiz/payment'
     | '/booking-quiz/schedule'
     | '/booking-quiz/start'
+    | '/locations/$slug'
     | '/admin-portal'
+    | '/blog'
     | '/book-now'
     | '/booking-quiz/'
     | '/checklist'
@@ -1227,13 +1281,16 @@ export interface FileRouteTypes {
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
+    | '/blog/$slug'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
     | '/booking-quiz/payment'
     | '/booking-quiz/schedule'
     | '/booking-quiz/start'
+    | '/locations/$slug'
     | '/admin-portal'
+    | '/blog'
     | '/book-now'
     | '/booking-quiz'
     | '/checklist'
@@ -1291,13 +1348,16 @@ export interface FileRouteTypes {
     | '/admin-portal/settings'
     | '/admin-portal/signups'
     | '/admin-portal/storage'
+    | '/blog/$slug'
     | '/booking-quiz/address'
     | '/booking-quiz/address-details'
     | '/booking-quiz/details'
     | '/booking-quiz/payment'
     | '/booking-quiz/schedule'
     | '/booking-quiz/start'
+    | '/locations/$slug'
     | '/admin-portal/'
+    | '/blog/'
     | '/book-now/'
     | '/booking-quiz/'
     | '/checklist/'
@@ -1357,7 +1417,10 @@ export interface RootRouteChildren {
   AdminPortalSettingsRoute: typeof AdminPortalSettingsRoute
   AdminPortalSignupsRoute: typeof AdminPortalSignupsRoute
   AdminPortalStorageRoute: typeof AdminPortalStorageRoute
+  BlogSlugRoute: typeof BlogSlugRoute
+  LocationsSlugRoute: typeof LocationsSlugRoute
   AdminPortalIndexRoute: typeof AdminPortalIndexRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   BookNowIndexRoute: typeof BookNowIndexRoute
   ChecklistIndexRoute: typeof ChecklistIndexRoute
   CleanerPortalIndexRoute: typeof CleanerPortalIndexRoute
@@ -1403,7 +1466,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPortalSettingsRoute: AdminPortalSettingsRoute,
   AdminPortalSignupsRoute: AdminPortalSignupsRoute,
   AdminPortalStorageRoute: AdminPortalStorageRoute,
+  BlogSlugRoute: BlogSlugRoute,
+  LocationsSlugRoute: LocationsSlugRoute,
   AdminPortalIndexRoute: AdminPortalIndexRoute,
+  BlogIndexRoute: BlogIndexRoute,
   BookNowIndexRoute: BookNowIndexRoute,
   ChecklistIndexRoute: ChecklistIndexRoute,
   CleanerPortalIndexRoute: CleanerPortalIndexRoute,
@@ -1461,7 +1527,10 @@ export const routeTree = rootRoute
         "/admin-portal/settings",
         "/admin-portal/signups",
         "/admin-portal/storage",
+        "/blog/$slug",
+        "/locations/$slug",
         "/admin-portal/",
+        "/blog/",
         "/book-now/",
         "/checklist/",
         "/cleaner-portal/",
@@ -1561,6 +1630,9 @@ export const routeTree = rootRoute
     "/admin-portal/storage": {
       "filePath": "admin-portal/storage.tsx"
     },
+    "/blog/$slug": {
+      "filePath": "blog/$slug.tsx"
+    },
     "/booking-quiz/address": {
       "filePath": "booking-quiz/address.tsx",
       "parent": "/booking-quiz"
@@ -1585,8 +1657,14 @@ export const routeTree = rootRoute
       "filePath": "booking-quiz/start.tsx",
       "parent": "/booking-quiz"
     },
+    "/locations/$slug": {
+      "filePath": "locations/$slug.tsx"
+    },
     "/admin-portal/": {
       "filePath": "admin-portal/index.tsx"
+    },
+    "/blog/": {
+      "filePath": "blog/index.tsx"
     },
     "/book-now/": {
       "filePath": "book-now/index.tsx"
