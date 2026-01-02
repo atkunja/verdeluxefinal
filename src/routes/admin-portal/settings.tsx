@@ -7,6 +7,7 @@ import { useTRPC } from "~/trpc/react";
 import toast from "react-hot-toast";
 import { BillingConfig } from "~/mocks/adminPortal"; // Keeping Billing mock for now
 import { getBillingConfig } from "~/api/adminPortal";
+import { ErrorBoundary } from "~/components/ErrorBoundary";
 
 type SettingsTab = "checklist" | "pricing" | "billing" | "website" | "leadSources" | "communications" | "logs";
 
@@ -73,6 +74,8 @@ function SettingsPage() {
       {tab === "billing" && <BillingTab />}
       {tab === "website" && <WebsiteTab />}
       {tab === "leadSources" && <LeadSourcesTab />}
+      {tab === "communications" && <ErrorBoundary><CommunicationsTab /></ErrorBoundary>}
+      {tab === "logs" && <ErrorBoundary><LogsTab /></ErrorBoundary>}
     </AdminShell>
   );
 }
@@ -147,9 +150,14 @@ function LeadSourcesTab() {
 }
 
 function CommunicationsTab() {
+  console.log("CommunicationsTab: Mounting...");
   const trpc = useTRPC();
+  console.log("CommunicationsTab: TRPC context:", !!trpc, "email endpoint:", !!trpc?.email);
+
   const queryClient = useQueryClient();
   const { data: templates, isLoading, isError, error } = useQuery(trpc.email.getEmailTemplates.queryOptions());
+
+  console.log("CommunicationsTab: Query State:", { isLoading, isError, hasData: !!templates, templatesLength: templates?.length, error });
   const updateMutation = useMutation(trpc.email.updateEmailTemplate.mutationOptions());
   const seedMutation = useMutation(trpc.seedDefaultEmailTemplates.mutationOptions());
 
