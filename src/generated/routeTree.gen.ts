@@ -36,6 +36,7 @@ import { Route as AdminPortalSettingsImport } from './../routes/admin-portal/set
 import { Route as AdminPortalScheduleRequestsImport } from './../routes/admin-portal/schedule-requests'
 import { Route as AdminPortalReviewsImport } from './../routes/admin-portal/reviews'
 import { Route as AdminPortalRevenueReportsImport } from './../routes/admin-portal/revenue-reports'
+import { Route as AdminPortalPayrollImport } from './../routes/admin-portal/payroll'
 import { Route as AdminPortalManagementImport } from './../routes/admin-portal/management'
 import { Route as AdminPortalLogsImport } from './../routes/admin-portal/logs'
 import { Route as AdminPortalLeadsImport } from './../routes/admin-portal/leads'
@@ -243,6 +244,12 @@ const AdminPortalReviewsRoute = AdminPortalReviewsImport.update({
 const AdminPortalRevenueReportsRoute = AdminPortalRevenueReportsImport.update({
   id: '/admin-portal/revenue-reports',
   path: '/admin-portal/revenue-reports',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AdminPortalPayrollRoute = AdminPortalPayrollImport.update({
+  id: '/admin-portal/payroll',
+  path: '/admin-portal/payroll',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -523,6 +530,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-portal/management'
       fullPath: '/admin-portal/management'
       preLoaderRoute: typeof AdminPortalManagementImport
+      parentRoute: typeof rootRoute
+    }
+    '/admin-portal/payroll': {
+      id: '/admin-portal/payroll'
+      path: '/admin-portal/payroll'
+      fullPath: '/admin-portal/payroll'
+      preLoaderRoute: typeof AdminPortalPayrollImport
       parentRoute: typeof rootRoute
     }
     '/admin-portal/revenue-reports': {
@@ -946,6 +960,7 @@ export interface FileRoutesByFullPath {
   '/admin-portal/leads': typeof AdminPortalLeadsRoute
   '/admin-portal/logs': typeof AdminPortalLogsRoute
   '/admin-portal/management': typeof AdminPortalManagementRoute
+  '/admin-portal/payroll': typeof AdminPortalPayrollRoute
   '/admin-portal/revenue-reports': typeof AdminPortalRevenueReportsRoute
   '/admin-portal/reviews': typeof AdminPortalReviewsRoute
   '/admin-portal/schedule-requests': typeof AdminPortalScheduleRequestsRoute
@@ -1009,6 +1024,7 @@ export interface FileRoutesByTo {
   '/admin-portal/leads': typeof AdminPortalLeadsRoute
   '/admin-portal/logs': typeof AdminPortalLogsRoute
   '/admin-portal/management': typeof AdminPortalManagementRoute
+  '/admin-portal/payroll': typeof AdminPortalPayrollRoute
   '/admin-portal/revenue-reports': typeof AdminPortalRevenueReportsRoute
   '/admin-portal/reviews': typeof AdminPortalReviewsRoute
   '/admin-portal/schedule-requests': typeof AdminPortalScheduleRequestsRoute
@@ -1074,6 +1090,7 @@ export interface FileRoutesById {
   '/admin-portal/leads': typeof AdminPortalLeadsRoute
   '/admin-portal/logs': typeof AdminPortalLogsRoute
   '/admin-portal/management': typeof AdminPortalManagementRoute
+  '/admin-portal/payroll': typeof AdminPortalPayrollRoute
   '/admin-portal/revenue-reports': typeof AdminPortalRevenueReportsRoute
   '/admin-portal/reviews': typeof AdminPortalReviewsRoute
   '/admin-portal/schedule-requests': typeof AdminPortalScheduleRequestsRoute
@@ -1140,6 +1157,7 @@ export interface FileRouteTypes {
     | '/admin-portal/leads'
     | '/admin-portal/logs'
     | '/admin-portal/management'
+    | '/admin-portal/payroll'
     | '/admin-portal/revenue-reports'
     | '/admin-portal/reviews'
     | '/admin-portal/schedule-requests'
@@ -1202,6 +1220,7 @@ export interface FileRouteTypes {
     | '/admin-portal/leads'
     | '/admin-portal/logs'
     | '/admin-portal/management'
+    | '/admin-portal/payroll'
     | '/admin-portal/revenue-reports'
     | '/admin-portal/reviews'
     | '/admin-portal/schedule-requests'
@@ -1265,6 +1284,7 @@ export interface FileRouteTypes {
     | '/admin-portal/leads'
     | '/admin-portal/logs'
     | '/admin-portal/management'
+    | '/admin-portal/payroll'
     | '/admin-portal/revenue-reports'
     | '/admin-portal/reviews'
     | '/admin-portal/schedule-requests'
@@ -1330,6 +1350,7 @@ export interface RootRouteChildren {
   AdminPortalLeadsRoute: typeof AdminPortalLeadsRoute
   AdminPortalLogsRoute: typeof AdminPortalLogsRoute
   AdminPortalManagementRoute: typeof AdminPortalManagementRoute
+  AdminPortalPayrollRoute: typeof AdminPortalPayrollRoute
   AdminPortalRevenueReportsRoute: typeof AdminPortalRevenueReportsRoute
   AdminPortalReviewsRoute: typeof AdminPortalReviewsRoute
   AdminPortalScheduleRequestsRoute: typeof AdminPortalScheduleRequestsRoute
@@ -1375,6 +1396,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPortalLeadsRoute: AdminPortalLeadsRoute,
   AdminPortalLogsRoute: AdminPortalLogsRoute,
   AdminPortalManagementRoute: AdminPortalManagementRoute,
+  AdminPortalPayrollRoute: AdminPortalPayrollRoute,
   AdminPortalRevenueReportsRoute: AdminPortalRevenueReportsRoute,
   AdminPortalReviewsRoute: AdminPortalReviewsRoute,
   AdminPortalScheduleRequestsRoute: AdminPortalScheduleRequestsRoute,
@@ -1432,6 +1454,7 @@ export const routeTree = rootRoute
         "/admin-portal/leads",
         "/admin-portal/logs",
         "/admin-portal/management",
+        "/admin-portal/payroll",
         "/admin-portal/revenue-reports",
         "/admin-portal/reviews",
         "/admin-portal/schedule-requests",
@@ -1516,6 +1539,9 @@ export const routeTree = rootRoute
     },
     "/admin-portal/management": {
       "filePath": "admin-portal/management.tsx"
+    },
+    "/admin-portal/payroll": {
+      "filePath": "admin-portal/payroll.tsx"
     },
     "/admin-portal/revenue-reports": {
       "filePath": "admin-portal/revenue-reports.tsx"

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireAdmin } from "~/server/trpc/main";
-import nodemailer from "nodemailer";
+import { sendEmail } from "~/server/services/email";
 import { db } from "~/server/db";
 
 export const sendAddCardLink = requireAdmin
@@ -26,12 +26,6 @@ export const sendAddCardLink = requireAdmin
             throw new Error("No client email");
         }
 
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || "localhost",
-            port: Number(process.env.SMTP_PORT || 1025),
-            secure: false,
-        });
-
         const link = `${process.env.NEXT_PUBLIC_APP_URL || "https://verdeluxe.com"}/client-portal`;
 
         const subject = `Update Payment Method for Booking #${booking.id}`;
@@ -44,11 +38,11 @@ ${link}
 
 If you have any questions, please reply to this email.`;
 
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM || "no-reply@verdeluxe.com",
+        await sendEmail({
             to,
-            subject,
-            text: body,
+            templateType: "ADD_CARD_LINK",
+            fallbackSubject: subject,
+            fallbackBody: body,
         });
 
         return { success: true };

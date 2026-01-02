@@ -26,10 +26,20 @@ export async function sendEmail(options: EmailOptions) {
         });
     }
 
+    // Check for production missing configuration
+    if (process.env.NODE_ENV === 'production' && !process.env.SMTP_HOST) {
+        console.error("❌ Production environment detected but SMTP_HOST is not set.");
+        throw new Error("Email configuration missing in production. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.");
+    }
+
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || "localhost",
         port: Number(process.env.SMTP_PORT || 1025),
-        secure: false,
+        secure: process.env.SMTP_SECURE === "true",
+        auth: process.env.SMTP_USER ? {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        } : undefined,
     });
 
     try {
@@ -40,7 +50,7 @@ export async function sendEmail(options: EmailOptions) {
             text: body,
         });
     } catch (error: any) {
-        if (error.code === 'ECONNREFUSED') {
+        if (error.code === 'ECONNREFUSED' || error.code === 'ESOCKET') {
             console.warn("⚠️ SMTP connection refused. Logging email to console instead:");
             console.log(`[Email Mock] To: ${options.to}`);
             console.log(`[Email Mock] Subject: ${subject}`);

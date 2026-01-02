@@ -239,6 +239,11 @@ function CommunicationsTab() {
             )}
           </div>
         ))}
+        {(!templates || templates.length === 0) && (
+          <div className="p-12 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+            <p className="text-gray-400 font-medium italic">No email templates found. Click "Seed Defaults" to restore.</p>
+          </div>
+        )}
       </div>
     </div>
   );

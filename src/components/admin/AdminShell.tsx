@@ -15,6 +15,7 @@ import {
   XCircle,
   LogOut,
   Home,
+  DollarSign,
 } from "lucide-react";
 import { useAuthStore } from "~/stores/authStore";
 import { useTRPC } from "~/trpc/react";
@@ -38,6 +39,7 @@ const navItems = [
   { label: "Bank", icon: Banknote, path: "/admin-portal/bank-transactions" },
   { label: "Schedule", icon: Clock3, path: "/admin-portal/schedule-requests" },
   { label: "Revenue", icon: BarChart3, path: "/admin-portal/revenue-reports" },
+  { label: "Cleaner Pay", icon: DollarSign, path: "/admin-portal/payroll" },
   { label: "Signups", icon: Users, path: "/admin-portal/signups" },
 ];
 

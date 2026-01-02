@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireAdmin } from "~/server/trpc/main";
-import nodemailer from "nodemailer";
+import { sendEmail } from "~/server/services/email";
 import { db } from "~/server/db";
 
 export const sendBookingReceipt = requireAdmin
@@ -25,12 +25,6 @@ export const sendBookingReceipt = requireAdmin
       throw new Error("No recipient email");
     }
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "localhost",
-      port: Number(process.env.SMTP_PORT || 1025),
-      secure: false,
-    });
-
     const subject = `Receipt for booking #${booking.id}`;
     const body = `Hi ${booking.client?.firstName ?? ""},
 
@@ -42,23 +36,12 @@ Amount: $${(booking.finalPrice ?? 0).toFixed(2)}
 
 If you have questions, please reply to this email.`;
 
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || "no-reply@verdeluxe.com",
-        to,
-        subject,
-        text: body,
-      });
-    } catch (error: any) {
-      if (error.code === 'ECONNREFUSED') {
-        console.warn("⚠️ SMTP connection refused. Logging email to console instead:");
-        console.log(`[Email Mock] To: ${to}`);
-        console.log(`[Email Mock] Subject: ${subject}`);
-        console.log(`[Email Mock] Body:\n${body}`);
-      } else {
-        throw error;
-      }
-    }
+    await sendEmail({
+      to,
+      templateType: "BOOKING_RECEIPT",
+      fallbackSubject: subject,
+      fallbackBody: body,
+    });
 
     return { success: true };
   });

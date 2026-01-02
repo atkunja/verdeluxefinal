@@ -120,12 +120,12 @@ model BookingCleaner {
 model Payment {
   id          Int       @id @default(autoincrement())
   createdAt   DateTime  @default(now())
-  bookingId   Int
+  bookingId   Int?
   cleanerId   Int?
   amount      Float
   paidAt      DateTime?
   description String?
-  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking     Booking?  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   cleaner     User?     @relation(fields: [cleanerId], references: [id])
 }
 

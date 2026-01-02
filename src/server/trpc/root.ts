@@ -27,6 +27,7 @@ import { getBookingAdmin } from "./procedures/admin/getBookingAdmin";
 import { getBookingTimeLogs } from "./procedures/admin/getBookingTimeLogs";
 import { addBookingTip } from "./procedures/admin/addBookingTip";
 import { getPayoutSummary } from "./procedures/admin/getPayoutSummary";
+import { recordCleanerPayment } from "./procedures/admin/recordCleanerPayment";
 import { sendAddCardLink } from "./procedures/admin/sendAddCardLink";
 import { createUserAdmin } from "./procedures/admin/createUserAdmin";
 import { updateUserAdmin } from "./procedures/admin/updateUserAdmin";
@@ -144,6 +145,7 @@ export const appRouter = createTRPCRouter({
   getBookingTimeLogs,
   addBookingTip,
   getPayoutSummary,
+  recordCleanerPayment,
   assignCleaners,
 
   // Checklist procedures
