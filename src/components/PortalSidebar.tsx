@@ -35,50 +35,99 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
   // Define navigation items based on portal type
   const getNavItems = (): NavItem[] => {
     if (portalType === "admin") {
-      return [
+      const isOwner = user?.role === "OWNER";
+      // Ensure permissions is an object even if null/undefined
+      const perms = (user?.adminPermissions || {}) as Record<string, boolean>;
+      const has = (key: string) => isOwner || !!perms[key];
+
+      const items: NavItem[] = [
         { label: "Dashboard", view: "dashboard", icon: LayoutDashboard },
-        {
+      ];
+
+      if (has("manage_bookings")) {
+        items.push({
           label: "Bookings",
           view: "bookings-group",
-          icon: Calendar, // Using Calendar as the group icon
+          icon: Calendar,
           subItems: [
-            { label: "Calendar", view: "calendar", icon: Calendar, routePath: "/admin-portal?view=calendar" }, // Assuming query param logic for calendar
+            { label: "Calendar", view: "calendar", icon: Calendar, routePath: "/admin-portal?view=calendar" },
             { label: "Charges", view: "booking-charges", icon: DollarSign, routePath: "/admin-portal/booking-charges" },
-            { label: "All Bookings", view: "bookings", icon: Package, routePath: "/admin-portal/bookings" }, // Assuming a list view exists or we add it
+            { label: "All Bookings", view: "bookings", icon: Package, routePath: "/admin-portal/bookings" },
           ]
-        },
-        {
+        });
+      }
+
+      // Management Group
+      const managementSubItems: NavItem[] = [];
+      if (has("manage_customers")) {
+        managementSubItems.push({ label: "Customers", view: "management-customers", icon: Users, routePath: "/admin-portal/management?tab=customers" });
+      }
+      if (has("manage_cleaners")) {
+        managementSubItems.push({ label: "Cleaners", view: "management-cleaners", icon: UserCog, routePath: "/admin-portal/management?tab=cleaners" });
+      }
+      if (has("manage_admins")) {
+        managementSubItems.push({ label: "Admins & Owners", view: "management-admins", icon: Settings, routePath: "/admin-portal/management?tab=admins" });
+      }
+
+      if (managementSubItems.length > 0) {
+        items.push({
           label: "Management",
           view: "management",
           icon: Briefcase,
-          subItems: [
-            { label: "Customers", view: "management-customers", icon: Users, routePath: "/admin-portal/management?tab=customers" },
-            { label: "Cleaners", view: "management-cleaners", icon: UserCog, routePath: "/admin-portal/management?tab=cleaners" },
-            { label: "Admins & Owners", view: "management-admins", icon: Settings, routePath: "/admin-portal/management?tab=admins" },
-          ],
-        },
-        { label: "Requests", view: "cleaner-requests", icon: CalendarOff },
-        { label: "Reports", view: "reports", icon: BarChart2 },
-        { label: "Phone", view: "phone", icon: Phone },
-        {
+          subItems: managementSubItems,
+        });
+      }
+
+      if (has("manage_time_off_requests")) {
+        items.push({ label: "Requests", view: "cleaner-requests", icon: CalendarOff });
+      }
+
+      if (has("view_reports")) {
+        items.push({ label: "Reports", view: "reports", icon: BarChart2 });
+      }
+
+      if (has("use_dialer")) {
+        items.push({ label: "Phone", view: "phone", icon: Phone });
+      }
+
+      // Finance Group
+      const financeSubItems: NavItem[] = [];
+      if (has("view_reports")) { // Closest permission for Bank Transactions
+        financeSubItems.push({ label: "Bank Transactions", view: "bank-transactions", icon: ClipboardList, routePath: "/admin-portal/bank-transactions" });
+      }
+      if (has("manage_pricing")) { // Closest for Billing Settings
+        financeSubItems.push({ label: "Billing Settings", view: "billing", icon: Settings, routePath: "/admin-portal/billing" });
+      }
+
+      if (financeSubItems.length > 0) {
+        items.push({
           label: "Finance",
           view: "finance",
           icon: DollarSign,
-          subItems: [
-            { label: "Bank Transactions", view: "bank-transactions", icon: ClipboardList, routePath: "/admin-portal/bank-transactions" },
-            { label: "Billing Settings", view: "billing", icon: Settings, routePath: "/admin-portal/billing" },
-          ],
-        },
-        {
+          subItems: financeSubItems,
+        });
+      }
+
+      // Settings Group
+      const settingsSubItems: NavItem[] = [];
+      if (has("manage_checklists")) {
+        settingsSubItems.push({ label: "Checklist Rules", view: "settings-checklist", icon: ClipboardList, routePath: "/admin-portal/settings?tab=checklist" });
+      }
+      if (has("manage_pricing")) {
+        settingsSubItems.push({ label: "Pricing Rules", view: "settings-pricing", icon: DollarSign, routePath: "/admin-portal/settings?tab=pricing" });
+      }
+
+      if (settingsSubItems.length > 0) {
+        items.push({
           label: "Settings",
           view: "settings",
           icon: Settings,
-          subItems: [
-            { label: "Checklist Rules", view: "settings-checklist", icon: ClipboardList, routePath: "/admin-portal/settings?tab=checklist" },
-            { label: "Pricing Rules", view: "settings-pricing", icon: DollarSign, routePath: "/admin-portal/settings?tab=pricing" },
-          ],
-        },
-      ];
+          subItems: settingsSubItems,
+        });
+      }
+
+      return items;
+
     } else if (portalType === "cleaner") {
       return [
         { label: "Dashboard", view: "dashboard", icon: LayoutDashboard },

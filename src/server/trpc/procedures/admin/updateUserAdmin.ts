@@ -123,6 +123,7 @@ export const updateUserAdmin = requireAdmin
         phone: true,
         color: true,
         createdAt: true,
+        adminPermissions: true,
       },
     });
 

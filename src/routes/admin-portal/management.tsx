@@ -24,7 +24,8 @@ function ManagementPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: Route.id });
   const tab = search.tab || "customers";
-  const { user } = useAuthStore();
+  const { user, setAuth, token } = useAuthStore();
+  const currentUser = user;
 
   const setTab = (t: Tab) => {
     navigate({ search: { tab: t } });
@@ -125,10 +126,12 @@ function ManagementPage() {
     setShowDetailModal(true);
   };
 
+
+
   const handleSave = async (data: any) => {
     try {
       if (editId) {
-        await updateMutation.mutateAsync({
+        const res = await updateMutation.mutateAsync({
           userId: editId,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -140,13 +143,19 @@ function ManagementPage() {
           temporaryPassword: data.temporaryPassword,
           password: data.password ? data.password : undefined,
         });
+
+        // If editing self, update the auth store to reflect changes immediately (e.g. permissions)
+        if (currentUser && currentUser.id === editId && token) {
+          // We need to match the User type expected by store. res.user has what we selected.
+          setAuth(token, res.user as any);
+        }
       } else {
         await createMutation.mutateAsync({
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
-          phone: data.phone,
           role: data.role as any,
+          phone: data.phone,
           adminPermissions: data.adminPermissions,
           password: data.password || "VerdeLuxeTemp123!",
           color: data.color,
