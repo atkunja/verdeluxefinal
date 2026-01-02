@@ -2,6 +2,7 @@ import { z } from "zod";
 // import bcryptjs from "bcryptjs";
 import { db } from "~/server/db";
 import { requireAdmin } from "~/server/trpc/main";
+import { supabaseServer } from "~/server/supabase";
 
 export const updateUserAdmin = requireAdmin
   .input(
@@ -48,6 +49,49 @@ export const updateUserAdmin = requireAdmin
       // Dynamic import to prevent startup crashes on Vercel
       const bcryptjs = (await import("bcryptjs")).default;
       updateData.password = await bcryptjs.hash(input.password, 10);
+
+      // Sync password update to Supabase Auth
+      if (supabaseServer) {
+        try {
+          // Find user by email (using original email if not changing, or new email if handled sequentially)
+          // Note: If email is changing, we should probably update supabase first.
+          // But logic here handles them independently in local updateData construction.
+          // Let's rely on targetUser.email which is the CURRENT email.
+
+          const { data: usersData } = await supabaseServer.auth.admin.listUsers();
+          const supabaseUser = usersData?.users?.find((u: any) => u.email?.toLowerCase() === targetUser.email.toLowerCase());
+
+          if (supabaseUser) {
+            await supabaseServer.auth.admin.updateUserById(supabaseUser.id, {
+              password: input.password
+            });
+          } else {
+            console.warn("[updateUserAdmin] Could not find Supabase user to update password for:", targetUser.email);
+          }
+        } catch (err) {
+          console.error("[updateUserAdmin] Failed to update Supabase password:", err);
+          // We don't throw here to allow local update to proceed, or maybe we should?
+          // Proceeding allows at least local consistency, but login might fail.
+          // Given the critical nature, we should probably warn but proceed.
+        }
+      }
+    }
+
+    // Sync Email Update to Supabase
+    if (input.email && input.email !== targetUser.email && supabaseServer) {
+      try {
+        const { data: usersData } = await supabaseServer.auth.admin.listUsers();
+        const supabaseUser = usersData?.users?.find((u: any) => u.email?.toLowerCase() === targetUser.email.toLowerCase());
+
+        if (supabaseUser) {
+          await supabaseServer.auth.admin.updateUserById(supabaseUser.id, {
+            email: input.email,
+            email_confirm: true
+          });
+        }
+      } catch (err) {
+        console.error("[updateUserAdmin] Failed to update Supabase email:", err);
+      }
     }
 
     if (input.temporaryPassword !== undefined) {
