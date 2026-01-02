@@ -3,6 +3,9 @@ import { Footer } from "./Footer";
 import { Link } from "@tanstack/react-router";
 import { PortalSidebar } from "./PortalSidebar";
 import { useAuthStore } from "~/stores/authStore";
+import { useEffect } from "react";
+import { useTRPC } from "~/trpc/react";
+import { useQuery } from "@tanstack/react-query";
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -10,7 +13,24 @@ interface PortalLayoutProps {
 }
 
 export function PortalLayout({ children, portalType }: PortalLayoutProps) {
-  const { user } = useAuthStore();
+  const { user, token, setAuth } = useAuthStore();
+  const trpc = useTRPC();
+
+  // Revalidate session on mount to ensure permissions are up to date
+  const { data: refreshedUser } = useQuery(
+    trpc.getCurrentUser.queryOptions(
+      { authToken: token || "" },
+      { enabled: !!token && !!user }
+    )
+  );
+
+  useEffect(() => {
+    if (refreshedUser && token) {
+      // Force update store with fresh data from server
+      // console.log("Refreshed session:", refreshedUser);
+      setAuth(token, refreshedUser as any);
+    }
+  }, [refreshedUser, token, setAuth]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#edeae1]">
