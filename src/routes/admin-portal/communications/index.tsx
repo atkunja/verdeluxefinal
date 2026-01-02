@@ -155,13 +155,45 @@ function CommunicationsPage() {
     const segmentedConversations = useMemo(() => {
         if (!usersQuery.data?.users) return { clients: [], employees: [] };
 
-        const all = usersQuery.data.users
+        const usersList = usersQuery.data.users.map(u => ({ ...u, type: 'USER' as const }));
+
+        // Create a set of normalized user phones to filter out duplicate leads
+        const userPhones = new Set(usersList.map(u => u.phone?.replace(/\D/g, "")).filter(Boolean));
+
+        // Leads might be undefined if query hasn't updated in older caches, but backend sends it.
+        // We cast to any to safe access in case types aren't regenerated yet.
+        const leadsList = ((usersQuery.data as any).leads || [])
+            .filter((l: any) => {
+                const normPhone = l.phone?.replace(/\D/g, "");
+                // Only show leads that don't match an existing user's phone
+                return normPhone && !userPhones.has(normPhone);
+            })
+            .map((l: any) => ({
+                id: -l.id, // Negative ID for leads to avoid collision
+                firstName: l.name.split(' ')[0] || "Lead",
+                lastName: l.name.split(' ').slice(1).join(' ') || "",
+                phone: l.phone,
+                email: l.email,
+                role: 'LEAD',
+                createdAt: l.createdAt,
+                isPinned: false,
+                type: 'LEAD' as const
+            }));
+
+        const allContacts = [...usersList, ...leadsList];
+
+        const allMapped = allContacts
             .filter(u => u.phone && u.id !== user?.id)
             .map(contactUser => {
                 const userMessages = (messagesQuery.data || []) as any[];
-                const filteredMessages = userMessages.filter(
-                    m => m.senderId === contactUser.id || m.recipientId === contactUser.id
-                ).map(m => ({ ...m, type: 'message' as const }));
+
+                // For leads (negative ID), they won't have messages initially in this system 
+                // unless they are converted. But valid mapped users (positive ID) will.
+                const filteredMessages = contactUser.type === 'USER'
+                    ? userMessages.filter(
+                        m => m.senderId === contactUser.id || m.recipientId === contactUser.id
+                    ).map(m => ({ ...m, type: 'message' as const }))
+                    : [];
 
                 const allItems = filteredMessages.sort(
                     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -177,9 +209,11 @@ function CommunicationsPage() {
                 };
             })
             .filter(conv => {
-                const hasHistory = conv.items.length > 0 || conv.user.role === 'CLIENT' || conv.user.role === 'CLEANER';
-                if (!hasHistory) return false;
-
+                // Show if has history OR is a Client/Cleaner/Lead
+                // We basically want to show everyone returned by getAllUsersAdmin (which now includes Leads)
+                return true;
+            })
+            .filter(conv => {
                 if (!searchQuery.trim()) return true;
                 const q = searchQuery.toLowerCase();
                 const fullName = `${conv.user.firstName} ${conv.user.lastName}`.toLowerCase();
@@ -187,8 +221,15 @@ function CommunicationsPage() {
                 return fullName.includes(q) || phone.includes(q);
             })
             .sort((a, b) => {
-                const dateA = a.lastItem ? new Date(a.lastItem.createdAt).getTime() : 0;
-                const dateB = b.lastItem ? new Date(b.lastItem.createdAt).getTime() : 0;
+                // Sort by: most recent activity (message OR creation date)
+                const dateA = Math.max(
+                    a.lastItem ? new Date(a.lastItem.createdAt).getTime() : 0,
+                    new Date(a.user.createdAt).getTime()
+                );
+                const dateB = Math.max(
+                    b.lastItem ? new Date(b.lastItem.createdAt).getTime() : 0,
+                    new Date(b.user.createdAt).getTime()
+                );
                 return dateB - dateA;
             })
             .sort((a, b) => {
@@ -197,8 +238,8 @@ function CommunicationsPage() {
             });
 
         return {
-            clients: all.filter(c => c.user.role === 'CLIENT' || c.user.email.includes('@guest')),
-            employees: all.filter(c => c.user.role === 'CLEANER' || c.user.role === 'ADMIN' || c.user.role === 'OWNER')
+            clients: allMapped.filter(c => c.user.role === 'CLIENT' || c.user.role === 'LEAD' || c.user.email.includes('@guest')),
+            employees: allMapped.filter(c => c.user.role === 'CLEANER' || c.user.role === 'ADMIN' || c.user.role === 'OWNER')
         };
     }, [usersQuery.data, messagesQuery.data, searchQuery, user?.id]);
 
@@ -209,14 +250,26 @@ function CommunicationsPage() {
         e.preventDefault();
         if ((!messageText.trim() && selectedMediaUrls.length === 0) || sendMessageMutation.isPending || isUploading) return;
 
-        sendMessageMutation.mutate({
-            recipientId: selectedContactId!,
+        const payload: any = {
             content: messageText,
             mediaUrls: selectedMediaUrls,
-        }, {
+        };
+
+        if (selectedContactId! < 0) {
+            payload.leadId = Math.abs(selectedContactId!);
+        } else {
+            payload.recipientId = selectedContactId!;
+        }
+
+        sendMessageMutation.mutate(payload, {
             onSuccess: () => {
                 setMessageText("");
                 setSelectedMediaUrls([]);
+                // If we messaged a lead, refreshing the users list will hopefully show them as a converted User (Client) now,
+                // or at least we need to re-fetch to get the new User if one was created.
+                // However, the mutation response might not be instantly reflected in getAllUsersAdmin if we rely on that.
+                // But the message creation logic in backend creates a User.
+                usersQuery.refetch();
             }
         });
     };
@@ -440,13 +493,15 @@ function CommunicationsPage() {
                                             <h3 className="font-bold text-[17px] text-gray-900 leading-tight truncate">
                                                 {selectedConversation.user.firstName} {selectedConversation.user.lastName}
                                             </h3>
-                                            <button
-                                                onClick={handleStartEdit}
-                                                className="p-1 opacity-0 group-hover:opacity-100 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-all active:scale-90"
-                                                title="Edit Contact Profile"
-                                            >
-                                                <Edit2 className="w-3.5 h-3.5" />
-                                            </button>
+                                            {(selectedConversation.user as any).type !== 'LEAD' && (
+                                                <button
+                                                    onClick={handleStartEdit}
+                                                    className="p-1 opacity-0 group-hover:opacity-100 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-all active:scale-90"
+                                                    title="Edit Contact Profile"
+                                                >
+                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
                                             {selectedConversation.user.isPinned && (
                                                 <Pin className="w-3.5 h-3.5 text-blue-500 ml-1" />
                                             )}
@@ -456,14 +511,16 @@ function CommunicationsPage() {
                                 </div>
 
                                 <div className="flex gap-2 ml-4">
-                                    <button
-                                        onClick={handleDeleteConversation}
-                                        className="p-3 bg-white border border-gray-100 text-rose-500 rounded-2xl hover:bg-rose-50 hover:border-rose-100 transition-all shadow-sm active:scale-95"
-                                        title="Delete Conversation"
-                                        disabled={deleteConversationMutation.isPending}
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    {(selectedConversation.user as any).type !== 'LEAD' && (
+                                        <button
+                                            onClick={handleDeleteConversation}
+                                            className="p-3 bg-white border border-gray-100 text-rose-500 rounded-2xl hover:bg-rose-50 hover:border-rose-100 transition-all shadow-sm active:scale-95"
+                                            title="Delete Conversation"
+                                            disabled={deleteConversationMutation.isPending}
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

@@ -7,7 +7,8 @@ import { TRPCError } from "@trpc/server";
 export const sendMessage = requireAdmin
   .input(
     z.object({
-      recipientId: z.number(),
+      recipientId: z.number().optional(),
+      leadId: z.number().optional(),
       content: z.string(),
       mediaUrls: z.array(z.string()).optional(),
     })
@@ -15,9 +16,70 @@ export const sendMessage = requireAdmin
   .mutation(async ({ input, ctx }) => {
     const senderId = ctx.profile.id;
 
+    if (!input.recipientId && !input.leadId) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Must provide either recipientId or leadId",
+      });
+    }
+
+    let recipientId = input.recipientId;
+
+    // If leadId is provided, find or create the user
+    if (input.leadId && !recipientId) {
+      const lead = await db.lead.findUnique({
+        where: { id: input.leadId },
+      });
+
+      if (!lead) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lead not found",
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await db.user.findFirst({
+        where: {
+          OR: [
+            { phone: lead.phone },
+            { email: lead.email },
+          ]
+        }
+      });
+
+      if (existingUser) {
+        recipientId = existingUser.id;
+      } else {
+        // Create new contact user
+        const normalizedDigits = lead.phone.replace(/\D/g, "");
+        const newUser = await db.user.create({
+          data: {
+            firstName: lead.name.split(' ')[0] || "Lead",
+            lastName: lead.name.split(' ').slice(1).join(' ') || "Contact",
+            phone: lead.phone,
+            email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+            password: "lead-no-login-permitted", // Placeholder
+            role: "CLIENT",
+            notes: `Created from Lead #${lead.id} via Messaging`,
+            isPinned: false
+          }
+        });
+        recipientId = newUser.id;
+      }
+
+      // Update lead status to CONTACTED if it's NEW
+      if (lead.status === "NEW") {
+        await db.lead.update({
+          where: { id: lead.id },
+          data: { status: "CONTACTED" }
+        });
+      }
+    }
+
     // 1. Get recipient phone number
     const recipient = await db.user.findUnique({
-      where: { id: input.recipientId },
+      where: { id: recipientId },
       select: { phone: true },
     });
 
@@ -53,7 +115,7 @@ export const sendMessage = requireAdmin
     const message = await (db.message as any).create({
       data: {
         sender: { connect: { id: senderId } },
-        recipient: { connect: { id: input.recipientId } },
+        recipient: { connect: { id: recipientId } },
         content: input.content,
         mediaUrls: input.mediaUrls || [],
         externalId: externalId,

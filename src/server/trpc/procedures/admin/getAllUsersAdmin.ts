@@ -53,5 +53,17 @@ export const getAllUsersAdmin = requireAdmin
       },
     });
 
-    return { users };
+    const leads = await db.lead.findMany({
+      where: {
+        status: { not: "CONVERTED" }, // Only show non-converted leads
+        OR: input.search ? [
+          { name: { contains: input.search, mode: "insensitive" } },
+          { email: { contains: input.search, mode: "insensitive" } },
+          { phone: { contains: input.search, mode: "insensitive" } },
+        ] : undefined,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { users, leads };
   });
