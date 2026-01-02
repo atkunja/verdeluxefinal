@@ -150,15 +150,11 @@ function LeadSourcesTab() {
 }
 
 function CommunicationsTab() {
-  console.log("CommunicationsTab: Mounting...");
   const trpc = useTRPC();
-  console.log("CommunicationsTab: TRPC context:", !!trpc, "email endpoint:", !!trpc?.email);
-
   const queryClient = useQueryClient();
   const { data: templates, isLoading, isError, error } = useQuery(trpc.email.getEmailTemplates.queryOptions());
-
-  console.log("CommunicationsTab: Query State:", { isLoading, isError, hasData: !!templates, templatesLength: templates?.length, error });
   const updateMutation = useMutation(trpc.email.updateEmailTemplate.mutationOptions());
+  const deleteMutation = useMutation(trpc.email.deleteEmailTemplate.mutationOptions());
   const seedMutation = useMutation(trpc.seedDefaultEmailTemplates.mutationOptions());
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -250,6 +246,21 @@ function CommunicationsTab() {
                   className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-100"
                 >
                   <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Are you sure you want to delete this template?")) return;
+                    try {
+                      await deleteMutation.mutateAsync({ id: template.id });
+                      queryClient.invalidateQueries({ queryKey: trpc.email.getEmailTemplates.queryOptions().queryKey });
+                      toast.success("Template deleted");
+                    } catch (e: any) {
+                      toast.error("Failed to delete template");
+                    }
+                  }}
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             )}
