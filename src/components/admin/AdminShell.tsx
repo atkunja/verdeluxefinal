@@ -54,7 +54,7 @@ export function AdminShell({ title, subtitle, children, actions }: AdminShellPro
     if (path.startsWith("/admin-portal/bookings")) return hasPermission("manage_bookings");
     if (path.startsWith("/admin-portal/bank-transactions") || path.startsWith("/admin-portal/billing")) return hasPermission("access_bank");
     if (path.startsWith("/admin-portal/revenue-reports")) return hasPermission("view_reports");
-    if (path.startsWith("/admin-portal/management")) return hasPermission("manage_admins");
+    if (path.startsWith("/admin-portal/management")) return hasPermission("manage_admins") || hasPermission("manage_customers") || hasPermission("manage_cleaners");
     if (path.startsWith("/admin-portal/communications")) return hasPermission("use_dialer");
     if (path.startsWith("/admin-portal/leads") || path.startsWith("/admin-portal/signups")) return hasPermission("manage_customers");
     if (path.startsWith("/admin-portal/schedule-requests")) return hasPermission("manage_time_off_requests");
@@ -135,7 +135,7 @@ function AdminSidebar() {
         case "Leads": return hasPermission("manage_customers");
         case "Bookings": return hasPermission("manage_bookings");
         case "Messages": return hasPermission("use_dialer");
-        case "Management": return hasPermission("manage_admins");
+        case "Management": return hasPermission("manage_admins") || hasPermission("manage_customers") || hasPermission("manage_cleaners");
         case "Bank": return hasPermission("access_bank");
         case "Schedule": return hasPermission("manage_time_off_requests");
         case "Revenue": return hasPermission("view_reports");

@@ -1,20 +1,21 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Plus, Pencil, Trash2, X, CheckSquare, Square, UserPlus, ShieldCheck, Eye, Key, CreditCard, Users, UserCog, Briefcase } from "lucide-react";
+import { Plus, Pencil, Trash2, X, CheckSquare, Square, UserPlus, ShieldCheck, Eye, Key, CreditCard, Users, UserCog, Briefcase, Lock } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useAuthStore } from "~/stores/authStore";
 import { AdminUserForm } from "~/components/AdminUserForm";
+import { useAdminPermissions } from "~/hooks/useAdminPermissions";
 
 type Tab = "customers" | "cleaners" | "admins";
 
 export const Route = createFileRoute("/admin-portal/management")({
   component: ManagementPage,
-  validateSearch: (search: Record<string, unknown>): { tab: Tab } => {
+  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
     return {
-      tab: (search.tab as Tab) || "customers",
+      tab: (search.tab as Tab) || undefined,
     };
   },
 });
@@ -23,12 +24,38 @@ function ManagementPage() {
   const trpc = useTRPC();
   const navigate = useNavigate();
   const search = useSearch({ from: Route.id });
-  const tab = search.tab || "customers";
   const { user, setAuth, token } = useAuthStore();
+  const { hasPermission, role, isLoading: isPermissionsLoading } = useAdminPermissions();
   const currentUser = user;
 
+  const tabs = useMemo(() => {
+    const list = [];
+    if (hasPermission("manage_customers")) {
+      list.push({ id: "customers" as const, label: "Customers", icon: Users });
+    }
+    if (hasPermission("manage_cleaners")) {
+      list.push({ id: "cleaners" as const, label: "Cleaners", icon: Briefcase });
+    }
+    if (hasPermission("manage_admins")) {
+      list.push({ id: "admins" as const, label: "Admins", icon: ShieldCheck });
+    }
+    return list;
+  }, [hasPermission]);
+
+  // Handle default tab selection
+  const tab = useMemo(() => {
+    if (search.tab && tabs.some(t => t.id === search.tab)) return search.tab;
+    return tabs[0]?.id;
+  }, [search.tab, tabs]);
+
+  useEffect(() => {
+    if (!isPermissionsLoading && tabs.length > 0 && (!search.tab || !tabs.some(t => t.id === search.tab))) {
+      navigate({ search: { tab: tabs[0].id } as any });
+    }
+  }, [isPermissionsLoading, tabs, search.tab, navigate]);
+
   const setTab = (t: Tab) => {
-    navigate({ search: { tab: t } });
+    navigate({ search: { tab: t } as any });
   };
 
   const roleMap: Record<Tab, "CLIENT" | "CLEANER" | ["ADMIN", "OWNER"]> = {
@@ -37,7 +64,10 @@ function ManagementPage() {
     admins: ["ADMIN", "OWNER"],
   };
 
-  const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions({ role: roleMap[tab] as any }));
+  const usersQuery = useQuery(trpc.getAllUsersAdmin.queryOptions(
+    { role: roleMap[tab] as any },
+    { enabled: !!tab }
+  ));
   const users = usersQuery.data?.users || [];
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -175,11 +205,24 @@ function ManagementPage() {
     }
   };
 
-  const tabs = [
-    { id: "customers" as const, label: "Customers", icon: Users, count: tab === "customers" ? users.length : undefined },
-    { id: "cleaners" as const, label: "Cleaners", icon: Briefcase, count: tab === "cleaners" ? users.length : undefined },
-    { id: "admins" as const, label: "Admins", icon: ShieldCheck, count: tab === "admins" ? users.length : undefined },
-  ];
+
+  if (!isPermissionsLoading && tabs.length === 0) {
+    return (
+      <AdminShell title="User Management" subtitle="Manage your accounts and permissions">
+        <div className="premium-card py-20 text-center">
+          <div className="h-16 w-16 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-8 w-8 text-rose-500" />
+          </div>
+          <p className="text-xl font-black text-slate-900">Access Denied</p>
+          <p className="text-slate-400 mt-2 max-w-sm mx-auto">
+            You do not have permission to view any management tabs. Please contact an owner to adjust your permissions.
+          </p>
+        </div>
+      </AdminShell>
+    );
+  }
+
+  if (!tab) return null;
 
   return (
     <AdminShell
@@ -219,7 +262,7 @@ function ManagementPage() {
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.label}</p>
                 <p className="text-2xl font-black text-slate-900 mt-1">
-                  {t.id === tab ? users.length : "—"}
+                  {users.length}
                 </p>
               </div>
               <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${tab === t.id ? "bg-[#163022] text-white" : "bg-slate-100 text-slate-400"
