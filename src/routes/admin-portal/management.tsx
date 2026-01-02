@@ -136,7 +136,7 @@ function ManagementPage() {
           phone: data.phone,
           role: data.role as any,
           adminPermissions: data.adminPermissions,
-          color: data.color,
+          color: data.color || null,
           temporaryPassword: data.temporaryPassword,
           password: data.password ? data.password : undefined,
         });
