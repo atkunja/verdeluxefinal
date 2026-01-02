@@ -61,6 +61,7 @@ export function AdminUserForm({
     { key: "view_reports", label: "View Reports", description: "Access revenue reports and statistics" },
     { key: "manage_time_off_requests", label: "Manage Time-Off Requests", description: "Approve/reject cleaner time-off requests" },
     { key: "use_dialer", label: "Use Dialer", description: "Access the phone dialer feature" },
+    { key: "access_bank", label: "Access Bank", description: "View and manage bank transactions and billing" },
   ];
 
   // Get current user's permissions if they're an admin

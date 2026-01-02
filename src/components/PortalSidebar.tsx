@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Calendar, Users, Package, DollarSign, Menu, X, Settings, ClipboardList, ChevronDown, Phone, BarChart2, CalendarOff, Briefcase, UserCog } from "lucide-react";
+import { LayoutDashboard, Calendar, Users, Package, DollarSign, Menu, X, Settings, ClipboardList, Phone, BarChart2, CalendarOff, Briefcase, UserCog, Landmark } from "lucide-react";
 import { useState } from "react";
-import { useAuthStore } from "~/stores/authStore";
+import { useAdminPermissions } from "~/hooks/useAdminPermissions";
 
 interface NavItem {
   label: string;
@@ -18,21 +18,10 @@ interface PortalSidebarProps {
 
 export function PortalSidebar({ portalType }: PortalSidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>([
-    "store-options",
-    "management",
-    "charges",
-  ]); // Default expanded
   const router = useRouterState();
-  const { user } = useAuthStore();
 
-  // Debug log for permissions issue
-  console.log("PortalSidebar render:", {
-    userId: user?.id,
-    role: user?.role,
-    perms: user?.adminPermissions,
-    hasBookings: user?.role === "OWNER" || !!(user?.adminPermissions as any)?.manage_bookings
-  });
+  // Use the new permissions hook that fetches fresh data from server
+  const { hasPermission, role, isLoading } = useAdminPermissions();
 
   const baseRoute =
     portalType === "admin"
@@ -41,19 +30,15 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
         ? "/cleaner-portal"
         : "/client-portal";
 
-  // Define navigation items based on portal type
+  // Build navigation items based on portal type and permissions
   const getNavItems = (): NavItem[] => {
     if (portalType === "admin") {
-      const isOwner = user?.role === "OWNER";
-      // Ensure permissions is an object even if null/undefined
-      const perms = (user?.adminPermissions || {}) as Record<string, boolean>;
-      const has = (key: string) => isOwner || !!perms[key];
-
       const items: NavItem[] = [
         { label: "Dashboard", view: "dashboard", icon: LayoutDashboard },
       ];
 
-      if (has("manage_bookings")) {
+      // Bookings - requires manage_bookings permission
+      if (hasPermission("manage_bookings")) {
         items.push({
           label: "Bookings",
           view: "bookings-group",
@@ -66,15 +51,15 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
         });
       }
 
-      // Management Group
+      // Management Group - each sub-item has its own permission
       const managementSubItems: NavItem[] = [];
-      if (has("manage_customers")) {
+      if (hasPermission("manage_customers")) {
         managementSubItems.push({ label: "Customers", view: "management-customers", icon: Users, routePath: "/admin-portal/management?tab=customers" });
       }
-      if (has("manage_cleaners")) {
+      if (hasPermission("manage_cleaners")) {
         managementSubItems.push({ label: "Cleaners", view: "management-cleaners", icon: UserCog, routePath: "/admin-portal/management?tab=cleaners" });
       }
-      if (has("manage_admins")) {
+      if (hasPermission("manage_admins")) {
         managementSubItems.push({ label: "Admins & Owners", view: "management-admins", icon: Settings, routePath: "/admin-portal/management?tab=admins" });
       }
 
@@ -87,42 +72,40 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
         });
       }
 
-      if (has("manage_time_off_requests")) {
+      // Requests - requires manage_time_off_requests permission
+      if (hasPermission("manage_time_off_requests")) {
         items.push({ label: "Requests", view: "cleaner-requests", icon: CalendarOff });
       }
 
-      if (has("view_reports")) {
+      // Reports - requires view_reports permission
+      if (hasPermission("view_reports")) {
         items.push({ label: "Reports", view: "reports", icon: BarChart2 });
       }
 
-      if (has("use_dialer")) {
+      // Phone - requires use_dialer permission
+      if (hasPermission("use_dialer")) {
         items.push({ label: "Phone", view: "phone", icon: Phone });
       }
 
-      // Finance Group
-      const financeSubItems: NavItem[] = [];
-      if (has("view_reports")) { // Closest permission for Bank Transactions
-        financeSubItems.push({ label: "Bank Transactions", view: "bank-transactions", icon: ClipboardList, routePath: "/admin-portal/bank-transactions" });
-      }
-      if (has("manage_pricing")) { // Closest for Billing Settings
-        financeSubItems.push({ label: "Billing Settings", view: "billing", icon: Settings, routePath: "/admin-portal/billing" });
-      }
-
-      if (financeSubItems.length > 0) {
+      // Finance Group - requires access_bank permission
+      if (hasPermission("access_bank")) {
         items.push({
           label: "Finance",
           view: "finance",
-          icon: DollarSign,
-          subItems: financeSubItems,
+          icon: Landmark,
+          subItems: [
+            { label: "Bank Transactions", view: "bank-transactions", icon: ClipboardList, routePath: "/admin-portal/bank-transactions" },
+            { label: "Billing Settings", view: "billing", icon: Settings, routePath: "/admin-portal/billing" },
+          ],
         });
       }
 
-      // Settings Group
+      // Settings Group - requires manage_checklists or manage_pricing
       const settingsSubItems: NavItem[] = [];
-      if (has("manage_checklists")) {
+      if (hasPermission("manage_checklists")) {
         settingsSubItems.push({ label: "Checklist Rules", view: "settings-checklist", icon: ClipboardList, routePath: "/admin-portal/settings?tab=checklist" });
       }
-      if (has("manage_pricing")) {
+      if (hasPermission("manage_pricing")) {
         settingsSubItems.push({ label: "Pricing Rules", view: "settings-pricing", icon: DollarSign, routePath: "/admin-portal/settings?tab=pricing" });
       }
 
@@ -163,11 +146,16 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
     return currentView === view;
   };
 
-  const toggleExpanded = (view: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(view) ? prev.filter((v) => v !== view) : [...prev, view]
+  // Show loading state briefly while permissions load
+  if (isLoading && portalType === "admin") {
+    return (
+      <aside className="fixed top-[70px] left-0 h-[calc(100vh-70px)] w-20 bg-white border-r border-gray-200 shadow-sm z-[998]">
+        <div className="flex flex-col h-full items-center justify-center">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-[#163022] rounded-full animate-spin" />
+        </div>
+      </aside>
     );
-  };
+  }
 
   return (
     <>
@@ -252,18 +240,10 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
           </nav>
 
           {/* Avatar at bottom */}
-          <div className="mt-auto pb-2 flex flex-col items-center gap-1">
-            <div className="text-[10px] text-gray-400 text-center leading-tight">
-              {user?.role}<br />
-              Bk: {String((user?.adminPermissions as any)?.manage_bookings)}
+          <div className="mt-auto pb-2">
+            <div className="w-10 h-10 rounded-full bg-[#163022] text-white flex items-center justify-center font-semibold text-sm shadow-md ring-2 ring-white">
+              {role?.[0] || "?"}
             </div>
-            {user ? (
-              <div className="w-10 h-10 rounded-full bg-[#163022] text-white flex items-center justify-center font-semibold text-sm shadow-md ring-2 ring-white">
-                {user.firstName?.[0] || user.email?.[0] || "U"}
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-200" />
-            )}
           </div>
         </div>
       </aside>
