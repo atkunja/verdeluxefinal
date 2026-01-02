@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe, MessageSquare, History, Tag } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe, MessageSquare, History, Tag, MapPin } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import toast from "react-hot-toast";
 import { BillingConfig } from "~/mocks/adminPortal"; // Keeping Billing mock for now
@@ -31,9 +31,7 @@ function SettingsPage() {
     navigate({ search: ((prev: any) => ({ ...prev, tab: t })) as any });
   };
 
-  const leadSourcesQuery = useQuery(trpc.crm.getLeadSources.queryOptions());
-  const createLeadSourceMutation = useMutation(trpc.crm.createLeadSource.mutationOptions());
-  const deleteLeadSourceMutation = useMutation(trpc.crm.deleteLeadSource.mutationOptions());
+
 
   const tabs = [
     { id: "checklist" as const, label: "Checklists", icon: ClipboardList },
@@ -73,7 +71,7 @@ function SettingsPage() {
       {tab === "pricing" && <PricingTab />}
       {tab === "billing" && <BillingTab />}
       {tab === "website" && <WebsiteTab />}
-      {tab === "leadSources" && <LeadSourcesTab />}
+      {tab === "leadSources" && <ErrorBoundary><LeadSourcesTab /></ErrorBoundary>}
       {tab === "communications" && <ErrorBoundary><CommunicationsTab /></ErrorBoundary>}
       {tab === "logs" && <ErrorBoundary><LogsTab /></ErrorBoundary>}
     </AdminShell>
