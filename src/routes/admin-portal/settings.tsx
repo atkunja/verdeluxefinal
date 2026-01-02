@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe, MessageSquare, History } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe, MessageSquare, History, Tag } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import toast from "react-hot-toast";
 import { BillingConfig } from "~/mocks/adminPortal"; // Keeping Billing mock for now
