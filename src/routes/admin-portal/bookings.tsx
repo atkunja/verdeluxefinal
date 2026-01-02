@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LiveStatusTracker } from "~/components/admin/LiveStatusTracker";
 import { CleanerAssignmentModal } from "~/components/admin/CleanerAssignmentModal";
 import { BookingEventTooltip } from "~/components/BookingEventTooltip";
+import { TimeLogModal } from "~/components/admin/TimeLogModal";
 
 
 
@@ -35,6 +36,7 @@ type BookingAction =
   | "add-card-link"
   | "resend-receipt"
   | "send-invoice"
+  | "add-tip"
   | "time-log"
   | "payment-log"
   | "refund"
@@ -64,6 +66,7 @@ function BookingsPage() {
   const cancelBookingMutation = useMutation(trpc.updateBookingAdmin.mutationOptions());
   const receiptMutation = useMutation(trpc.sendBookingReceipt.mutationOptions());
   const invoiceMutation = useMutation(trpc.sendBookingInvoice.mutationOptions());
+  const addTipMutation = useMutation(trpc.addBookingTip.mutationOptions());
   const setupIntentMutation = useMutation(trpc.sendAddCardLink.mutationOptions());
   const capturePaymentMutation = useMutation(trpc.stripe.capturePayment.mutationOptions());
   const refundPaymentMutation = useMutation(trpc.stripe.refundPayment.mutationOptions());
@@ -79,6 +82,7 @@ function BookingsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [timeLogModalOpen, setTimeLogModalOpen] = useState(false);
   const [hoveredEvent, setHoveredEvent] = useState<BookingEvent | null>(null);
   const [tooltipTarget, setTooltipTarget] = useState<HTMLElement | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
@@ -698,6 +702,10 @@ function BookingsPage() {
                 setCancelModalOpen(true);
                 return;
               }
+              if (action === "time-log") {
+                setTimeLogModalOpen(true);
+                return;
+              }
               handleBookingAction(action, activeBooking, {
                 cancel: cancelBookingMutation,
                 receipt: receiptMutation,
@@ -705,6 +713,7 @@ function BookingsPage() {
                 setupIntent: setupIntentMutation,
                 capture: capturePaymentMutation,
                 refund: refundPaymentMutation,
+                addTip: addTipMutation,
               }, actionPrefs, setActionModal);
             }}
             actionPrefs={actionPrefs}
@@ -716,6 +725,7 @@ function BookingsPage() {
               setupIntent: setupIntentMutation,
               capture: capturePaymentMutation,
               refund: refundPaymentMutation,
+              addTip: addTipMutation,
             }}
             setActionModal={setActionModal}
           />
@@ -795,6 +805,11 @@ function BookingsPage() {
               specialInstructions: leadQuery.data.lead.message,
               privateBookingNote: `Converted from Lead Source: ${leadQuery.data.lead.source}`,
             } : undefined}
+          />
+          <TimeLogModal
+            isOpen={timeLogModalOpen}
+            onClose={() => setTimeLogModalOpen(false)}
+            bookingId={activeBooking ? Number(activeBooking.id) : null}
           />
         </div>
 
@@ -893,6 +908,7 @@ async function handleBookingAction(
     setupIntent?: any;
     capture?: any;
     refund?: any;
+    addTip?: any;
   },
   prefs?: ActionPreferences,
   setActionModal?: (data: any) => void
@@ -906,6 +922,7 @@ async function handleBookingAction(
     "time-log": "View Time Log",
     "payment-log": "View Payment Log",
     refund: "Refund Booking",
+    "add-tip": "Add Tip",
     "retry-payment": "Retry Payment",
     assign: "Assign Cleaner(s)",
   };
@@ -920,6 +937,7 @@ async function handleBookingAction(
     "time-log": `View clock -in/out history and duration logs for ${booking.customer}?`,
     "payment-log": `View detailed transaction logs and Stripe events for ${booking.customer}?`,
     refund: `Are you sure you want to refund the payment for ${booking.customer}?`,
+    "add-tip": `Add a tip for the cleaners? This will charge the card on file for ${booking.customer}.`,
     "retry-payment": `Attempt to process the pending payment for ${booking.customer} again?`,
     assign: `Assigned cleaner(s) to this booking?`,
   };
@@ -986,8 +1004,21 @@ async function handleBookingAction(
             toast.success("Invoice sent");
             return;
           }
+          if (action === "add-tip") {
+            const amountStr = window.prompt("Tip amount (e.g. 20.00)?");
+            const amount = parseFloat(amountStr || "0");
+            if (amount > 0 && mutations?.addTip) {
+              await (mutations.addTip as any).mutateAsync({ bookingId: bookingIdNum, tipAmount: amount });
+              toast.success(`$${amount} tip added and charged`);
+            }
+            return;
+          }
           if (action === "time-log" || action === "payment-log") {
-            toast(`Viewing ${action} (Coming Soon)`, { icon: "📋" });
+            // Handled by callers usually via separate modal if possible, 
+            // but we'll show a toast if no handler.
+            if (action === "payment-log") {
+              toast(`Viewing ${action} (Coming Soon)`, { icon: "📋" });
+            }
             return;
           }
           toast.success(`${action} action processed for ${booking.customer}`);
@@ -1103,7 +1134,8 @@ function BookingSummaryPanel({
               <ActionButton label="Send Invoice" color="bg-indigo-100 text-indigo-700 border border-indigo-200" onClick={() => onAction("send-invoice")} />
               <ActionButton label="View Time Log" color="bg-orange-100 text-orange-700 border border-orange-200" onClick={() => onAction("time-log")} />
               <ActionButton label="View Payment Log" color="bg-sky-100 text-sky-700 border border-sky-200" onClick={() => onAction("payment-log")} />
-              <ActionButton label="Refund" color="bg-emerald-100 text-emerald-700 border border-emerald-200" onClick={() => onAction("refund")} />
+              <ActionButton label="Add Tip" color="bg-emerald-100 text-emerald-700 border border-emerald-200" onClick={() => onAction("add-tip")} />
+              <ActionButton label="Refund" color="bg-rose-100 text-rose-700 border border-rose-200" onClick={() => onAction("refund")} />
               <ActionButton label="Retry Payment" color="bg-amber-100 text-amber-700 border border-amber-200" onClick={() => onAction("retry-payment")} />
               {booking.hasUnreadMessages && (
                 <Link

@@ -61,5 +61,31 @@ export const mercury = {
         const data = await response.json();
         console.log("[Mercury] getTransactions raw data:", JSON.stringify(data, null, 2));
         return data.transactions || [];
+    },
+
+    async sendPayment(accountId: string, recipientName: string, amount: number, note?: string): Promise<any> {
+        if (!env.MERCURY_API_KEY) throw new Error("Missing Mercury API Key");
+
+        const response = await fetch(`${BASE_URL}/api/v1/account/${accountId}/payments`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${env.MERCURY_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                recipientName,
+                amount,
+                paymentMethod: "ach", // Default to ACH for now
+                note,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Mercury SendPayment Error:", response.status, errorText);
+            throw new Error(`Mercury Payment Failed: ${errorText}`);
+        }
+
+        return await response.json();
     }
 };

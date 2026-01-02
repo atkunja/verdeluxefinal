@@ -2,13 +2,13 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "~/components/admin/AdminShell";
-import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Check, X, ClipboardList, DollarSign, Trash, Save, Globe, MessageSquare, History } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import toast from "react-hot-toast";
 import { BillingConfig } from "~/mocks/adminPortal"; // Keeping Billing mock for now
 import { getBillingConfig } from "~/api/adminPortal";
 
-type SettingsTab = "checklist" | "pricing" | "billing" | "website" | "leadSources";
+type SettingsTab = "checklist" | "pricing" | "billing" | "website" | "leadSources" | "communications" | "logs";
 
 export const Route = createFileRoute("/admin-portal/settings")({
   component: SettingsPage,
@@ -27,7 +27,7 @@ function SettingsPage() {
   const tab = search.tab;
 
   const setTab = (t: SettingsTab) => {
-    navigate({ search: { tab: t } });
+    navigate({ search: ((prev: any) => ({ ...prev, tab: t })) as any });
   };
 
   const leadSourcesQuery = useQuery(trpc.crm.getLeadSources.queryOptions());
@@ -39,6 +39,8 @@ function SettingsPage() {
     { id: "pricing" as const, label: "Pricing", icon: DollarSign },
     { id: "website" as const, label: "Website", icon: Globe },
     { id: "leadSources" as const, label: "Lead Sources", icon: Plus },
+    { id: "communications" as const, label: "Communications", icon: MessageSquare },
+    { id: "logs" as const, label: "System Logs", icon: History },
     { id: "billing" as const, label: "Billing", icon: DollarSign },
   ];
 
@@ -55,8 +57,8 @@ function SettingsPage() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-all ${tab === t.id
-                  ? "bg-[#163022] text-white shadow-lg"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                ? "bg-[#163022] text-white shadow-lg"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
             >
               <t.icon className="h-4 w-4" />
@@ -70,68 +72,232 @@ function SettingsPage() {
       {tab === "pricing" && <PricingTab />}
       {tab === "billing" && <BillingTab />}
       {tab === "website" && <WebsiteTab />}
-      {tab === "leadSources" && (
-        <div className="space-y-6">
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            {/* Lead Sources Content (Unchanged) */}
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <span className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">LSC</span>
-                Lead Source Categories
-              </h1>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  id="new-lead-source"
-                  placeholder="e.g. Google LSA, Yelp"
-                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                />
+      {tab === "leadSources" && <LeadSourcesTab />}
+    </AdminShell>
+  );
+}
+
+function LeadSourcesTab() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const leadSourcesQuery = useQuery(trpc.crm.getLeadSources.queryOptions());
+  const createLeadSourceMutation = useMutation(trpc.crm.createLeadSource.mutationOptions());
+  const deleteLeadSourceMutation = useMutation(trpc.crm.deleteLeadSource.mutationOptions());
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <span className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">LSC</span>
+            Lead Source Categories
+          </h1>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              id="new-lead-source"
+              placeholder="e.g. Google LSA, Yelp"
+              className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            />
+            <button
+              onClick={async () => {
+                const input = document.getElementById("new-lead-source") as HTMLInputElement;
+                if (!input || !input.value) return;
+                try {
+                  await createLeadSourceMutation.mutateAsync({ name: input.value });
+                  input.value = "";
+                  void queryClient.invalidateQueries({ queryKey: trpc.crm.getLeadSources.queryOptions().queryKey });
+                  toast.success("Lead source added");
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+              className="rounded-xl bg-[#163022] px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:bg-[#0f241a] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {((leadSourcesQuery.data as any) || []).map((source: any) => (
+            <div key={source.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:shadow-sm transition-all">
+              <span className="font-semibold text-gray-900">{source.name}</span>
+              <button
+                onClick={async () => {
+                  if (!confirm("Delete this lead source?")) return;
+                  try {
+                    await deleteLeadSourceMutation.mutateAsync({ id: source.id });
+                    void queryClient.invalidateQueries({ queryKey: trpc.crm.getLeadSources.queryOptions().queryKey });
+                    toast.success("Lead source deleted");
+                  } catch (e: any) {
+                    toast.error(e.message);
+                  }
+                }}
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+              >
+                <Trash className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CommunicationsTab() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { data: templates, isLoading } = useQuery(trpc.email.getEmailTemplates.queryOptions());
+  const updateMutation = useMutation(trpc.email.updateEmailTemplate.mutationOptions());
+  const seedMutation = useMutation(trpc.seedDefaultEmailTemplates.mutationOptions());
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <div>
+          <h2 className="font-bold text-lg text-[#0f172a]">Email Templates</h2>
+          <p className="text-sm text-gray-500">Customize automated emails sent to clients and staff.</p>
+        </div>
+        <button
+          onClick={async () => {
+            await (seedMutation as any).mutateAsync(undefined);
+            queryClient.invalidateQueries({ queryKey: trpc.email.getEmailTemplates.queryOptions().queryKey });
+            toast.success("Default templates seeded");
+          }}
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all"
+        >
+          Seed Defaults
+        </button>
+      </div>
+
+      <div className="grid gap-6">
+        {(templates || []).map((template) => (
+          <div key={template.id} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            {editingId === template.id ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  await updateMutation.mutateAsync({
+                    id: template.id,
+                    subject: fd.get("subject") as string,
+                    body: fd.get("body") as string,
+                  });
+                  setEditingId(null);
+                  queryClient.invalidateQueries({ queryKey: trpc.email.getEmailTemplates.queryOptions().queryKey });
+                  toast.success("Template updated");
+                }}
+                className="space-y-4"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-gray-900">{template.name}</h3>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setEditingId(null)} className="p-2 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+                    <button type="submit" className="p-2 text-emerald-600 hover:text-emerald-700"><Check className="w-5 h-5" /></button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Subject</label>
+                  <input name="subject" defaultValue={template.subject} className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Body</label>
+                  <textarea name="body" defaultValue={template.body} rows={8} className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-primary/20 outline-none shadow-sm" />
+                </div>
+                <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                  <div className="text-xs font-bold text-blue-800 uppercase mb-1">Available Variables</div>
+                  <div className="flex flex-wrap gap-2">
+                    {['{{clientName}}', '{{bookingId}}', '{{scheduledDate}}', '{{scheduledTime}}'].map(v => (
+                      <code key={v} className="bg-white px-1.5 py-0.5 rounded border border-blue-100 text-[10px] font-bold text-blue-600">{v}</code>
+                    ))}
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900">{template.name}</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{template.type}</span>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">Subject: {template.subject}</div>
+                  <p className="text-sm text-gray-500 line-clamp-3 mt-2 leading-relaxed">{template.body}</p>
+                </div>
                 <button
-                  onClick={async () => {
-                    const input = document.getElementById("new-lead-source") as HTMLInputElement;
-                    if (!input || !input.value) return;
-                    try {
-                      await createLeadSourceMutation.mutateAsync({ name: input.value });
-                      input.value = "";
-                      void queryClient.invalidateQueries({ queryKey: trpc.crm.getLeadSources.queryOptions().queryKey });
-                      toast.success("Lead source added");
-                    } catch (e: any) {
-                      toast.error(e.message);
-                    }
-                  }}
-                  className="rounded-xl bg-[#163022] px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:bg-[#0f241a] transition-colors"
+                  onClick={() => setEditingId(template.id)}
+                  className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-100"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Pencil className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-              {((leadSourcesQuery.data as any) || []).map((source: any) => (
-                <div key={source.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:shadow-sm transition-all">
-                  <span className="font-semibold text-gray-900">{source.name}</span>
-                  <button
-                    onClick={async () => {
-                      if (!confirm("Delete this lead source?")) return;
-                      try {
-                        await deleteLeadSourceMutation.mutateAsync({ id: source.id });
-                        void queryClient.invalidateQueries({ queryKey: trpc.crm.getLeadSources.queryOptions().queryKey });
-                        toast.success("Lead source deleted");
-                      } catch (e: any) {
-                        toast.error(e.message);
-                      }
-                    }}
-                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash className="w-4 h-4" />
-                  </button>
-                </div>
+function LogsTab() {
+  const trpc = useTRPC();
+  const { data: logs, isLoading } = useQuery(trpc.system.getSystemLogs.queryOptions());
+
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="premium-card !p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[#f9fafb] border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Date</th>
+                <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Action</th>
+                <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Entity</th>
+                <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {(logs || []).map((log) => (
+                <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-medium">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${log.action.includes("deleted") || log.action.includes("cancel") ? "bg-red-50 text-red-700" :
+                      log.action.includes("created") ? "bg-emerald-50 text-emerald-700" :
+                        "bg-blue-50 text-blue-700"
+                      }`}>
+                      {log.action.replace("booking.", "")}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">
+                    {log.entity} #{log.entityId}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
+                      <span className="text-xs text-gray-600 font-medium">Logged</span>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </section>
+              {(logs || []).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-gray-400 italic">No activity logs found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
-    </AdminShell>
+      </div>
+    </div>
   );
 }
 
@@ -195,7 +361,7 @@ function ChecklistTab() {
                       onClick={async () => {
                         if (!window.confirm("Delete template?")) return;
                         try {
-                          await deleteMutation.mutateAsync({ id: template.id });
+                          await deleteMutation.mutateAsync({ templateId: template.id });
                           queryClient.invalidateQueries({ queryKey: trpc.getChecklistTemplates.queryOptions().queryKey });
                           toast.success("Template deleted");
                         } catch (e) { toast.error("Failed to delete"); }

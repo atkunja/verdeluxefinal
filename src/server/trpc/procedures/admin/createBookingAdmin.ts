@@ -3,6 +3,7 @@ import { db } from "~/server/db";
 import { randomUUID } from "crypto";
 import { requireAdmin } from "~/server/trpc/main";
 import { stripe } from "~/server/stripe/client";
+import { trackEvent } from "~/server/services/events";
 
 export const createBookingAdmin = requireAdmin
   .input(
@@ -55,7 +56,7 @@ export const createBookingAdmin = requireAdmin
       leadId: z.number().optional(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     // 1. Parallel Lookups for Client, Cleaner, and Checklist Template
     const [clientData, cleanerData, teamCleaners, matchingTemplate] = await Promise.all([
       // Client lookup
@@ -116,6 +117,13 @@ export const createBookingAdmin = requireAdmin
     }
 
     const primaryCleanerId = (input.cleanerIds && input.cleanerIds[0]) ?? input.cleanerId ?? null;
+    const cleanerIdsToSet =
+      input.cleanerIds && input.cleanerIds.length > 0
+        ? Array.from(new Set(input.cleanerIds))
+        : primaryCleanerId
+          ? [primaryCleanerId]
+          : [];
+
     const recurrenceId = input.recurrenceId || (input.serviceFrequency && input.serviceFrequency !== "ONE_TIME" ? randomUUID() : null);
 
     // 2.5 Handle Stripe Token Exchange (Manual Card Entry)
@@ -144,8 +152,6 @@ export const createBookingAdmin = requireAdmin
         }
 
         // B. Create Source/PaymentMethod from Token
-        // Since we are using tokens from Elements but want to use PaymentMethods API ideally
-        // We can create a card PaymentMethod directly from the token.
         const paymentMethod = await stripe.paymentMethods.create({
           type: 'card',
           card: { token: input.paymentDetails },
@@ -156,19 +162,58 @@ export const createBookingAdmin = requireAdmin
           customer: stripeCustomerId,
         });
 
-        // D. Set as default (optional, but good for "We charge it")
+        // D. Set as default
         await stripe.customers.update(stripeCustomerId, {
           invoice_settings: { default_payment_method: paymentMethod.id },
         });
 
         paymentDetailsFinal = paymentMethod.id; // Store pm_... instead of tok_...
 
+        // E. IMMEDIATE CHARGE if finalPrice is set
+        if (input.finalPrice && input.finalPrice > 0) {
+          await stripe.paymentIntents.create({
+            amount: Math.round(input.finalPrice * 100),
+            currency: "usd",
+            customer: stripeCustomerId,
+            payment_method: paymentMethod.id,
+            off_session: true,
+            confirm: true,
+            description: `Immediate Booking Payment for Client #${finalClientId}`,
+            metadata: {
+              clientId: String(finalClientId),
+              initiatedBy: "admin_portal_booking_create",
+            },
+            automatic_payment_methods: {
+              enabled: true,
+              allow_redirects: 'never' // Can't redirect in admin procedure easily
+            }
+          });
+          // Note: We are not explicitly marking the booking as "PAID" in the Booking model 
+          // because we don't have a 'paid' status column yet (status is enum), 
+          // but we have charged the card effectively.
+        }
+
       } catch (err) {
-        console.error("Failed to process manual card token:", err);
-        // We throw here because we don't want to create a booking with a dead token that looks valid
-        throw new Error(`Failed to save credit card: ${(err as any).message}`);
+        console.error("Failed to process manual card token or charge:", err);
+        throw new Error(`Payment processing failed: ${(err as any).message}`);
       }
     }
+
+    const calculateAdjustedDuration = (originalDuration: number, numCleaners: number): number => {
+      if (numCleaners <= 1) return originalDuration;
+      const scalingFactors: Record<number, number> = {
+        2: 0.6,
+        3: 0.45,
+        4: 0.35,
+      };
+      const factor = scalingFactors[numCleaners] || 0.3;
+      return Number((originalDuration * factor).toFixed(2));
+    };
+
+    const finalCleanersCount = cleanerIdsToSet.length;
+    const finalDurationHours = input.durationHours !== undefined
+      ? calculateAdjustedDuration(input.durationHours, finalCleanersCount)
+      : undefined;
 
     // 3. Create the Main Booking
     const booking = await db.booking.create({
@@ -178,7 +223,7 @@ export const createBookingAdmin = requireAdmin
         serviceType: input.serviceType,
         scheduledDate: new Date(input.scheduledDate),
         scheduledTime: input.scheduledTime,
-        durationHours: input.durationHours,
+        durationHours: finalDurationHours,
         address: input.address,
         addressLine1: input.addressLine1 ?? input.address,
         addressLine2: input.addressLine2,
@@ -211,11 +256,6 @@ export const createBookingAdmin = requireAdmin
 
     // 4. Parallelize Post-Creation Tasks
     const postCreationTasks: Promise<any>[] = [];
-
-    // Cleaner assignments
-    const cleanerIdsToSet = input.cleanerIds && input.cleanerIds.length > 0
-      ? Array.from(new Set(input.cleanerIds))
-      : primaryCleanerId ? [primaryCleanerId] : [];
 
     if (cleanerIdsToSet.length > 0) {
       postCreationTasks.push(db.bookingCleaner.createMany({
@@ -300,6 +340,13 @@ export const createBookingAdmin = requireAdmin
     }
 
     await Promise.all(postCreationTasks);
+
+    // 5. Audit & Notifications
+    await trackEvent("booking.created", {
+      bookingId: booking.id,
+      userId: ctx.profile.id,
+      changes: { after: booking }
+    });
 
     return { booking };
   });

@@ -86,6 +86,9 @@ model Booking {
   numberOfBathrooms         Int?
   numberOfCleanersRequested Int?
   cleanerPaymentAmount      Float?
+  tipAmount                 Float?
+  payoutStatus              String?
+  mercuryPaymentId          String?
   paymentMethod             PaymentMethod?
   paymentDetails            String?
   accountingEntries         AccountingEntry[]
@@ -249,6 +252,8 @@ model TimeEntry {
   bookingId    Int?
   lat          Float?
   lng          Float?
+  outLat       Float?
+  outLng       Float?
   locationNote String?
   startTime    DateTime
   endTime      DateTime?

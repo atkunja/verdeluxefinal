@@ -32,6 +32,7 @@ const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/admin-portal" },
   { label: "Leads", icon: KanbanSquare, path: "/admin-portal/leads" },
   { label: "Bookings", icon: CalendarRange, path: "/admin-portal/bookings" },
+  { label: "Finance", icon: Banknote, path: "/admin-portal/finance" },
   { label: "Messages", icon: MessageSquare, path: "/admin-portal/communications" },
   { label: "Management", icon: Users, path: "/admin-portal/management" },
   { label: "Bank", icon: Banknote, path: "/admin-portal/bank-transactions" },
@@ -52,7 +53,7 @@ export function AdminShell({ title, subtitle, children, actions }: AdminShellPro
     const path = router.location.pathname;
 
     if (path.startsWith("/admin-portal/bookings")) return hasPermission("manage_bookings");
-    if (path.startsWith("/admin-portal/bank-transactions") || path.startsWith("/admin-portal/billing")) return hasPermission("access_bank");
+    if (path.startsWith("/admin-portal/finance") || path.startsWith("/admin-portal/bank-transactions") || path.startsWith("/admin-portal/billing")) return hasPermission("access_bank");
     if (path.startsWith("/admin-portal/revenue-reports")) return hasPermission("view_reports");
     if (path.startsWith("/admin-portal/management")) return hasPermission("manage_admins") || hasPermission("manage_customers") || hasPermission("manage_cleaners");
     if (path.startsWith("/admin-portal/communications")) return hasPermission("use_dialer");
@@ -134,6 +135,7 @@ function AdminSidebar() {
         case "Dashboard": return true;
         case "Leads": return hasPermission("manage_customers");
         case "Bookings": return hasPermission("manage_bookings");
+        case "Finance": return hasPermission("access_bank");
         case "Messages": return hasPermission("use_dialer");
         case "Management": return hasPermission("manage_admins") || hasPermission("manage_customers") || hasPermission("manage_cleaners");
         case "Bank": return hasPermission("access_bank");

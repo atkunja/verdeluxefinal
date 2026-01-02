@@ -4,6 +4,7 @@ import { env } from "~/server/env";
 import nodemailer from "nodemailer";
 import { requireAdmin } from "~/server/trpc/main";
 import { stripe } from "~/server/stripe/client";
+import { trackEvent } from "~/server/services/events";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
 
@@ -56,7 +57,7 @@ export const updateBookingAdmin = requireAdmin
       overrideConflict: z.boolean().optional(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     const existingBooking = await db.booking.findUnique({
       where: { id: input.bookingId },
       include: { client: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, stripeCustomerId: true } } }
@@ -132,6 +133,17 @@ export const updateBookingAdmin = requireAdmin
       }
     }
 
+    const calculateAdjustedDuration = (originalDuration: number, numCleaners: number): number => {
+      if (numCleaners <= 1) return originalDuration;
+      const scalingFactors: Record<number, number> = {
+        2: 0.6,
+        3: 0.45,
+        4: 0.35,
+      };
+      const factor = scalingFactors[numCleaners] || 0.3;
+      return Number((originalDuration * factor).toFixed(2));
+    };
+
     const updateData: any = {};
     const primaryCleanerId =
       (input.cleanerIds && input.cleanerIds[0]) ?? (input.cleanerId !== undefined ? input.cleanerId : undefined);
@@ -140,7 +152,21 @@ export const updateBookingAdmin = requireAdmin
     if (input.scheduledDate !== undefined)
       updateData.scheduledDate = new Date(input.scheduledDate);
     if (input.scheduledTime !== undefined) updateData.scheduledTime = input.scheduledTime;
-    if (input.durationHours !== undefined) updateData.durationHours = input.durationHours;
+
+    // Automated Time Adjustment
+    const finalCleanersCount =
+      input.cleanerIds !== undefined
+        ? new Set(input.cleanerIds).size
+        : existingBooking.cleanerId ? 1 : 0; // Simplified check
+
+    if (input.durationHours !== undefined) {
+      updateData.durationHours = calculateAdjustedDuration(input.durationHours, finalCleanersCount);
+    } else if (input.cleanerIds !== undefined && existingBooking.durationHours) {
+      // If cleaners changed but duration didn't, we might want to re-calculate?
+      // For now, only adjust if duration is explicitly updated OR if it's a new assignment.
+      // Actually, user said "automated time adjustments" - usually happens on assignment.
+      updateData.durationHours = calculateAdjustedDuration(existingBooking.durationHours, finalCleanersCount);
+    }
     if (input.address !== undefined) updateData.address = input.address;
     if (input.addressLine1 !== undefined) updateData.addressLine1 = input.addressLine1;
     if (input.addressLine2 !== undefined) updateData.addressLine2 = input.addressLine2;
@@ -437,7 +463,7 @@ export const updateBookingAdmin = requireAdmin
                 bookingId: booking.id,
                 stripeIntentId: refund.id,
                 amount: delta, // negative
-                status: refund.status,
+                status: refund.status || "succeeded",
                 currency: stripePayment.currency ?? "usd",
                 description: "Price decrease refund",
               },
@@ -764,6 +790,17 @@ export const updateBookingAdmin = requireAdmin
     };
 
     await ensureFutureRecurrences();
+
+    // 5. Audit & Notifications
+    const eventType = input.status === "CANCELLED" ? "booking.cancelled" : "booking.modified";
+    await trackEvent(eventType, {
+      bookingId: input.bookingId,
+      userId: ctx.profile.id,
+      changes: {
+        before: existingBooking,
+        after: booking
+      }
+    });
 
     return { booking };
   });

@@ -115,7 +115,7 @@ export const generateRecurrences = requireAdmin
               cleanerPaymentAmount: booking.cleanerPaymentAmount,
               paymentMethod: booking.paymentMethod,
               paymentDetails: booking.paymentDetails,
-              selectedExtras: booking.selectedExtras,
+              selectedExtras: booking.selectedExtras ?? undefined,
               recurrenceId,
               occurrenceNumber: (booking.occurrenceNumber ?? 1) + n,
             },

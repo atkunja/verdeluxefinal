@@ -24,6 +24,9 @@ import { getBookingStatsAdmin } from "./procedures/admin/getBookingStatsAdmin";
 import { getRevenueReport } from "./procedures/admin/getRevenueReport";
 import { getQuizSubmissions } from "./procedures/admin/getQuizSubmissions";
 import { getBookingAdmin } from "./procedures/admin/getBookingAdmin";
+import { getBookingTimeLogs } from "./procedures/admin/getBookingTimeLogs";
+import { addBookingTip } from "./procedures/admin/addBookingTip";
+import { getPayoutSummary } from "./procedures/admin/getPayoutSummary";
 import { sendAddCardLink } from "./procedures/admin/sendAddCardLink";
 import { createUserAdmin } from "./procedures/admin/createUserAdmin";
 import { updateUserAdmin } from "./procedures/admin/updateUserAdmin";
@@ -62,6 +65,7 @@ import { paymentsRouter } from "./routers/payments";
 import { smsRouter } from "./routers/sms";
 import { documentsRouter } from "./routers/documents";
 import { stripeRouter } from "./routers/stripe";
+import { mercuryRouter } from "./routers/mercury";
 import { accountingRouter } from "./routers/accounting";
 import { crmRouter } from "./routers/crm";
 import { aiRouter } from "./routers/ai";
@@ -137,6 +141,9 @@ export const appRouter = createTRPCRouter({
   getAdminTasks,
   updateProfile,
   getActiveTimeEntries,
+  getBookingTimeLogs,
+  addBookingTip,
+  getPayoutSummary,
   assignCleaners,
 
   // Checklist procedures
@@ -170,6 +177,7 @@ export const appRouter = createTRPCRouter({
   sms: smsRouter,
   documents: documentsRouter,
   stripe: stripeRouter,
+  mercury: mercuryRouter,
   accounting: accountingRouter,
   crm: crmRouter,
   ai: aiRouter,
