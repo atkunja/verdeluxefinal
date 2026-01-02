@@ -145,14 +145,7 @@ function ManagementPage() {
         });
 
         // If editing self, update the auth store to reflect changes immediately (e.g. permissions)
-        console.log("[handleSave] Checking self-update:", {
-          currentUserId: currentUser?.id,
-          editId,
-          match: currentUser?.id === editId
-        });
-
         if (currentUser && currentUser.id === editId && token) {
-          console.log("[handleSave] Updating auth store with new user data:", res.user);
           // We need to match the User type expected by store. res.user has what we selected.
           setAuth(token, res.user as any);
         }

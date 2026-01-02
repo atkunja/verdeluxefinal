@@ -30,7 +30,8 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
   console.log("PortalSidebar render:", {
     userId: user?.id,
     role: user?.role,
-    perms: user?.adminPermissions
+    perms: user?.adminPermissions,
+    hasBookings: user?.role === "OWNER" || !!(user?.adminPermissions as any)?.manage_bookings
   });
 
   const baseRoute =
