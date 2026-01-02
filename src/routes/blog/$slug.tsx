@@ -1,6 +1,7 @@
 
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { trpc } from '../../trpc/react'
+import { useTRPC } from '../../trpc/react'
+import { useQuery } from '@tanstack/react-query'
 import { Loader2, Calendar, User, ArrowLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
@@ -10,7 +11,8 @@ export const Route = createFileRoute('/blog/$slug')({
 
 function BlogPost() {
     const { slug } = Route.useParams()
-    const { data: post, isLoading } = trpc.marketing.getPost.useQuery({ slug })
+    const trpc = useTRPC()
+    const { data: post, isLoading } = useQuery(trpc.marketing.getPost.queryOptions({ slug }))
 
     if (isLoading) return <div className="flex justify-center items-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-[#163022]" /></div>
 

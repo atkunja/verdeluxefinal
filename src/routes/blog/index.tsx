@@ -1,6 +1,7 @@
 
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { trpc } from '../../trpc/react'
+import { useTRPC } from '../../trpc/react'
+import { useQuery } from '@tanstack/react-query'
 import { Loader2, Calendar, User, ArrowRight } from 'lucide-react'
 
 export const Route = createFileRoute('/blog/')({
@@ -8,7 +9,8 @@ export const Route = createFileRoute('/blog/')({
 })
 
 function BlogIndex() {
-    const { data: posts, isLoading } = trpc.marketing.getPublicPosts.useQuery()
+    const trpc = useTRPC()
+    const { data: posts, isLoading } = useQuery(trpc.marketing.getPublicPosts.queryOptions())
 
     return (
         <div className="min-h-screen bg-neutral-50">
