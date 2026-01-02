@@ -149,13 +149,21 @@ function LeadSourcesTab() {
 function CommunicationsTab() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data: templates, isLoading } = useQuery(trpc.email.getEmailTemplates.queryOptions());
+  const { data: templates, isLoading, isError, error } = useQuery(trpc.email.getEmailTemplates.queryOptions());
   const updateMutation = useMutation(trpc.email.updateEmailTemplate.mutationOptions());
   const seedMutation = useMutation(trpc.seedDefaultEmailTemplates.mutationOptions());
 
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center flex-col gap-2"><Loader2 className="h-8 w-8 animate-spin text-brand-800" /><p className="text-sm text-gray-500">Loading templates...</p></div>;
+
+  if (isError) return (
+    <div className="p-8 text-center bg-red-50 rounded-2xl border border-red-100">
+      <p className="text-red-600 font-bold mb-2">Failed to load templates</p>
+      <p className="text-sm text-red-500 font-mono mb-4">{error?.message}</p>
+      <button onClick={() => window.location.reload()} className="px-4 py-2 bg-white border border-red-200 text-red-700 rounded-lg hover:bg-red-50 font-semibold text-sm">Retry</button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -251,9 +259,16 @@ function CommunicationsTab() {
 
 function LogsTab() {
   const trpc = useTRPC();
-  const { data: logs, isLoading } = useQuery(trpc.system.getSystemLogs.queryOptions());
+  const { data: logs, isLoading, isError, error } = useQuery(trpc.system.getSystemLogs.queryOptions());
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+
+  if (isError) return (
+    <div className="p-8 text-center bg-red-50 rounded-2xl border border-red-100">
+      <p className="text-red-600 font-bold mb-2">Failed to load logs</p>
+      <p className="text-sm text-red-500 font-mono">{error?.message}</p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
