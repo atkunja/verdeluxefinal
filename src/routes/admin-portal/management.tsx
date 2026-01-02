@@ -138,6 +138,7 @@ function ManagementPage() {
           adminPermissions: data.adminPermissions,
           color: data.color,
           temporaryPassword: data.temporaryPassword,
+          password: data.password ? data.password : undefined,
         });
       } else {
         await createMutation.mutateAsync({
