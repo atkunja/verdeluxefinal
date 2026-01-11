@@ -38,7 +38,7 @@ export function PortalLayout({ children, portalType }: PortalLayoutProps) {
       <div className="fixed top-0 inset-x-0 z-[999] bg-[#f7f4ed] border-b border-[#d7d1c4]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/imported/images/logo.png" alt="Verde Luxe" className="h-8 w-auto" />
+            <img src="/luxeclean-logo.png" alt="LuxeClean" className="h-8 w-auto" />
             <span className="text-sm font-semibold text-[#163022]">Portal</span>
             <div className="h-4 w-px bg-gray-300 mx-2" />
             <Link to="/" className="text-sm font-medium text-[#5c5a55] hover:text-[#163022] hover:underline transition-all">

@@ -20,7 +20,7 @@ function BlogIndex() {
                 <div className="relative z-10 max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <span className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-bold tracking-widest uppercase text-emerald-100">Our Journal</span>
                     <h1 className="text-4xl md:text-5xl font-heading font-bold text-white tracking-tight">Cleaning Tips & Company News</h1>
-                    <p className="text-emerald-100/80 text-lg max-w-xl mx-auto">Expert advice on keeping your home pristine, plus updates from the V-Luxe team.</p>
+                    <p className="text-emerald-100/80 text-lg max-w-xl mx-auto">Expert advice on keeping your home pristine, plus updates from the Cleaning Business team.</p>
                 </div>
             </section>
 
@@ -48,7 +48,7 @@ function BlogIndex() {
                                     </div>
                                 ) : (
                                     <div className="h-48 bg-[#163022]/5 flex items-center justify-center text-[#163022]/20">
-                                        <span className="font-heading font-bold text-2xl">V-Luxe</span>
+                                        <span className="font-heading font-bold text-2xl">Cleaning Business</span>
                                     </div>
                                 )}
 

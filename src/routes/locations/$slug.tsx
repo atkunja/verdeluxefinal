@@ -38,7 +38,7 @@ function LocationPage() {
                         Premium Cleaning in <span className="text-emerald-300">{location.city}</span>
                     </h1>
                     <p className="text-xl text-emerald-100 max-w-2xl mx-auto leading-relaxed">
-                        V-Luxe brings 5-star hotel standards to your {location.city} home. Experience the difference of a truly professional clean.
+                        Cleaning Business brings 5-star hotel standards to your {location.city} home. Experience the difference of a truly professional clean.
                     </p>
                     <div className="pt-8">
                         <Link to="/" className="inline-block bg-white text-[#163022] px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 transition-transform">
@@ -66,10 +66,10 @@ function LocationPage() {
                 ) : (
                     <div className="space-y-12">
                         <div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6 font-heading">Why {location.city} Residents Choose V-Luxe</h2>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-6 font-heading">Why {location.city} Residents Choose Cleaning Business</h2>
                             <p className="text-lg text-gray-600 leading-relaxed mb-6">
                                 Living in {location.city} implies a busy lifestyle. Whether you're a working professional or managing a bustling household, the last thing you want to worry about is cleaning.
-                                V-Luxe provides a comprehensive cleaning solution tailored to the high standards of {location.city} homes.
+                                Cleaning Business provides a comprehensive cleaning solution tailored to the high standards of {location.city} homes.
                             </p>
                             <ul className="grid md:grid-cols-2 gap-4">
                                 {["Deep Kitchen Cleaning", "Resort-Style Bathrooms", "Dust-Free Living Areas", "Eco-Friendly Products"].map(item => (
@@ -83,7 +83,7 @@ function LocationPage() {
                         <div className="bg-[#163022] rounded-3xl p-8 md:p-12 text-white text-center relative overflow-hidden">
                             <div className="relative z-10">
                                 <h3 className="text-3xl font-bold mb-4 font-heading">Book Your {location.city} Clean Today</h3>
-                                <p className="text-emerald-100 mb-8 max-w-lg mx-auto">Don't settle for average. Get the premium V-Luxe experience and reclaim your weekends.</p>
+                                <p className="text-emerald-100 mb-8 max-w-lg mx-auto">Don't settle for average. Get the premium Cleaning Business experience and reclaim your weekends.</p>
                                 <Link to="/" className="inline-block bg-white text-[#163022] px-8 py-3 rounded-xl font-bold hover:bg-emerald-50 transition-colors">
                                     Get Started
                                 </Link>

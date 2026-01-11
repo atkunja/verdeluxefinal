@@ -22,7 +22,7 @@ function EnhancementPlanPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center mb-12">
             <p className="text-sm uppercase tracking-[0.25em] text-[#7a766c]">Roadmap</p>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#163022]">Verde Luxe Enhancement Plan</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-[#163022]">LuxeClean Enhancement Plan</h1>
             <p className="text-base text-[#5c5a55] mt-4">
               A seven-phase rollout to deliver the full booking, finance, CRM, and automation experience.
             </p>

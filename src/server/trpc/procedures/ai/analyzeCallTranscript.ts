@@ -19,7 +19,7 @@ export const analyzeCallTranscript = baseProcedure
           actionItems: z.array(z.string()),
           summary: z.string(),
         }),
-        prompt: `Analyze the following call transcript from a professional cleaning service "Verde Luxe". 
+        prompt: `Analyze the following call transcript from a professional cleaning service "LuxeClean". 
         Identify the overall sentiment, key action items (e.g. scheduling, follow-ups, complaints), and provide a short summary.
         
         Transcript:

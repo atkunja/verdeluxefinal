@@ -42,9 +42,9 @@ export function QuizIdentityLayout({ children, title, subtitle }: QuizIdentityLa
                 {/* Logo */}
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-500/20 backdrop-blur rounded-xl flex items-center justify-center border border-emerald-500/30">
-                        <img src="/imported/images/logo.png" alt="" className="h-6 w-auto invert brightness-0" />
+                        <img src="/luxeclean-logo.png" alt="" className="h-6 w-auto invert brightness-0" />
                     </div>
-                    <span className="text-lg font-bold text-white hidden sm:block">Verde Luxe</span>
+                    <span className="text-lg font-bold text-white hidden sm:block">LuxeClean</span>
                 </div>
             </header>
 
@@ -90,7 +90,7 @@ export function QuizIdentityLayout({ children, title, subtitle }: QuizIdentityLa
             {/* Footer */}
             <footer className="relative z-20 text-center py-6">
                 <p className="text-xs text-white/30">
-                    Verde Luxe Premium Cleaning • Secure Session
+                    LuxeClean Premium Cleaning • Secure Session
                 </p>
             </footer>
         </div>

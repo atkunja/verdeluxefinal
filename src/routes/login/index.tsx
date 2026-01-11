@@ -76,9 +76,9 @@ function LoginPage() {
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-[#163022] rounded-xl flex items-center justify-center shadow-lg shadow-[#163022]/20">
-                <img src="/imported/images/logo.png" alt="" className="h-6 w-auto invert brightness-0" />
+                <img src="/luxeclean-logo.png" alt="" className="h-6 w-auto invert brightness-0" />
               </div>
-              <span className="text-xl font-extrabold text-[#163022]">Verde Luxe</span>
+              <span className="text-xl font-extrabold text-[#163022]">LuxeClean</span>
             </div>
             <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Welcome back</h1>
             <p className="text-slate-500 font-medium">Sign in to access your team portal</p>

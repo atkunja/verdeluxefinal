@@ -677,7 +677,7 @@ export const updateBookingAdmin = requireAdmin
             booking.scheduledDate.toLocaleDateString()
           );
           await transporter.sendMail({
-            from: process.env.SMTP_FROM || "no-reply@verdeluxe.com",
+            from: process.env.SMTP_FROM || "no-reply@luxeclean.com",
             to: booking.client.email,
             subject,
             text: body,

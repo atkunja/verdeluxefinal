@@ -23,7 +23,7 @@ function ServiceAreasPage() {
               <span className="font-bold">Where We Service</span>
             </h2>
             <p className="text-lg text-white mb-0 max-w-3xl mx-auto">
-              Verde Luxe is proud to offer premium eco-conscious cleaning to
+              LuxeClean is proud to offer premium eco-conscious cleaning to
               homes and businesses across Southeast Michigan. Whether you're in
               the city or the suburbs, our professionals bring top-tier service
               to your doorstep.

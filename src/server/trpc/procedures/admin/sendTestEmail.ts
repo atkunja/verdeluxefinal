@@ -8,7 +8,7 @@ export const sendTestEmail = requireAdmin
         return await sendEmail({
             to: input.email,
             templateType: "TEST_EMAIL",
-            fallbackSubject: "Test Email from Verde Luxe",
+            fallbackSubject: "Test Email from LuxeClean",
             fallbackBody: "This is a test email to verify your SMTP configuration. If you are reading this, your email system is working correctly!",
         });
     });

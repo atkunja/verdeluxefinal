@@ -71,7 +71,7 @@ function RegisterPage() {
   return (
     <QuizIdentityLayout
       title="Create account"
-      subtitle="Join Verde Luxe for a premium, bespoke cleaning experience."
+      subtitle="Join LuxeClean for a premium, bespoke cleaning experience."
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">

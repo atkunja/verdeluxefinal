@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-// Service area cities for Verde Luxe Cleaning
+// Service area cities for LuxeClean Cleaning
 export const SERVICE_AREA_CITIES = [
   "Canton",
   "Dearborn",

@@ -44,7 +44,7 @@ function StartChoiceContent() {
 
   return (
     <QuizIdentityLayout
-      title="Welcome to Verde Luxe"
+      title="Welcome to LuxeClean"
       subtitle="Choose how you'd like to start your premium cleaning experience."
     >
       <div className="grid gap-5">

@@ -21,6 +21,10 @@ interface OpenPhoneMessage {
 
 export const openPhone = {
     async sendMessage({ to, content, mediaUrls }: SendMessageParams) {
+        if (!env.OPENPHONE_API_KEY || !env.OPENPHONE_PHONE_NUMBER) {
+            console.log(`[OpenPhone Mock] Sending SMS to ${to}: "${content}"`);
+            return { id: "mock_msg_" + Date.now(), status: "sent", direction: "outgoing" };
+        }
         return this._request(`${BASE_URL}/messages`, {
             method: "POST",
             body: JSON.stringify({
@@ -66,6 +70,7 @@ export const openPhone = {
     async getPhoneNumberId(): Promise<string> {
         if (this._phoneNumberId) return this._phoneNumberId;
 
+        if (!env.OPENPHONE_API_KEY) return "mock_phone_id";
         const data = await this._request(`${BASE_URL}/phone-numbers`);
         // Find the ID for the configured phone number
         // Clean the env number to match format if needed, assuming E.164 match
@@ -95,6 +100,7 @@ export const openPhone = {
     },
 
     async getConversations(pageToken?: string) {
+        if (!env.OPENPHONE_API_KEY) return { data: [] };
         const phoneNumberId = await this.getPhoneNumberId();
         const url = new URL(`${BASE_URL}/conversations`);
         url.searchParams.append("phoneNumberId", phoneNumberId);
@@ -111,6 +117,7 @@ export const openPhone = {
     },
 
     async getMessages(participants: string[], pageToken?: string) {
+        if (!env.OPENPHONE_API_KEY) return { data: [] };
         // We need the phone number ID, not just the number
         const phoneNumberId = await this.getPhoneNumberId();
 
@@ -221,7 +228,7 @@ export const openPhone = {
                             firstName: lead.name.split(' ')[0] || "Lead",
                             lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
                             phone: contactPhone,
-                            email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+                            email: lead.email || `${normalizedDigits}@lead.luxeclean.com`,
                             password: "lead-no-login-permitted",
                             role: "CLIENT" as any
                         }
@@ -241,7 +248,7 @@ export const openPhone = {
                     firstName: "Contact",
                     lastName: contactPhone,
                     phone: contactPhone,
-                    email: `${normalizedDigits}@contact.v-luxe.com`,
+                    email: `${normalizedDigits}@contact.luxeclean.com`,
                     password: "contact-no-login-permitted",
                     role: "CLIENT" as any
                 }
@@ -329,7 +336,7 @@ export const openPhone = {
                             firstName: lead.name.split(' ')[0] || "Lead",
                             lastName: lead.name.split(' ').slice(1).join(' ') || contactPhone,
                             phone: contactPhone,
-                            email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+                            email: lead.email || `${normalizedDigits}@lead.luxeclean.com`,
                             password: "lead-no-login-permitted",
                             role: "CLIENT" as any
                         }
@@ -351,7 +358,7 @@ export const openPhone = {
                     firstName: "Contact",
                     lastName: contactPhone,
                     phone: contactPhone,
-                    email: `${normalizedDigits}@contact.v-luxe.com`,
+                    email: `${normalizedDigits}@contact.luxeclean.com`,
                     password: "contact-no-login-permitted",
                     role: "CLIENT" as any
                 }

@@ -19,7 +19,7 @@ function TermsOfServicePage() {
 
             <div className="bg-white rounded-lg border border-gray-200 p-8 md:p-12 shadow-sm space-y-8">
               <p className="text-gray-600 leading-relaxed">
-                Welcome to Verde Luxe Cleaning. By booking or using our services,
+                Welcome to LuxeClean Cleaning. By booking or using our services,
                 you agree to the terms below. These terms are in place to ensure
                 clarity, fairness, and professionalism in every interaction.
               </p>

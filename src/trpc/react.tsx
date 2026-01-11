@@ -31,7 +31,7 @@ function getBaseUrl() {
     // Fallback for production to ensure we hit the Railway backend
     // if the environment variable was not correctly injected by Vercel.
     if (window.location.hostname.endsWith(".vercel.app")) {
-      return "https://verdeluxefinal-production.up.railway.app";
+      return "https://luxecleanfinal-production.up.railway.app";
     }
 
     // Otherwise use relative path (same origin)

@@ -187,7 +187,7 @@ function ManagementPage() {
           role: data.role as any,
           phone: data.phone,
           adminPermissions: data.adminPermissions,
-          password: data.password || "VerdeLuxeTemp123!",
+          password: data.password || "LuxeCleanLuxeCleanTemp123!",
           color: data.color,
         });
       }
@@ -431,7 +431,7 @@ function ManagementPage() {
                   <Key className="h-4 w-4" /> Temporary Password
                 </h3>
                 <div className="bg-white border border-amber-200 rounded-xl px-4 py-2 font-mono text-amber-800 font-bold inline-block mb-2">
-                  VerdeLuxeTemp123!
+                  LuxeCleanLuxeCleanTemp123!
                 </div>
                 <p className="text-xs text-amber-600">
                   Customer can reset via "Forgot Password" on login page.

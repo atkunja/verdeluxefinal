@@ -159,10 +159,10 @@ function AdminSidebar() {
       {/* Logo Section */}
       <div className="px-6 py-8 flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-800 rounded-xl flex items-center justify-center shadow-lg shadow-brand-800/20">
-          <img src="/imported/images/logo.png" alt="" className="h-6 w-auto invert brightness-0" />
+          <img src="/luxeclean-logo.png" alt="" className="h-6 w-auto invert brightness-0" />
         </div>
         <div>
-          <h2 className="text-lg font-extrabold text-slate-900 leading-none">Verde Luxe</h2>
+          <h2 className="text-lg font-extrabold text-slate-900 leading-none">LuxeClean</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-brand-600 mt-1">Admin Portal</p>
         </div>
       </div>

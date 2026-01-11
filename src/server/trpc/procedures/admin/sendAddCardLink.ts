@@ -26,7 +26,7 @@ export const sendAddCardLink = requireAdmin
             throw new Error("No client email");
         }
 
-        const link = `${process.env.NEXT_PUBLIC_APP_URL || "https://verdeluxe.com"}/client-portal`;
+        const link = `${process.env.NEXT_PUBLIC_APP_URL || "https://luxeclean.com"}/client-portal`;
 
         const subject = `Update Payment Method for Booking #${booking.id}`;
         const body = `Hi ${booking.client.firstName ?? ""},

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/services/standard-home-cleaning/")({
 function StandardHomeCleaningPage() {
   return (
     <ServicePageTemplate
-      title="Basic Clean with Verde Luxe"
+      title="Basic Clean with LuxeClean"
       subtitle="Simple. Polished. Reliable. Experience the difference with our tailored basic clean service."
       heroImage="/imported/images/bg3.jpg"
       description={
@@ -45,7 +45,7 @@ function StandardHomeCleaningPage() {
           icon: <Sparkles className="w-16 h-16" />,
           title: "Trusted Professionals",
           description:
-            "Every cleaner is background checked and trained to maintain Verde Luxe Cleaning's high standard of care.",
+            "Every cleaner is background checked and trained to maintain LuxeClean Cleaning's high standard of care.",
         },
       ]}
       galleryImages={[

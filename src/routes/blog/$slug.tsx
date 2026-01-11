@@ -43,7 +43,7 @@ function BlogPost() {
                         )}
                         <div className="flex items-center gap-2">
                             <User className="w-4 h-4" />
-                            V-Luxe Team
+                            Cleaning Business Team
                         </div>
                     </div>
                 </div>
@@ -71,7 +71,7 @@ function BlogPost() {
             {/* Footer CTA */}
             <div className="bg-neutral-50 border-t border-gray-200 py-16 text-center px-4">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4 font-heading">Ready for a Cleaner Home?</h2>
-                <p className="text-gray-600 mb-8 max-w-lg mx-auto">Experience the V-Luxe difference today. Book your first premium cleaning service in minutes.</p>
+                <p className="text-gray-600 mb-8 max-w-lg mx-auto">Experience the Cleaning Business difference today. Book your first premium cleaning service in minutes.</p>
                 <Link to="/" className="inline-block px-8 py-4 bg-[#163022] text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">Book Now</Link>
             </div>
         </div>

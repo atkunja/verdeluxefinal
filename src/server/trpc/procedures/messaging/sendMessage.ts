@@ -58,7 +58,7 @@ export const sendMessage = requireAdmin
             firstName: lead.name.split(' ')[0] || "Lead",
             lastName: lead.name.split(' ').slice(1).join(' ') || "Contact",
             phone: lead.phone,
-            email: lead.email || `${normalizedDigits}@lead.v-luxe.com`,
+            email: lead.email || `${normalizedDigits}@lead.luxeclean.com`,
             password: "lead-no-login-permitted", // Placeholder
             role: "CLIENT",
             notes: `Created from Lead #${lead.id} via Messaging`,

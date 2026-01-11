@@ -44,7 +44,7 @@ export async function sendEmail(options: EmailOptions) {
 
     try {
         await transporter.sendMail({
-            from: process.env.SMTP_FROM || "no-reply@verdeluxe.com",
+            from: process.env.SMTP_FROM || "no-reply@luxeclean.com",
             to: options.to,
             subject,
             text: body,

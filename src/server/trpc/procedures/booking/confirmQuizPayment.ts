@@ -24,7 +24,7 @@ export const confirmQuizPayment = baseProcedure
       customer: submission.stripeCustomerId ?? undefined,
       payment_method: submission.stripePaymentMethodId,
       confirm: true,
-      description: `Verde Luxe booking quiz #${submission.id}`,
+      description: `LuxeClean booking quiz #${submission.id}`,
       metadata: { submissionId: submission.id.toString() },
     });
 

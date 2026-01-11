@@ -25,12 +25,12 @@ function PrivacyPolicyPage() {
               </p>
 
               <p className="text-gray-600 leading-relaxed">
-                At <strong>Verde Luxe Cleaning</strong> ("Verde Luxe", "we",
+                At <strong>LuxeClean Cleaning</strong> ("LuxeClean", "we",
                 "us"), your privacy, trust, and clarity matter deeply. This
                 Privacy Policy explains what personal data we collect, how we use
                 it, when we share it, how we protect it, and what rights you
                 have. It applies across our website, booking forms, communications
-                (SMS, email, phone), and any associated services under Verde Luxe.
+                (SMS, email, phone), and any associated services under LuxeClean.
               </p>
 
               <div>
@@ -150,10 +150,10 @@ function PrivacyPolicyPage() {
                 <p className="text-gray-600 leading-relaxed">
                   <strong>Email:</strong>{" "}
                   <a
-                    href="mailto:contact@verdeluxecleaning.com"
+                    href="mailto:contact@luxecleancleaning.com"
                     className="text-[#5e870d] hover:text-[#3d550c]"
                   >
-                    contact@verdeluxecleaning.com
+                    contact@luxecleancleaning.com
                   </a>
                   <br />
                   <strong>Phone:</strong>{" "}

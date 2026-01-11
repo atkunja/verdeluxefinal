@@ -10,14 +10,14 @@ export function Footer() {
           <div className="lg:col-span-4">
             <Link to="/" className="inline-block w-[100px] mb-5">
               <img
-                src="/imported/images/logo.png"
-                alt="Verde Luxe Cleaning"
+                src="/luxeclean-logo.png"
+                alt="LuxeClean Cleaning"
                 className="w-full"
               />
             </Link>
             <p className="text-sm text-gray-text leading-relaxed font-normal mb-[30px]">
               Our cleaners are professionally trained, background-checked, and fully equipped to provide top-quality
-              service through Verde Luxe Cleaning, ensuring a reliable and consistent cleaning experience for every
+              service through LuxeClean Cleaning, ensuring a reliable and consistent cleaning experience for every
               client.
             </p>
           </div>
@@ -132,7 +132,7 @@ export function Footer() {
                 </p>
                 <p className="text-sm text-gray-text font-normal mb-[15px]">
                   <Mail className="w-[14px] h-[14px] text-primary-dark inline-block mr-1" />
-                  contact@verdeluxecleaning.com
+                  contact@luxecleancleaning.com
                 </p>
                 <p className="text-sm text-gray-text font-normal mb-0">
                   <MapPin className="w-[14px] h-[14px] text-primary-dark inline-block mr-1" />
@@ -147,7 +147,7 @@ export function Footer() {
         <hr className="border-gray-300 mb-6" />
         <div className="text-center">
           <p className="text-sm text-gray-text">
-            © 2025 Verde Luxe Cleaning. All rights reserved.
+            © 2025 LuxeClean Cleaning. All rights reserved.
           </p>
         </div>
       </div>

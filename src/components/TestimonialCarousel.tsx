@@ -29,7 +29,7 @@ const testimonials: Testimonial[] = [
     name: "Bud P.",
     role: "",
     rating: 5,
-    text: "Cleaners were super efficient and through. House is spotless, will definitely use Verde Luxe again.",
+    text: "Cleaners were super efficient and through. House is spotless, will definitely use LuxeClean again.",
     avatar: "/imported/images/user1.png",
   },
   {

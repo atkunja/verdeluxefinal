@@ -100,7 +100,7 @@ function CreateAccountContent() {
           <div className="absolute inset-0 border-4 border-emerald-600 rounded-full border-t-transparent animate-spin"></div>
         </div>
         <h2 className="text-xl font-bold mt-8 text-emerald-900">{status}</h2>
-        <p className="mt-2 text-sm text-slate-500">Initializing your Verde Luxe experience...</p>
+        <p className="mt-2 text-sm text-slate-500">Initializing your LuxeClean experience...</p>
       </div>
     </QuizIdentityLayout>
   );

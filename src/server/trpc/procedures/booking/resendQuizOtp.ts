@@ -57,7 +57,7 @@ export const resendQuizOtp = baseProcedure
         to: [phone],
         from: env.OPENPHONE_PHONE_NUMBER,
         userId: env.OPENPHONE_USER_ID,
-        content: `Your Verde Luxe verification code is ${code}. It expires in 10 minutes.`,
+        content: `Your LuxeClean verification code is ${code}. It expires in 10 minutes.`,
       }),
     });
 

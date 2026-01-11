@@ -123,7 +123,7 @@ function HomePage() {
                 className="text-lg text-slate-600 leading-relaxed mb-10 max-w-lg animate-fade-in-up"
                 style={{ animationDelay: "0.6s" }}
               >
-                Verde Luxe delivers meticulous, eco-friendly cleaning tailored to your lifestyle —
+                LuxeClean delivers meticulous, eco-friendly cleaning tailored to your lifestyle —
                 so you can reclaim your time and enjoy a pristine space.
               </p>
 
@@ -268,7 +268,7 @@ function HomePage() {
         <div className="container mx-auto px-4">
           <AnimatedSection className="text-center mb-16 max-w-2xl mx-auto">
             <span className="inline-block px-4 py-2 bg-amber-50 text-amber-700 text-xs font-bold uppercase tracking-widest rounded-full mb-6">
-              Why Verde Luxe
+              Why LuxeClean
             </span>
             <h2 className="font-serif text-4xl md:text-5xl text-slate-900 mb-6">
               What makes us <span className="text-emerald-600 italic">different</span>

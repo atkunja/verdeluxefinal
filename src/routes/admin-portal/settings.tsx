@@ -620,7 +620,7 @@ function WebsiteTab() {
               <label className="text-sm font-semibold text-gray-700">Site Title</label>
               <input
                 name="title"
-                defaultValue={homeSEO?.title || "V-Luxe Cleaning | Premium Residential Cleaning"}
+                defaultValue={homeSEO?.title || "Cleaning Business | Premium Residential Cleaning"}
                 className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
               />
             </div>
@@ -637,7 +637,7 @@ function WebsiteTab() {
               <textarea
                 name="description"
                 rows={2}
-                defaultValue={homeSEO?.description || "V-Luxe provides premium residential cleaning services with a focus on quality, reliability, and luxury experience."}
+                defaultValue={homeSEO?.description || "Cleaning Business provides premium residential cleaning services with a focus on quality, reliability, and luxury experience."}
                 className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
               />
             </div>

@@ -7,8 +7,8 @@ interface SEOProps {
 }
 
 export function SEO({
-    title = "V-Luxe Cleaning | Premium Residential Cleaning Services",
-    description = "V-Luxe provides high-end residential cleaning with absolute attention to detail.",
+    title = "Cleaning Business | Premium Residential Cleaning Services",
+    description = "Cleaning Business provides high-end residential cleaning with absolute attention to detail.",
     keywords = "cleaning services, luxury cleaning, residential cleaning"
 }: SEOProps) {
     useEffect(() => {

@@ -36,8 +36,8 @@ export function Header() {
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 max-w-[75px] mr-10">
             <img
-              src="/verde-leaf-logo.png"
-              alt="Verde Luxe Cleaning"
+              src="/luxeclean-logo.png"
+              alt="LuxeClean Services"
               className="w-full"
             />
           </Link>

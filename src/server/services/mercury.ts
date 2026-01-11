@@ -23,7 +23,15 @@ interface MercuryAccount {
 
 export const mercury = {
     async getAccounts(): Promise<MercuryAccount[]> {
-        if (!env.MERCURY_API_KEY) return [];
+        if (!env.MERCURY_API_KEY) {
+            console.log("[Mercury Mock] Returning mock account");
+            return [{
+                id: "mock_acc_123",
+                name: "Portfolio Test Account",
+                currentBalance: 5000.00,
+                availableBalance: 5000.00
+            }];
+        }
 
         const response = await fetch(`${BASE_URL}/api/v1/accounts`, {
             headers: {
@@ -44,7 +52,10 @@ export const mercury = {
     },
 
     async getTransactions(accountId: string): Promise<MercuryTransaction[]> {
-        if (!env.MERCURY_API_KEY) return [];
+        if (!env.MERCURY_API_KEY) {
+            console.log("[Mercury Mock] Returning empty transactions for account:", accountId);
+            return [];
+        }
 
         const response = await fetch(`${BASE_URL}/api/v1/transactions?account_id=${accountId}`, {
             headers: {
@@ -64,7 +75,16 @@ export const mercury = {
     },
 
     async sendPayment(accountId: string, recipientName: string, amount: number, note?: string): Promise<any> {
-        if (!env.MERCURY_API_KEY) throw new Error("Missing Mercury API Key");
+        if (!env.MERCURY_API_KEY) {
+            console.log(`[Mercury Mock] Sending payment of $${amount} to ${recipientName} from ${accountId}`);
+            return {
+                id: "mock_pmt_" + Date.now(),
+                amount,
+                recipientName,
+                status: "sent",
+                createdAt: new Date().toISOString()
+            };
+        }
 
         const response = await fetch(`${BASE_URL}/api/v1/account/${accountId}/payments`, {
             method: "POST",
