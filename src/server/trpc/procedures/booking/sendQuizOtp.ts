@@ -24,12 +24,10 @@ const generateOtp = () => crypto.randomInt(0, 1000000).toString().padStart(6, "0
 export const sendQuizOtp = baseProcedure
   .input(z.object({ phone: z.string().min(6) }))
   .mutation(async ({ input }) => {
-    if (!env.OPENPHONE_API_KEY || !env.OPENPHONE_PHONE_NUMBER) {
-      throw new Error("SMS delivery is not configured. Please add OPENPHONE_API_KEY and OPENPHONE_PHONE_NUMBER env vars.");
-    }
-
     const phone = normalizePhone(input.phone);
     const now = new Date();
+
+    const isMock = !env.OPENPHONE_API_KEY || !env.OPENPHONE_PHONE_NUMBER;
 
     const latest = await db.otpVerification.findFirst({
       where: { phone, verifiedAt: null, supersededAt: null },
@@ -44,42 +42,43 @@ export const sendQuizOtp = baseProcedure
       throw new Error("Resend limit reached. Please wait before trying again.");
     }
 
-    let code = generateOtp();
+    let code = isMock ? "123456" : generateOtp();
     // Dynamic import to prevent startup crashes on Vercel
     const bcryptjs = (await import("bcryptjs")).default;
     let otpHash = await bcryptjs.hash(code, 10);
     const expiresAt = new Date(now.getTime() + OTP_TTL_MINUTES * 60 * 1000);
 
-    const response = await fetch("https://api.openphone.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: env.OPENPHONE_API_KEY,
-      },
-      body: JSON.stringify({
-        to: [phone],
-        from: env.OPENPHONE_PHONE_NUMBER,
-        userId: env.OPENPHONE_USER_ID,
-        content: `Your LuxeClean verification code is ${code}. It expires in 10 minutes.`,
-      }),
-    });
+    if (!isMock) {
+      const response = await fetch("https://api.openphone.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: env.OPENPHONE_API_KEY!,
+        },
+        body: JSON.stringify({
+          to: [phone],
+          from: env.OPENPHONE_PHONE_NUMBER,
+          userId: env.OPENPHONE_USER_ID,
+          content: `Your LuxeClean verification code is ${code}. It expires in 10 minutes.`,
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      // In development, allow a graceful fallback so OTP flow isn't blocked by SMS config.
-      if (process.env.NODE_ENV !== "production") {
-        code = "000000";
-        otpHash = await bcryptjs.hash(code, 10);
-        console.warn(
-          "[sendQuizOtp] SMS send failed; falling back to dev mode. Ensure OpenPhone creds are set. " +
-          `status=${response.status} body=${errorText} devCode=${code} from=${env.OPENPHONE_PHONE_NUMBER} keyPrefix=${env.OPENPHONE_API_KEY?.slice(0, 6) || "missing"}`
-        );
-      } else {
-        if (response.status === 401) {
-          throw new Error(`OpenPhone rejected the request (401). Check API key/phone number credentials. Body: ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        // In development, allow a graceful fallback so OTP flow isn't blocked by SMS config.
+        if (process.env.NODE_ENV !== "production") {
+          code = "123456";
+          otpHash = await bcryptjs.hash(code, 10);
+          console.warn(
+            "[sendQuizOtp] SMS send failed; falling back to dev mode. Ensure OpenPhone creds are set. " +
+            `status=${response.status} body=${errorText} devCode=${code}`
+          );
+        } else {
+          throw new Error(`Failed to send verification code. ${response.status} ${response.statusText}`);
         }
-        throw new Error(`Failed to send verification code. ${response.status} ${response.statusText} ${errorText}`);
       }
+    } else {
+      console.log(`[sendQuizOtp Mock] "Sending" OTP ${code} to ${phone}`);
     }
 
     await db.otpVerification.updateMany({
@@ -97,5 +96,5 @@ export const sendQuizOtp = baseProcedure
       },
     });
 
-    return { phone, expiresAt, devCode: process.env.NODE_ENV !== "production" ? code : undefined };
+    return { phone, expiresAt, isMock, demoCode: isMock ? code : undefined };
   });

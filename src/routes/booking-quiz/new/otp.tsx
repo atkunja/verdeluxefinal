@@ -98,6 +98,13 @@ function OtpContent() {
         <p className="text-center text-xs text-[#5c5a55]">
           Didn't receive the code? <button type="button" onClick={() => navigate({ to: "/booking-quiz/new/phone" })} className="font-bold underline">Try again</button>
         </p>
+
+        {/* Portfolio Demo Mock Hint */}
+        {(!process.env.OPENPHONE_API_KEY) && (
+          <div className="mt-4 p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg text-[11px] text-emerald-800 text-center font-medium">
+            Demo Mode: If you don't receive a text, use code <span className="font-bold">123456</span>
+          </div>
+        )}
       </div>
     </QuizIdentityLayout>
   );

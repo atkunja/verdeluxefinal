@@ -19,6 +19,8 @@ function PhoneContent() {
   const [error, setError] = React.useState<string | null>(null);
   const sendOtpMutation = useMutation(trpc.booking.sendQuizOtp.mutationOptions());
 
+  const [demoInstructions, setDemoInstructions] = React.useState<string | null>(null);
+
   const handleSendCode = () => {
     const phone = draft.contact.phone || "";
     if (!phone.trim()) {
@@ -29,9 +31,16 @@ function PhoneContent() {
     sendOtpMutation.mutate(
       { phone },
       {
-        onSuccess: () => {
-          toast.success("Verification code sent");
-          navigate({ to: "/booking-quiz/new/otp" });
+        onSuccess: (data: any) => {
+          if (data.isMock) {
+            toast.success("Portfolio Demo Mode: Code is " + data.demoCode);
+            setDemoInstructions("Since this is a portfolio demo, please use code: " + data.demoCode);
+            // Delay navigation slightly so they can see the message if they missed the toast
+            setTimeout(() => navigate({ to: "/booking-quiz/new/otp" }), 3000);
+          } else {
+            toast.success("Verification code sent");
+            navigate({ to: "/booking-quiz/new/otp" });
+          }
         },
         onError: (err) => {
           toast.error(err.message || "Failed to send code");
@@ -65,6 +74,12 @@ function PhoneContent() {
             {error}
           </p>}
         </div>
+
+        {demoInstructions && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-medium animate-pulse">
+            {demoInstructions}
+          </div>
+        )}
 
         <button
           type="button"
