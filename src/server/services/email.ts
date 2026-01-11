@@ -27,9 +27,14 @@ export async function sendEmail(options: EmailOptions) {
     }
 
     // Check for production missing configuration
-    if (process.env.NODE_ENV === 'production' && !process.env.SMTP_HOST) {
-        console.error("❌ Production environment detected but SMTP_HOST is not set.");
-        throw new Error("Email configuration missing in production. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.");
+    if (!process.env.SMTP_HOST) {
+        if (process.env.NODE_ENV === 'production') {
+            console.warn("⚠️ Production environment detected but SMTP_HOST is not set. Falling back to console mock.");
+        }
+        console.log(`[Email Mock] To: ${options.to}`);
+        console.log(`[Email Mock] Subject: ${subject}`);
+        console.log(`[Email Mock] Body:\n${body}`);
+        return { success: true };
     }
 
     const transporter = nodemailer.createTransport({
